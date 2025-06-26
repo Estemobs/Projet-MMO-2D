@@ -203,6 +203,11 @@ class GameManager:
             self.menu.selected_button = 0
         elif action == "quit":
             self.running = False
+        elif action == "toggle_fullscreen":
+            self._toggle_fullscreen()
+        elif action and action.startswith("remap_control_"):
+            control_key = action.split("remap_control_")[-1]
+            self._remap_control(control_key)
         elif action and action.startswith("load_slot_"):
             slot_number = int(action.split("_")[-1])
             if self.load_game(slot_number):
@@ -390,6 +395,81 @@ class GameManager:
         
         # Afficher le texte
         self.screen.blit(text_surface, (text_x, text_y))
+
+    def _toggle_fullscreen(self):
+        """Bascule entre le mode plein écran et fenêtré"""
+        try:
+            current_resolution = self.menu.get_resolution()
+            if self.menu.is_fullscreen():
+                # Mode plein écran
+                self.screen = pygame.display.set_mode(current_resolution, pygame.FULLSCREEN)
+                print(f"✅ Mode plein écran activé ({current_resolution[0]}x{current_resolution[1]})")
+            else:
+                # Mode fenêtré
+                self.screen = pygame.display.set_mode(current_resolution)
+                print(f"✅ Mode fenêtré activé ({current_resolution[0]}x{current_resolution[1]})")
+            
+            # Mettre à jour le menu avec le nouvel écran
+            self.menu.screen = self.screen
+            
+            # Si on est en jeu, mettre à jour les autres composants
+            if self.state == "playing" and hasattr(self, 'hud') and self.hud:
+                self.hud.screen = self.screen
+            
+        except Exception as e:
+            print(f"❌ Erreur lors du changement de mode d'affichage: {e}")
+    
+    def _remap_control(self, control_key):
+        """Lance le processus de remapping d'une touche"""
+        print(f"📝 Appuyez sur une nouvelle touche pour '{self.menu.control_names[control_key]}'...")
+        print("   (Appuyez sur Échap pour annuler)")
+        
+        # Attendre l'input de l'utilisateur
+        waiting_for_key = True
+        while waiting_for_key:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                    return
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        print("❌ Remapping annulé")
+                        return
+                    else:
+                        # Assigner la nouvelle touche
+                        old_key = pygame.key.name(self.menu.controls[control_key])
+                        new_key = pygame.key.name(event.key)
+                        
+                        self.menu.controls[control_key] = event.key
+                        self.menu.save_settings()
+                        
+                        print(f"✅ Contrôle '{self.menu.control_names[control_key]}' changé:")
+                        print(f"   {old_key.upper()} → {new_key.upper()}")
+                        waiting_for_key = False
+            
+            # Redessiner l'écran pendant l'attente
+            self.menu.draw()
+            
+            # Afficher un message d'attente
+            waiting_text = self.font.render(f"Nouvelle touche pour '{self.menu.control_names[control_key]}'...", 
+                                          True, (255, 255, 0))
+            text_rect = waiting_text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2))
+            
+            # Fond semi-transparent
+            overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
+            overlay.set_alpha(128)
+            overlay.fill((0, 0, 0))
+            self.screen.blit(overlay, (0, 0))
+            
+            # Texte
+            self.screen.blit(waiting_text, text_rect)
+            
+            cancel_text = self.font.render("(Échap pour annuler)", True, (200, 200, 200))
+            cancel_rect = cancel_text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2 + 40))
+            self.screen.blit(cancel_text, cancel_rect)
+            
+            pygame.display.flip()
+            self.clock.tick(30)  # Limiter le FPS pendant l'attente
 
     def run(self):
         """Boucle principale du jeu"""

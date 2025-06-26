@@ -1,6 +1,6 @@
 {
-    "resolution": 2,
-    "fullscreen": false,
+    "resolution": 4,
+    "fullscreen": true,
     "controls": {
         "move_up": 119,
         "move_down": 115,

@@ -171,18 +171,39 @@ class Menu:
         self.screen.blit(controls_title, (50, y))
         y += 40
         
-        for i, (key, name) in enumerate(self.control_names.items()):
-            if key != "harvest":  # Skip mouse controls
-                key_name = pygame.key.name(self.controls[key]).upper()
-                text = f"{name}: {key_name}"
-                color = self.GREEN if self.selected_button == 3 + i else self.WHITE
-                control_surf = self.small_font.render(text, True, color)
-                self.screen.blit(control_surf, (70, y))
-                y += 25
+        # Filtrer les contrôles modifiables (exclure la souris)
+        modifiable_controls = [(k, v) for k, v in self.control_names.items() if k != "harvest"]
+        
+        for i, (key, name) in enumerate(modifiable_controls):
+            key_name = pygame.key.name(self.controls[key]).upper()
+            text = f"{name}: {key_name}"
+            
+            # Colorier selon la sélection
+            is_selected = self.selected_button == 3 + i
+            color = self.GREEN if is_selected else self.WHITE
+            
+            control_surf = self.small_font.render(text, True, color)
+            self.screen.blit(control_surf, (70, y))
+            
+            if is_selected:
+                # Ajouter une indication de sélection
+                indicator = self.small_font.render("← Entrée pour modifier", True, self.YELLOW)
+                self.screen.blit(indicator, (350, y))
+            
+            y += 25
+        
+        # Instructions
+        y += 20
+        instr1 = self.small_font.render("Utilisez ↑↓ pour naviguer, ←→ pour changer la résolution", True, self.GRAY)
+        self.screen.blit(instr1, (50, y))
+        y += 20
+        instr2 = self.small_font.render("Entrée pour modifier les contrôles ou basculer le plein écran", True, self.GRAY)
+        self.screen.blit(instr2, (50, y))
         
         # Bouton retour
+        retour_button_index = 3 + len(modifiable_controls)
         self.draw_button("Retour", 50, self.screen.get_height() - 80, 100, 50, 
-                        self.selected_button == len(self.control_names) + 2)
+                        self.selected_button == retour_button_index)
     
     def load_save_slots_info(self):
         """Charge les informations des slots de sauvegarde"""
@@ -357,26 +378,76 @@ class Menu:
     
     def handle_options_event(self, event):
         """Gère les événements du menu des options"""
+        # Calculer le nombre maximum de sélections
+        modifiable_controls = [k for k in self.control_names.keys() if k != "harvest"]
+        max_selection = 3 + len(modifiable_controls)  # 0,1,2 pour résolution/fullscreen, puis contrôles, puis retour
+        
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.current_menu = "main"
                 self.selected_button = 0
+                self.save_settings()
             elif event.key == pygame.K_UP:
                 self.selected_button = max(0, self.selected_button - 1)
             elif event.key == pygame.K_DOWN:
-                max_selection = len(self.control_names) + 2
                 self.selected_button = min(max_selection, self.selected_button + 1)
+            elif event.key == pygame.K_LEFT:
+                if self.selected_button == 0 or self.selected_button == 1:  # Résolution
+                    self.current_resolution = (self.current_resolution - 1) % len(self.resolutions)
+                    self.save_settings()
+            elif event.key == pygame.K_RIGHT:
+                if self.selected_button == 0 or self.selected_button == 1:  # Résolution
+                    self.current_resolution = (self.current_resolution + 1) % len(self.resolutions)
+                    self.save_settings()
             elif event.key == pygame.K_RETURN:
                 if self.selected_button == 0:  # Résolution précédente
                     self.current_resolution = (self.current_resolution - 1) % len(self.resolutions)
+                    self.save_settings()
                 elif self.selected_button == 1:  # Résolution suivante
                     self.current_resolution = (self.current_resolution + 1) % len(self.resolutions)
+                    self.save_settings()
                 elif self.selected_button == 2:  # Basculer plein écran
                     self.fullscreen = not self.fullscreen
-                elif self.selected_button == len(self.control_names) + 2:  # Retour
+                    self.save_settings()
+                    return "toggle_fullscreen"  # Signal pour changer la résolution
+                elif self.selected_button >= 3 and self.selected_button < 3 + len(modifiable_controls):
+                    # Modification de contrôle
+                    control_index = self.selected_button - 3
+                    if control_index < len(modifiable_controls):
+                        return f"remap_control_{modifiable_controls[control_index]}"
+                elif self.selected_button == max_selection:  # Retour
                     self.current_menu = "main"
                     self.selected_button = 0
                     self.save_settings()
+        
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            
+            # Clic sur les boutons de résolution
+            if pygame.Rect(400, 115, 40, 30).collidepoint(mouse_pos):  # Bouton <
+                self.current_resolution = (self.current_resolution - 1) % len(self.resolutions)
+                self.save_settings()
+            elif pygame.Rect(450, 115, 40, 30).collidepoint(mouse_pos):  # Bouton >
+                self.current_resolution = (self.current_resolution + 1) % len(self.resolutions)
+                self.save_settings()
+            # Clic sur le bouton fullscreen
+            elif pygame.Rect(400, 165, 100, 30).collidepoint(mouse_pos):
+                self.fullscreen = not self.fullscreen
+                self.save_settings()
+                return "toggle_fullscreen"
+            # Clic sur le bouton retour
+            elif pygame.Rect(50, self.screen.get_height() - 80, 100, 50).collidepoint(mouse_pos):
+                self.current_menu = "main"
+                self.selected_button = 0
+                self.save_settings()
+            # Clic sur les contrôles (zone approximative)
+            else:
+                # Calculer quelle ligne de contrôle a été cliquée
+                control_start_y = 240  # Position approximative des contrôles
+                for i, control_key in enumerate(modifiable_controls):
+                    control_y = control_start_y + i * 25
+                    if control_y <= mouse_pos[1] <= control_y + 25 and 70 <= mouse_pos[0] <= 400:
+                        return f"remap_control_{control_key}"
         
         return None
     
