@@ -1,0 +1,55 @@
+🎮 MMO 2D - GUIDE DE DÉMARRAGE RAPIDE
+=====================================
+
+📋 INSTALLATION RAPIDE:
+1. pip install -r requirements.txt
+2. python launch.py
+
+🎯 OBJECTIF:
+Survivez, récoltez des ressources, construisez votre base et défendez-vous contre les ennemis !
+
+🎮 CONTRÔLES ESSENTIELS:
+• WASD ou ↑↓←→  : Se déplacer
+• Clic gauche   : Récolter ressources / Construire
+• Touche B      : Activer mode construction
+• Touche 1      : Sélectionner fondation (2 bois + 1 pierre)
+• Touche 2      : Sélectionner mur (1 bois + 2 pierres)
+
+🌍 ÉLÉMENTS DU JEU:
+🟢 Herbe      : Terrain libre, zone constructible
+🟤 Arbres     : Donnent du bois (clic pour récolter)
+⚫ Pierres    : Donnent de la pierre (clic pour récolter)
+⚫ Minerai    : Donne du fer (clic pour récolter)
+🔴 Ennemis    : Vous attaquent si vous vous approchez
+🔵 Vous       : Le cercle bleu, c'est vous !
+🟡 Fondation  : Base constructible
+🟠 Mur        : Structure défensive
+
+💡 CONSEILS DE SURVIE:
+• Récoltez des ressources avant de construire
+• Restez éloigné des ennemis rouges
+• Construisez des murs pour vous protéger
+• Surveillez votre barre de vie (en haut à gauche)
+
+🚀 DÉMARRAGE:
+1. Déplacez-vous avec WASD
+2. Cliquez sur un arbre près de vous pour récolter du bois
+3. Cliquez sur une pierre pour récolter de la pierre
+4. Appuyez sur B pour activer le mode construction
+5. Appuyez sur 1 pour sélectionner fondation
+6. Cliquez sur une case d'herbe pour construire
+7. Explorez et survivez !
+
+⚡ FICHIERS IMPORTANTS:
+• main.py         : Code principal du jeu
+• launch.py       : Script de lancement avec instructions
+• config.py       : Configuration du jeu
+• test_performance.py : Test de performance
+• requirements.txt : Dépendances Python
+
+🐛 PROBLÈMES FRÉQUENTS:
+• Le jeu ne se lance pas → Vérifiez les dépendances: pip install -r requirements.txt
+• Performance lente → Lancez test_performance.py pour diagnostiquer
+• Fenêtre ne s'affiche pas → Assurez-vous d'avoir un environnement graphique
+
+Bon jeu ! 🎮

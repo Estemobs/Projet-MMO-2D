@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Lancer le jeu MMO 2D",
+			"type": "shell",
+			"command": "/home/estemobs/Documents/Projet MMO 2D/.venv/bin/python",
+			"args": [
+				"main.py"
+			],
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

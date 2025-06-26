@@ -1,0 +1,66 @@
+1. Génération du monde
+Carte en 2D vue de dessus (top-down) avec une grille de tuiles (tileset RPG style herbe, pierre, arbres, minerais)
+
+Terrain généré aléatoirement sur une taille définie (exemple : 50x50 tuiles)
+
+Objets placés aléatoirement sur la carte : arbres, rochers, minerais (fer, pierre), etc.
+
+2. Déplacements
+Contrôles du joueur en top-down (déplacement libre ou sur grille)
+
+Collision avec le décor (pas traverser les arbres, rochers, bâtiments)
+
+3. Récolte de ressources
+Le joueur peut cliquer ou appuyer sur une touche pour récolter une ressource (arbre → bois, pierre → pierre, minerai → fer)
+
+Ressources récoltées ajoutées à un inventaire global ou local
+
+4. Inventaire
+Interface simple pour afficher les ressources collectées (quantités de bois, pierre, fer, etc.)
+
+Possibilité de gérer les objets (utiliser, jeter)
+
+5. Construction / base building
+Système simple de placement d’objets ou structures (ex : poser un mur, une tour, une base)
+
+Consommation des ressources pour construire
+
+6. Combat PvP / PvE
+Combat basique avec armes ou attaques (ex : épée, arc)
+
+Ennemis IA à combattre (mob, animaux, etc.)
+
+Multijoueur : combat entre joueurs (optionnel dans un premier temps)
+
+7. Factions et hubs
+Système pour rejoindre/créer une faction
+
+Base / hub commun à une faction, améliorations à acheter avec ressources
+
+Gestion de la faction (membres, rangs)
+
+8. Ville et commerce
+Ville avec PNJ marchands qui vendent des objets
+
+Loot dans la ville (coffres, objets à ramasser)
+
+Éventuellement un système économique simple
+
+9. Système de craft
+Recettes pour créer armes, équipements, objets à partir des ressources
+
+Interface simple pour combiner objets
+
+10. Interface utilisateur (UI)
+Affichage de la santé, énergie, ressources
+
+Menus pour inventaire, crafting, factions
+
+11. Multijoueur (plus avancé)
+Synchronisation des joueurs sur le même monde
+
+Chat, interactions PvP
+
+Serveur simple (selon les capacités de GDevelop ou futur portage Godot)
+
+
