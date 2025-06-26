@@ -23,6 +23,9 @@ from game.enemy import Enemy
 from game.world import WorldGenerator
 from game.camera import Camera
 from game.hud import HUD
+from game.render_manager import RenderManager
+from game.gameplay_manager import GameplayManager
+from game.minimap import MiniMap
 from core.items import create_items, create_recipes
 from systems.save_system import SaveSystem
 
@@ -66,6 +69,11 @@ class GameManager:
         self.menu = Menu(self.screen, self.font)
         self.inventory_ui = InventoryUI(self.screen, self.font)
         
+        # Nouveaux gestionnaires modulaires
+        self.render_manager = RenderManager(self.screen)
+        self.gameplay_manager = GameplayManager()
+        self.minimap = MiniMap(200, 200)  # Taille de la minimap
+        
         # Composants du jeu (initialisés quand on commence une partie)
         self.world_map = None
         self.player = None
@@ -89,63 +97,29 @@ class GameManager:
 
     def init_game(self):
         """Initialise une nouvelle partie"""
-        self.world_map = WorldGenerator.generate_map()
-        self.player = Player(MAP_WIDTH * TILE_SIZE // 2, MAP_HEIGHT * TILE_SIZE // 2)
-        self.camera = Camera(self.screen.get_width(), self.screen.get_height())
+        # Utiliser le nouveau GameplayManager
+        self.gameplay_manager.init_new_game(self.screen.get_width(), self.screen.get_height())
+        
+        # Récupérer les références depuis le GameplayManager
+        self.world_map = self.gameplay_manager.world_map
+        self.player = self.gameplay_manager.player
+        self.camera = self.gameplay_manager.camera
+        self.enemies = self.gameplay_manager.enemies
+        self.dropped_inventories = self.gameplay_manager.death_markers
+        
+        # Initialiser le HUD
         self.hud = HUD(self.font)
-        self.dropped_inventories = []  # Réinitialiser les inventaires déposés
-        
-        # Initialiser le temps de jeu
-        self.game_start_time = time.time()
-        self.total_playtime = 0
-        
-        # Générer quelques ennemis
-        self._spawn_enemies()
         
         # Donner quelques items de départ au joueur
         self._give_starting_items()
         
         self.state = "playing"
 
-    def _spawn_enemies(self):
-        """Génère les ennemis dans le monde"""
-        self.enemies = []
-        for _ in range(ENEMY_COUNT):
-            while True:
-                enemy_x = random.randint(0, MAP_WIDTH - 1) * TILE_SIZE
-                enemy_y = random.randint(0, MAP_HEIGHT - 1) * TILE_SIZE
-                
-                tile_x = int(enemy_x // TILE_SIZE)
-                tile_y = int(enemy_y // TILE_SIZE)
-                distance_from_player = math.sqrt((enemy_x - self.player.x)**2 + (enemy_y - self.player.y)**2)
-                
-                if (self.world_map[tile_y][tile_x] == TileType.GRASS and 
-                    distance_from_player > 200):
-                    self.enemies.append(Enemy(enemy_x, enemy_y))
-                    break
-
     def _give_starting_items(self):
         """Donne les items de départ au joueur"""
         self.player.inventory.add_item(self.items["wood"], 10)
         self.player.inventory.add_item(self.items["stone"], 5)
         self.player.inventory.add_item(self.items["apple"], 3)
-
-    def get_tile_color(self, tile_type):
-        """Retourne la couleur d'un type de tile"""
-        color_map = {
-            TileType.GRASS: COLORS["GREEN"],
-            TileType.TREE: COLORS["BROWN"],
-            TileType.STONE: COLORS["GRAY"],
-            TileType.IRON_ORE: COLORS["DARK_GRAY"],
-            TileType.WALL: (255, 165, 0),  # Orange
-            TileType.FOUNDATION: (255, 255, 0),  # Jaune
-            TileType.GOLD_ORE: (255, 215, 0),  # Or
-            TileType.DIAMOND_ORE: (185, 242, 255),  # Diamant
-            TileType.COAL_ORE: (36, 36, 36),  # Charbon
-            TileType.APPLE_TREE: (34, 139, 34),  # Vert pomme
-            TileType.BERRY_BUSH: (128, 0, 128)  # Violet baies
-        }
-        return color_map.get(tile_type, COLORS["BLACK"])
 
     def save_game(self, slot_number=0):
         """Sauvegarde la partie"""
@@ -157,7 +131,7 @@ class GameManager:
             self.player, 
             self.world_map, 
             self.enemies, 
-            self.total_playtime
+            self.gameplay_manager.total_playtime
         )
 
     def load_game(self, slot_number=0):
@@ -167,25 +141,19 @@ class GameManager:
         if not game_data:
             return False
             
-        # Restaurer l'état du jeu
-        self.world_map = game_data["world_map"]
-        self.player = Player(game_data["player"]["x"], game_data["player"]["y"])
-        self.player.health = game_data["player"]["health"]
-        self.player.inventory = game_data["player"]["inventory"]
-        self.total_playtime = game_data["playtime"]
+        # Charger dans le GameplayManager
+        self.gameplay_manager.load_game_data(game_data, self.screen.get_width(), self.screen.get_height())
         
-        # Réinitialiser les composants
-        self.camera = Camera(self.screen.get_width(), self.screen.get_height())
+        # Synchroniser les références
+        self.world_map = self.gameplay_manager.world_map
+        self.player = self.gameplay_manager.player
+        self.camera = self.gameplay_manager.camera
+        self.enemies = self.gameplay_manager.enemies
+        self.dropped_inventories = self.gameplay_manager.death_markers
+        
+        # Réinitialiser le HUD
         self.hud = HUD(self.font)
         
-        # Restaurer les ennemis
-        self.enemies = []
-        for enemy_data in game_data["enemies"]:
-            enemy = Enemy(enemy_data["x"], enemy_data["y"])
-            enemy.health = enemy_data["health"]
-            self.enemies.append(enemy)
-        
-        self.game_start_time = time.time()
         self.state = "playing"
         return True
 
@@ -286,38 +254,18 @@ class GameManager:
     def update(self, dt):
         """Met à jour l'état du jeu"""
         if self.state == "playing":
-            # Mettre à jour le joueur
+            # Mettre à jour avec le GameplayManager
             keys = pygame.key.get_pressed()
             mouse_buttons = pygame.mouse.get_pressed()
             mouse_pos = pygame.mouse.get_pos()
             
-            # Mise à jour du joueur
-            dx, dy = self.player.update(keys, dt, self.menu.controls)
+            # Déléguer la mise à jour au GameplayManager
+            self.gameplay_manager.update(keys, mouse_buttons, mouse_pos, dt, self.menu.controls, self.camera, self.items)
             
-            # Appliquer le mouvement au joueur
-            if dx != 0 or dy != 0:
-                self.player.move(dx, dy, dt, self.world_map)
-            
-            # Vérifier si le joueur est mort
-            if self.player.is_dead():
-                dropped_inventory = self.player.die()
-                if dropped_inventory:
-                    self.dropped_inventories.append(dropped_inventory)
-            
-            # Gestion des clics de souris
-            if mouse_buttons[0]:  # Clic gauche
-                # Vérifier d'abord s'il y a un inventaire déposé à récupérer
-                if not self._try_pickup_dropped_inventory(mouse_pos):
-                    # Sinon, gestion normale
-                    self.player.handle_mouse_click(mouse_pos, self.world_map, 
-                                                 self.camera.x, self.camera.y, self.items)
-            
-            # Mise à jour des ennemis
-            for enemy in self.enemies:
-                enemy.update(self.player, self.world_map, dt)
-            
-            # Mise à jour de la caméra
-            self.camera.follow_player(self.player)
+            # Synchroniser les références
+            self.player = self.gameplay_manager.player
+            self.enemies = self.gameplay_manager.enemies
+            self.dropped_inventories = self.gameplay_manager.death_markers
             
             # Gestion du timer du message de sauvegarde
             if hasattr(self, 'show_save_message') and self.show_save_message:
@@ -339,48 +287,19 @@ class GameManager:
 
     def _draw_game(self):
         """Dessine le contenu du jeu"""
-        # Utiliser la taille actuelle de l'écran
-        screen_width = self.screen.get_width()
-        screen_height = self.screen.get_height()
+        # Dessiner le monde avec le RenderManager
+        self.render_manager.draw_world(self.world_map, self.camera)
         
-        # Calculer les tiles visibles
-        start_x = max(0, int(self.camera.x // TILE_SIZE))
-        end_x = min(MAP_WIDTH, int((self.camera.x + screen_width) // TILE_SIZE) + 1)
-        start_y = max(0, int(self.camera.y // TILE_SIZE))
-        end_y = min(MAP_HEIGHT, int((self.camera.y + screen_height) // TILE_SIZE) + 1)
+        # Dessiner les entités avec le RenderManager
+        self.render_manager.draw_entities(
+            self.player, self.enemies, self.dropped_inventories, self.camera
+        )
         
-        # Dessiner les tiles visibles
-        for y in range(start_y, end_y):
-            for x in range(start_x, end_x):
-                tile_type = self.world_map[y][x]
-                color = self.get_tile_color(tile_type)
-                
-                screen_x = x * TILE_SIZE - self.camera.x
-                screen_y = y * TILE_SIZE - self.camera.y
-                
-                pygame.draw.rect(self.screen, color, (screen_x, screen_y, TILE_SIZE, TILE_SIZE))
-                pygame.draw.rect(self.screen, COLORS["BLACK"], (screen_x, screen_y, TILE_SIZE, TILE_SIZE), 1)
-        
-        # Dessiner le joueur
-        player_screen_x = self.player.x - self.camera.x
-        player_screen_y = self.player.y - self.camera.y
-        
-        pygame.draw.circle(self.screen, COLORS["BLUE"], 
-                         (int(player_screen_x + TILE_SIZE // 2), 
-                          int(player_screen_y + TILE_SIZE // 2)), 
-                         TILE_SIZE // 3)
-        
-        # Dessiner les ennemis
-        for enemy in self.enemies:
-            enemy_screen_x = enemy.x - self.camera.x
-            enemy_screen_y = enemy.y - self.camera.y
-            
-            if (-TILE_SIZE <= enemy_screen_x <= screen_width and 
-                -TILE_SIZE <= enemy_screen_y <= screen_height):
-                pygame.draw.circle(self.screen, COLORS["RED"],
-                                 (int(enemy_screen_x + TILE_SIZE // 2),
-                                  int(enemy_screen_y + TILE_SIZE // 2)),
-                                 TILE_SIZE // 4)
+        # Dessiner la minimap en haut à gauche
+        self.minimap.draw(
+            self.screen, self.world_map, self.player, 
+            self.enemies, self.dropped_inventories, 10, 10
+        )
         
         # Dessiner le HUD
         self.hud.draw(self.screen, self.player, self)
@@ -390,6 +309,8 @@ class GameManager:
             self._draw_save_confirmation()
         
         # Dessiner l'interface d'inventaire
+        if self.inventory_ui.visible:
+            self.inventory_ui.draw(self.player.inventory)
         self.inventory_ui.draw(self.player.inventory, self.recipes)
         
         # Instructions
@@ -567,38 +488,13 @@ class GameManager:
 
     def get_playtime(self):
         """Retourne le temps de jeu actuel"""
-        if self.game_start_time and self.state == "playing":
-            current_session = time.time() - self.game_start_time
-            total_time = self.total_playtime + current_session
+        if self.gameplay_manager.game_start_time and self.state == "playing":
+            current_session = time.time() - self.gameplay_manager.game_start_time
+            total_time = self.gameplay_manager.total_playtime + current_session
         else:
-            total_time = self.total_playtime
+            total_time = self.gameplay_manager.total_playtime
         
         hours = int(total_time // 3600)
         minutes = int((total_time % 3600) // 60)
         seconds = int(total_time % 60)
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-    
-    def _try_pickup_dropped_inventory(self, mouse_pos):
-        """Essaie de récupérer un inventaire déposé"""
-        world_x = mouse_pos[0] + self.camera.x
-        world_y = mouse_pos[1] + self.camera.y
-        
-        for i, dropped_inv in enumerate(self.dropped_inventories):
-            # Vérifier si le clic est sur l'inventaire déposé
-            distance = ((world_x - dropped_inv.x)**2 + (world_y - dropped_inv.y)**2)**0.5
-            if distance <= TILE_SIZE:
-                # Récupérer l'inventaire
-                print("🎒 Inventaire récupéré !")
-                
-                # Transférer tous les items vers le joueur
-                for slot in dropped_inv.inventory.slots:
-                    if slot:
-                        remaining = self.player.inventory.add_item(slot.item, slot.quantity)
-                        if remaining > 0:
-                            print(f"⚠️ Impossible de récupérer {remaining} x {slot.item.name}")
-                
-                # Retirer l'inventaire déposé
-                self.dropped_inventories.pop(i)
-                return True
-        
-        return False

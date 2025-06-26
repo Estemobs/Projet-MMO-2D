@@ -127,16 +127,16 @@ class Player:
 
     def update(self, keys, dt, controls=None):
         """Met à jour l'état du joueur"""
-        # Diminuer la faim au fil du temps (plus lentement)
-        self.hunger = max(0, self.hunger - 1 * dt)  # Réduit de 5 à 1
+        # Diminuer la faim au fil du temps (beaucoup plus lentement)
+        self.hunger = max(0, self.hunger - 0.3 * dt)  # Encore plus lent
         
         # Si le joueur a faim, perdre de la santé (plus lentement)
         if self.hunger <= 0:
-            self.health = max(0, self.health - 3 * dt)  # Réduit de 10 à 3
+            self.health = max(0, self.health - 1.5 * dt)  # Réduit encore plus
         
         # Régénération naturelle si le joueur n'a pas faim
-        elif self.hunger > 50 and self.health < self.max_health:
-            self.health = min(self.max_health, self.health + 2 * dt)
+        elif self.hunger > 30 and self.health < self.max_health:
+            self.health = min(self.max_health, self.health + 3 * dt)  # Un peu plus de régénération
         
         # Gestion du déplacement avec les contrôles configurés
         if controls is None:
