@@ -520,13 +520,28 @@ class Game:
                 action = self.menu.handle_event(event)
                 if action == "new_game":
                     self.init_game()
+                elif action == "load_menu":
+                    self.menu.current_menu = "load_menu"
+                    self.menu.selected_save_slot = 0
+                    self.menu.refresh_save_slots()
+                elif action == "save_menu":
+                    if self.state == "playing":
+                        self.menu.current_menu = "save_menu"
+                        self.menu.selected_save_slot = 0
+                        self.menu.refresh_save_slots()
+                    else:
+                        print("❌ Aucune partie en cours à sauvegarder")
                 elif action == "options":
                     self.menu.current_menu = "options"
                     self.menu.selected_button = 0
                 elif action == "quit":
                     self.running = False
-                elif action == "load_game":
-                    self.load_game()
+                elif action and action.startswith("load_slot_"):
+                    slot_number = int(action.split("_")[-1])
+                    self.load_game_from_slot(slot_number)
+                elif action and action.startswith("save_slot_"):
+                    slot_number = int(action.split("_")[-1])
+                    self.save_game_to_slot(slot_number)
             
             elif self.state == "playing":
                 # Gestion de l'inventaire
