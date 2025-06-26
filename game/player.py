@@ -53,11 +53,23 @@ class Player:
         if 0 <= new_x < MAP_WIDTH * TILE_SIZE and 0 <= new_y < MAP_HEIGHT * TILE_SIZE:
             tile_x = int(new_x // TILE_SIZE)
             tile_y = int(new_y // TILE_SIZE)
+            
             # Terrain praticable : herbe, terre, eau (avec vitesse réduite)
-            walkable_tiles = [TileType.GRASS, TileType.DIRT, TileType.WATER]
-            if world_map[tile_y][tile_x] in walkable_tiles:
+            # OBSTACLES SOLIDES : arbres, minerais, pierres, murs
+            walkable_tiles = [TileType.GRASS, TileType.DIRT, TileType.WATER, TileType.FOUNDATION]
+            solid_tiles = [
+                TileType.TREE, TileType.APPLE_TREE, TileType.BERRY_BUSH,  # Végétation
+                TileType.STONE, TileType.IRON_ORE, TileType.GOLD_ORE,    # Minerais
+                TileType.DIAMOND_ORE, TileType.COAL_ORE,                 # Minerais
+                TileType.WALL                                             # Structures
+            ]
+            
+            current_tile = world_map[tile_y][tile_x]
+            
+            # Ne pas pouvoir marcher sur les obstacles solides
+            if current_tile not in solid_tiles and current_tile in walkable_tiles:
                 # Réduire la vitesse dans l'eau
-                if world_map[tile_y][tile_x] == TileType.WATER:
+                if current_tile == TileType.WATER:
                     speed_multiplier = 0.5
                 else:
                     speed_multiplier = 1.0

@@ -166,12 +166,19 @@ class InventoryUI:
         cols = 9
         rows = 4
         
+        # Stocker les positions des slots pour les clics
+        self.inventory_slots_rects = []
+        
         for i in range(min(inventory.size, cols * rows)):
             row = i // cols
             col = i % cols
             
             x = start_x + col * (self.slot_size + self.slot_padding)
             y = start_y + row * (self.slot_size + self.slot_padding)
+            
+            # Stocker le rectangle pour les clics
+            slot_rect = pygame.Rect(x, y, self.slot_size, self.slot_size)
+            self.inventory_slots_rects.append((i, slot_rect))
             
             selected = (i == self.selected_slot and self.current_tab == "inventory")
             self.draw_slot(x, y, inventory.slots[i], selected)
@@ -181,6 +188,9 @@ class InventoryUI:
         start_x = 50
         start_y = 100
         
+        # Stocker les positions des recettes pour les clics
+        self.crafting_rects = []
+        
         # Liste des recettes
         for i, recipe in enumerate(recipes[:10]):  # Limiter à 10 recettes visibles
             y = start_y + i * 60
@@ -188,8 +198,17 @@ class InventoryUI:
             # Fond de la recette
             can_craft = recipe.can_craft(inventory)
             color = self.GREEN if can_craft else self.DARK_GRAY
-            pygame.draw.rect(self.screen, color, (start_x, y, 400, 50))
-            pygame.draw.rect(self.screen, self.WHITE, (start_x, y, 400, 50), 2)
+            recipe_rect = pygame.Rect(start_x, y, 400, 50)
+            
+            # Stocker le rectangle pour les clics
+            self.crafting_rects.append((i, recipe_rect, can_craft))
+            
+            selected = (i == self.selected_slot and self.current_tab == "crafting")
+            if selected:
+                pygame.draw.rect(self.screen, self.BLUE, recipe_rect, 3)
+            
+            pygame.draw.rect(self.screen, color, recipe_rect)
+            pygame.draw.rect(self.screen, self.WHITE, recipe_rect, 2)
             
             # Nom de la recette
             name_text = self.font.render(recipe.name, True, self.WHITE)
@@ -205,6 +224,9 @@ class InventoryUI:
         start_x = 200
         start_y = 150
         
+        # Stocker les positions des équipements pour les clics
+        self.equipment_rects = []
+        
         equipment_slots = ["weapon", "armor", "tool"]
         slot_names = ["Arme", "Armure", "Outil"]
         
@@ -216,8 +238,12 @@ class InventoryUI:
             name_text = self.font.render(display_name + ":", True, self.WHITE)
             self.screen.blit(name_text, (x - 100, y + 10))
             
+            # Stocker le rectangle pour les clics
+            slot_rect = pygame.Rect(x, y, self.slot_size, self.slot_size)
+            self.equipment_rects.append((slot_name, slot_rect))
+            
             # Emplacement
-            selected = (slot_name == equipment_slots[self.selected_slot] and self.current_tab == "equipment")
+            selected = (i == self.selected_slot and self.current_tab == "equipment")
             self.draw_slot(x, y, inventory.equipment[slot_name], selected)
     
     def draw(self, inventory, recipes):
@@ -243,12 +269,18 @@ class InventoryUI:
         tab_y = 60
         tabs = [("inventory", "Inventaire"), ("crafting", "Artisanat"), ("equipment", "Équipement")]
         
+        # Stocker les rectangles des onglets pour les clics
+        self.tab_rects = []
+        
         for i, (tab_id, tab_name) in enumerate(tabs):
             x = 50 + i * (tab_width + 10)
             color = self.BLUE if tab_id == self.current_tab else self.GRAY
             
-            pygame.draw.rect(self.screen, color, (x, tab_y, tab_width, tab_height))
-            pygame.draw.rect(self.screen, self.WHITE, (x, tab_y, tab_width, tab_height), 2)
+            tab_rect = pygame.Rect(x, tab_y, tab_width, tab_height)
+            self.tab_rects.append((tab_id, tab_rect))
+            
+            pygame.draw.rect(self.screen, color, tab_rect)
+            pygame.draw.rect(self.screen, self.WHITE, tab_rect, 2)
             
             tab_text = self.small_font.render(tab_name, True, self.WHITE)
             text_rect = tab_text.get_rect(center=(x + tab_width//2, tab_y + tab_height//2))
@@ -264,8 +296,8 @@ class InventoryUI:
         
         # Instructions
         instructions = [
-            "TAB: Changer d'onglet",
-            "WASD: Naviguer",
+            "Clic: Sélectionner/Utiliser",
+            "WASD: Naviguer (clavier)",
             "ENTER: Utiliser/Équiper",
             "I: Fermer inventaire"
         ]
@@ -279,6 +311,54 @@ class InventoryUI:
         if not self.visible:
             return
         
+        # Gestion des clics de souris
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # Clic gauche
+                mouse_pos = pygame.mouse.get_pos()
+                
+                # Vérifier les clics sur les onglets
+                if hasattr(self, 'tab_rects'):
+                    for tab_id, tab_rect in self.tab_rects:
+                        if tab_rect.collidepoint(mouse_pos):
+                            self.current_tab = tab_id
+                            self.selected_slot = 0
+                            return
+                
+                # Vérifier les clics selon l'onglet actuel
+                if self.current_tab == "inventory" and hasattr(self, 'inventory_slots_rects'):
+                    for slot_index, slot_rect in self.inventory_slots_rects:
+                        if slot_rect.collidepoint(mouse_pos):
+                            self.selected_slot = slot_index
+                            # Action directe sur le slot si on re-clique dessus
+                            if inventory.slots[slot_index]:
+                                item = inventory.slots[slot_index].item
+                                if item.type == "food":
+                                    print(f"Consommé: {item.name}")
+                                    inventory.remove_item(item.name, 1)
+                            return
+                
+                elif self.current_tab == "crafting" and hasattr(self, 'crafting_rects'):
+                    for recipe_index, recipe_rect, can_craft in self.crafting_rects:
+                        if recipe_rect.collidepoint(mouse_pos):
+                            self.selected_slot = recipe_index
+                            # Crafting direct si possible
+                            if can_craft and recipe_index < len(recipes):
+                                recipe = recipes[recipe_index]
+                                if recipe.craft(inventory):
+                                    print(f"Crafté: {recipe.name}")
+                                else:
+                                    print("Pas assez de ressources!")
+                            return
+                
+                elif self.current_tab == "equipment" and hasattr(self, 'equipment_rects'):
+                    for slot_name, slot_rect in self.equipment_rects:
+                        if slot_rect.collidepoint(mouse_pos):
+                            equipment_slots = ["weapon", "armor", "tool"]
+                            if slot_name in equipment_slots:
+                                self.selected_slot = equipment_slots.index(slot_name)
+                            return
+        
+        # Gestion du clavier (optionnelle)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_TAB:
                 tabs = ["inventory", "crafting", "equipment"]

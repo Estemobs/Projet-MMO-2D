@@ -12,6 +12,7 @@ sys.path.insert(0, parent_dir)
 
 from ui.inventory import Item, ItemStack, Inventory, CraftingRecipe, InventoryUI
 from ui.menu import Menu
+from ui.pause_menu import PauseMenu
 from .constants import *
 from .tiletype import TileType
 from .player import Player
@@ -42,6 +43,7 @@ class Game:
         
         # Menu
         self.menu = Menu(self.screen, self.font)
+        self.pause_menu = PauseMenu(self.screen, self.font)
         
         # Composants du jeu (initialisés quand on commence une partie)
         self.world_map = None
@@ -209,14 +211,30 @@ class Game:
                     self.save_game_to_slot(slot_number)
             
             elif self.state == "playing":
+                # Gestion du menu de pause en priorité
+                if self.pause_menu.visible:
+                    pause_action = self.pause_menu.handle_event(event)
+                    if pause_action == "resume":
+                        self.pause_menu.hide()
+                    elif pause_action == "save":
+                        self.save_game()
+                        print("✅ Partie sauvegardée!")
+                    elif pause_action == "menu":
+                        self.pause_menu.hide()
+                        self.state = "menu"
+                        self.menu.current_menu = "main"
+                        self.menu.selected_button = 0
+                    elif pause_action == "quit":
+                        self.running = False
+                    continue  # Ne pas traiter d'autres événements si le menu pause est ouvert
+                
                 # Gestion de l'inventaire
                 self.inventory_ui.handle_event(event, self.player.inventory, self.recipes)
                 
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
-                        self.state = "menu"
-                        self.menu.current_menu = "main"
-                        self.menu.selected_button = 0
+                        # Ouvrir le menu de pause au lieu de quitter directement
+                        self.pause_menu.show()
                     elif event.key == pygame.K_i:
                         self.inventory_ui.toggle_visibility()
                     elif event.key == pygame.K_b:
@@ -238,7 +256,7 @@ class Game:
                         elif self.player.eat_food("bread", 20):
                             print("Pain consommé! +20 santé")
                 
-                elif event.type == pygame.MOUSEBUTTONDOWN and not self.inventory_ui.visible:
+                elif event.type == pygame.MOUSEBUTTONDOWN and not self.inventory_ui.visible and not self.pause_menu.visible:
                     if event.button == 1:  # Clic gauche
                         mouse_pos = pygame.mouse.get_pos()
                         if self.player.build_mode:
@@ -250,6 +268,10 @@ class Game:
     
     def update(self, dt):
         if self.state != "playing":
+            return
+        
+        # Ne pas mettre à jour le jeu si le menu de pause est ouvert
+        if self.pause_menu.visible:
             return
         
         # Gestion des inputs du clavier
@@ -358,6 +380,9 @@ class Game:
             
             # Dessiner l'interface d'inventaire
             self.inventory_ui.draw(self.player.inventory, self.recipes)
+            
+            # Dessiner le menu de pause par-dessus tout
+            self.pause_menu.draw()
             
             # Instructions
             if not self.inventory_ui.visible:
