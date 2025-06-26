@@ -8,7 +8,7 @@ class HUD:
     
     def draw(self, screen, player, game_instance=None):
         # Fond pour les barres et informations
-        hud_background_rect = pygame.Rect(5, 5, 450, 90)
+        hud_background_rect = pygame.Rect(5, 5, 450, 65)  # Réduit la hauteur
         pygame.draw.rect(screen, (0, 0, 0, 128), hud_background_rect)  # Fond semi-transparent
         pygame.draw.rect(screen, WHITE, hud_background_rect, 2)  # Bordure blanche
         
@@ -40,27 +40,6 @@ class HUD:
         pygame.draw.rect(screen, RED, (220, 35, health_bar_width, health_bar_height))
         pygame.draw.rect(screen, hunger_color, (220, 35, health_bar_width * hunger_ratio, health_bar_height))
         pygame.draw.rect(screen, WHITE, (220, 35, health_bar_width, health_bar_height), 2)
-        
-        # Afficher les ressources importantes avec fond
-        inventory_y = 60
-        resources_bg = pygame.Rect(5, inventory_y - 2, 450, 25)
-        pygame.draw.rect(screen, (0, 0, 0, 100), resources_bg)  # Fond semi-transparent
-        
-        wood_count = player.inventory.get_item_count("wood")
-        stone_count = player.inventory.get_item_count("stone")
-        iron_count = player.inventory.get_item_count("iron_ore")
-        food_count = player.inventory.get_item_count("apple") + player.inventory.get_item_count("berry")
-        
-        # Ressources avec icônes colorées
-        wood_text = self.font.render(f"🌲 Bois: {wood_count}", True, (139, 69, 19))  # Brun
-        stone_text = self.font.render(f"🪨 Pierre: {stone_count}", True, (128, 128, 128))  # Gris
-        iron_text = self.font.render(f"⚒️ Fer: {iron_count}", True, (169, 169, 169))  # Gris clair
-        food_text = self.font.render(f"🍎 Nourriture: {food_count}", True, (255, 69, 0))  # Rouge orangé
-        
-        screen.blit(wood_text, (10, inventory_y))
-        screen.blit(stone_text, (130, inventory_y))
-        screen.blit(iron_text, (270, inventory_y))
-        screen.blit(food_text, (350, inventory_y))
         
         # Mode de construction
         if player.build_mode:

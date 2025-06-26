@@ -129,25 +129,45 @@ class RenderManager:
             if (-TILE_SIZE <= marker_screen_x <= screen_width and 
                 -TILE_SIZE <= marker_screen_y <= screen_height):
                 
-                # Essayer d'utiliser un sprite
-                if not self.sprite_manager.draw_entity(self.screen, "death_marker", 
+                # Essayer d'utiliser le sprite de tombe
+                if not self.sprite_manager.draw_entity(self.screen, "tombstone", 
                                                        int(marker_screen_x), int(marker_screen_y)):
-                    # Fallback: croix grise
+                    # Fallback: tombe dessinée manuellement
                     center_x = int(marker_screen_x + TILE_SIZE // 2)
                     center_y = int(marker_screen_y + TILE_SIZE // 2)
                     
-                    # Dessiner une croix
-                    pygame.draw.line(self.screen, (200, 200, 200), 
-                                   (center_x - 10, center_y - 10),
-                                   (center_x + 10, center_y + 10), 3)
-                    pygame.draw.line(self.screen, (200, 200, 200), 
-                                   (center_x + 10, center_y - 10),
-                                   (center_x - 10, center_y + 10), 3)
+                    # Fond de la tombe
+                    pygame.draw.circle(self.screen, (40, 40, 40), (center_x, center_y), 18)
+                    pygame.draw.circle(self.screen, (100, 100, 100), (center_x, center_y), 16)
+                    
+                    # Base de la tombe
+                    pygame.draw.rect(self.screen, (80, 80, 80), 
+                                   (center_x - 12, center_y + 8, 24, 6))
+                    
+                    # Pierre tombale
+                    pygame.draw.rect(self.screen, (120, 120, 120), 
+                                   (center_x - 8, center_y - 8, 16, 16))
+                    pygame.draw.rect(self.screen, (60, 60, 60), 
+                                   (center_x - 8, center_y - 8, 16, 16), 2)
+                    
+                    # Croix sur la tombe
+                    pygame.draw.line(self.screen, (255, 255, 255), 
+                                   (center_x, center_y - 6), (center_x, center_y + 4), 3)
+                    pygame.draw.line(self.screen, (255, 255, 255), 
+                                   (center_x - 4, center_y - 2), (center_x + 4, center_y - 2), 3)
+                    
+                    # Petites fleurs
+                    pygame.draw.circle(self.screen, (255, 100, 100), (center_x - 10, center_y + 10), 3)
+                    pygame.draw.circle(self.screen, (100, 255, 100), (center_x + 10, center_y + 10), 3)
                 
-                # Texte "Inventaire"
-                font = pygame.font.Font(None, 16)
-                text = font.render("Inventaire", True, (255, 255, 255))
-                self.screen.blit(text, (marker_screen_x, marker_screen_y - 20))
+                # Texte "Inventaire" plus visible
+                font = pygame.font.Font(None, 18)
+                text_bg = font.render("Inventaire", True, (0, 0, 0))
+                text_fg = font.render("Inventaire", True, (255, 255, 255))
+                
+                # Ombre du texte
+                self.screen.blit(text_bg, (marker_screen_x + 1, marker_screen_y - 21))
+                self.screen.blit(text_fg, (marker_screen_x, marker_screen_y - 22))
     
     def draw_entities(self, player, enemies, death_markers, camera):
         """Dessine toutes les entités du jeu"""

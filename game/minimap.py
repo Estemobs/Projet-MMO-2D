@@ -7,11 +7,11 @@ from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE
 
 class MiniMap:
     def __init__(self, screen_width, screen_height):
-        self.width = 200
-        self.height = 150
-        # Position en haut à droite
-        self.x = screen_width - self.width - 10  # 10 pixels du bord droit
-        self.y = 10
+        self.width = 160  # Réduit encore plus
+        self.height = 120  # Réduit encore plus
+        # Position complètement collée à droite
+        self.x = screen_width - self.width  # Pas de marge du tout
+        self.y = 0  # Complètement en haut
         self.screen_width = screen_width  # Garder la largeur pour les updates
         self.scale = min(self.width / (MAP_WIDTH * TILE_SIZE), self.height / (MAP_HEIGHT * TILE_SIZE))
         
@@ -95,8 +95,8 @@ class MiniMap:
     def update_position(self, screen_width, screen_height):
         """Met à jour la position de la minimap selon la taille d'écran"""
         self.screen_width = screen_width
-        self.x = screen_width - self.width - 10  # 10 pixels du bord droit
-        self.y = 10
+        self.x = screen_width - self.width  # Complètement collé à droite
+        self.y = 0
     
     def draw(self, screen, player, enemies=None, camera=None, death_markers=None):
         """Dessine la minimap"""
@@ -112,27 +112,64 @@ class MiniMap:
         if death_markers:
             for marker in death_markers:
                 marker_mini_x, marker_mini_y = self.world_to_minimap(marker.x, marker.y)
-                pygame.draw.circle(screen, self.colors['death_marker'], 
-                                 (self.x + marker_mini_x, self.y + marker_mini_y), 3)
-                # Ajouter une croix
-                pygame.draw.line(screen, (255, 0, 0), 
-                               (self.x + marker_mini_x - 2, self.y + marker_mini_y - 2),
-                               (self.x + marker_mini_x + 2, self.y + marker_mini_y + 2), 2)
-                pygame.draw.line(screen, (255, 0, 0), 
-                               (self.x + marker_mini_x + 2, self.y + marker_mini_y - 2),
-                               (self.x + marker_mini_x - 2, self.y + marker_mini_y + 2), 2)
+                
+                # Dessiner un fond plus visible pour la tombe
+                pygame.draw.circle(screen, (50, 50, 50), 
+                                 (self.x + marker_mini_x, self.y + marker_mini_y), 6)
+                pygame.draw.circle(screen, (200, 200, 200), 
+                                 (self.x + marker_mini_x, self.y + marker_mini_y), 5)
+                
+                # Dessiner une tombe stylisée
+                tomb_x = self.x + marker_mini_x
+                tomb_y = self.y + marker_mini_y
+                
+                # Base de la tombe
+                pygame.draw.rect(screen, (80, 80, 80), 
+                               (tomb_x - 3, tomb_y + 2, 6, 2))
+                
+                # Pierre tombale
+                pygame.draw.rect(screen, (120, 120, 120), 
+                               (tomb_x - 2, tomb_y - 3, 4, 5))
+                
+                # Croix sur la tombe
+                pygame.draw.line(screen, (255, 255, 255), 
+                               (tomb_x, tomb_y - 2), (tomb_x, tomb_y + 1), 1)
+                pygame.draw.line(screen, (255, 255, 255), 
+                               (tomb_x - 1, tomb_y - 1), (tomb_x + 1, tomb_y - 1), 1)
+                
+                # Ajouter un effet de brillance
+                pygame.draw.circle(screen, (255, 255, 0, 100), 
+                                 (self.x + marker_mini_x, self.y + marker_mini_y), 8, 1)
         
         # Dessiner les marqueurs de mort stockés localement (rétro-compatibilité)
         for marker_x, marker_y in self.death_markers:
-            pygame.draw.circle(screen, self.colors['death_marker'], 
-                             (self.x + marker_x, self.y + marker_y), 3)
-            # Ajouter une croix
-            pygame.draw.line(screen, (255, 0, 0), 
-                           (self.x + marker_x - 2, self.y + marker_y - 2),
-                           (self.x + marker_x + 2, self.y + marker_y + 2), 2)
-            pygame.draw.line(screen, (255, 0, 0), 
-                           (self.x + marker_x + 2, self.y + marker_y - 2),
-                           (self.x + marker_x - 2, self.y + marker_y + 2), 2)
+            # Dessiner un fond plus visible pour la tombe
+            pygame.draw.circle(screen, (50, 50, 50), 
+                             (self.x + marker_x, self.y + marker_y), 6)
+            pygame.draw.circle(screen, (200, 200, 200), 
+                             (self.x + marker_x, self.y + marker_y), 5)
+            
+            # Dessiner une tombe stylisée
+            tomb_x = self.x + marker_x
+            tomb_y = self.y + marker_y
+            
+            # Base de la tombe
+            pygame.draw.rect(screen, (80, 80, 80), 
+                           (tomb_x - 3, tomb_y + 2, 6, 2))
+            
+            # Pierre tombale
+            pygame.draw.rect(screen, (120, 120, 120), 
+                           (tomb_x - 2, tomb_y - 3, 4, 5))
+            
+            # Croix sur la tombe
+            pygame.draw.line(screen, (255, 255, 255), 
+                           (tomb_x, tomb_y - 2), (tomb_x, tomb_y + 1), 1)
+            pygame.draw.line(screen, (255, 255, 255), 
+                           (tomb_x - 1, tomb_y - 1), (tomb_x + 1, tomb_y - 1), 1)
+            
+            # Ajouter un effet de brillance
+            pygame.draw.circle(screen, (255, 255, 0, 100), 
+                             (self.x + marker_x, self.y + marker_y), 8, 1)
         
         # Dessiner les ennemis
         if enemies:
