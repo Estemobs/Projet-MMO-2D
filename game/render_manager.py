@@ -22,7 +22,8 @@ class RenderManager:
             TileType.GOLD_ORE: (255, 215, 0),
             TileType.DIAMOND_ORE: (185, 242, 255),
             TileType.COAL_ORE: (64, 64, 64),
-            TileType.FRUIT_TREE: COLORS["GREEN"],
+            TileType.APPLE_TREE: COLORS["GREEN"],
+            TileType.BERRY_BUSH: (128, 0, 128),
             TileType.FOUNDATION: (160, 160, 160),
             TileType.WALL: COLORS["BROWN"],
         }
@@ -38,7 +39,8 @@ class RenderManager:
             TileType.GOLD_ORE: "gold_ore",
             TileType.DIAMOND_ORE: "diamond_ore",
             TileType.COAL_ORE: "coal_ore",
-            TileType.FRUIT_TREE: "fruit_tree",
+            TileType.APPLE_TREE: "apple_tree",
+            TileType.BERRY_BUSH: "berry_bush",
             TileType.FOUNDATION: "foundation",
             TileType.WALL: "wall",
         }
@@ -146,3 +148,9 @@ class RenderManager:
                 font = pygame.font.Font(None, 16)
                 text = font.render("Inventaire", True, (255, 255, 255))
                 self.screen.blit(text, (marker_screen_x, marker_screen_y - 20))
+    
+    def draw_entities(self, player, enemies, death_markers, camera):
+        """Dessine toutes les entités du jeu"""
+        self.draw_player(player, camera)
+        self.draw_enemies(enemies, camera)
+        self.draw_death_markers(death_markers, camera)

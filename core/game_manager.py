@@ -268,11 +268,9 @@ class GameManager:
             self.dropped_inventories = self.gameplay_manager.death_markers
             
             # Gestion du timer du message de sauvegarde
-            if hasattr(self, 'show_save_message') and self.show_save_message:
-                if hasattr(self, 'save_message_timer') and self.save_message_timer > 0:
-                    self.save_message_timer -= dt
-                    if self.save_message_timer <= 0:
-                        self.show_save_message = False
+            if hasattr(self.gameplay_manager, 'show_save_message') and self.gameplay_manager.show_save_message:
+                if hasattr(self.gameplay_manager, 'save_message_timer') and self.gameplay_manager.save_message_timer <= 0:
+                    self.gameplay_manager.show_save_message = False
 
     def draw(self):
         """Dessine tout le contenu du jeu"""

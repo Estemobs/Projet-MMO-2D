@@ -4,6 +4,7 @@ Gestionnaire de gameplay pour le jeu MMO 2D
 
 import time
 import random
+import pygame
 from .player import Player
 from .enemy import Enemy
 from .world import WorldGenerator
@@ -103,13 +104,13 @@ class GameplayManager:
         
         print(f"✅ Partie chargée - Temps de jeu: {self.get_playtime()}")
     
-    def update(self, dt, controls, mouse_buttons, mouse_pos, items):
+    def update(self, keys, mouse_buttons, mouse_pos, dt, controls, camera, items):
         """Met à jour le gameplay"""
         if not self.player:
             return
         
         # Mise à jour du joueur
-        dx, dy = self.player.update(pygame.key.get_pressed(), dt, controls)
+        dx, dy = self.player.update(keys, dt, controls)
         
         # Appliquer le mouvement au joueur
         if dx != 0 or dy != 0:
