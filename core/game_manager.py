@@ -363,19 +363,29 @@ class GameManager:
             self._draw_instructions()
 
     def _draw_instructions(self):
-        """Dessine les instructions à l'écran"""
+        """Dessine les instructions à l'écran avec les contrôles personnalisés"""
+        # Récupérer les noms des touches configurées
+        move_up = pygame.key.name(self.menu.controls["move_up"]).upper()
+        move_down = pygame.key.name(self.menu.controls["move_down"]).upper()
+        move_left = pygame.key.name(self.menu.controls["move_left"]).upper()
+        move_right = pygame.key.name(self.menu.controls["move_right"]).upper()
+        build_mode = pygame.key.name(self.menu.controls["build_mode"]).upper()
+        inventory = pygame.key.name(self.menu.controls["inventory"]).upper()
+        foundation = pygame.key.name(self.menu.controls["foundation"]).upper()
+        wall = pygame.key.name(self.menu.controls["wall"]).upper()
+        
         instructions = [
-            "WASD ou flèches: Se déplacer",
+            f"{move_up}{move_left}{move_down}{move_right}: Se déplacer",
             "Clic gauche: Récolter les ressources ou construire", 
-            "B: Activer/désactiver le mode construction",
-            "1: Sélectionner fondation, 2: Sélectionner mur",
-            "I: Ouvrir inventaire, H: Manger nourriture",
+            f"{build_mode}: Activer/désactiver le mode construction",
+            f"{foundation}: Sélectionner fondation, {wall}: Sélectionner mur",
+            f"{inventory}: Ouvrir inventaire",
             "F5: Sauvegarder, Échap: Menu principal"
         ]
         
         for i, instruction in enumerate(instructions):
             text = self.font.render(instruction, True, COLORS["WHITE"])
-            self.screen.blit(text, (10, WINDOW_HEIGHT - 120 + i * 20))
+            self.screen.blit(text, (10, self.screen.get_height() - 120 + i * 20))
 
     def _draw_save_confirmation(self):
         """Dessine le message de confirmation de sauvegarde"""
@@ -384,10 +394,12 @@ class GameManager:
         big_font = pygame.font.Font(None, 48)
         text_surface = big_font.render(message, True, COLORS["GREEN"])
         
-        # Calculer la position centrée
+        # Calculer la position centrée avec la taille actuelle de l'écran
+        screen_width = self.screen.get_width()
+        screen_height = self.screen.get_height()
         text_rect = text_surface.get_rect()
-        text_x = (WINDOW_WIDTH - text_rect.width) // 2
-        text_y = WINDOW_HEIGHT // 4
+        text_x = (screen_width - text_rect.width) // 2
+        text_y = screen_height // 4
         
         # Dessiner un fond semi-transparent
         background_padding = 20
@@ -415,9 +427,10 @@ class GameManager:
         try:
             current_resolution = self.menu.get_resolution()
             if self.menu.is_fullscreen():
-                # Mode plein écran
-                self.screen = pygame.display.set_mode(current_resolution, pygame.FULLSCREEN)
-                print(f"✅ Mode plein écran activé ({current_resolution[0]}x{current_resolution[1]})")
+                # Mode plein écran - utiliser la résolution native de l'écran
+                self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                actual_size = self.screen.get_size()
+                print(f"✅ Mode plein écran activé ({actual_size[0]}x{actual_size[1]})")
             else:
                 # Mode fenêtré
                 self.screen = pygame.display.set_mode(current_resolution)
