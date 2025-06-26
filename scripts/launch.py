@@ -95,23 +95,26 @@ def check_game_files():
     """Vérifie que tous les fichiers du jeu sont présents"""
     print_header("� Vérification des fichiers du jeu")
     
+    # Ajuster les chemins relatifs au répertoire parent
+    project_root = Path(__file__).parent.parent
+    
     required_files = [
-        ('game/core.py', 'Module principal du jeu'),
-        ('game/__init__.py', 'Package de jeu'),
-        ('config.py', 'Configuration du jeu'),
-        ('inventory.py', 'Système d\'inventaire'),
-        ('menu.py', 'Interface des menus'),
-        ('requirements.txt', 'Liste des dépendances'),
+        (project_root / 'game/core.py', 'Module principal du jeu'),
+        (project_root / 'game/__init__.py', 'Package de jeu'),
+        (project_root / 'data/config.py', 'Configuration du jeu'),
+        (project_root / 'ui/inventory.py', 'Système d\'inventaire'),
+        (project_root / 'ui/menu.py', 'Interface des menus'),
+        (project_root / 'requirements.txt', 'Liste des dépendances'),
     ]
     
     missing_files = []
     
     for file_path, description in required_files:
-        if Path(file_path).exists():
-            print_colored(f"  ✅ {file_path:<15} - {description}", Colors.GREEN)
+        if file_path.exists():
+            print_colored(f"  ✅ {str(file_path.relative_to(project_root)):<15} - {description}", Colors.GREEN)
         else:
-            print_colored(f"  ❌ {file_path:<15} - {description}", Colors.RED)
-            missing_files.append(file_path)
+            print_colored(f"  ❌ {str(file_path.relative_to(project_root)):<15} - {description}", Colors.RED)
+            missing_files.append(str(file_path.relative_to(project_root)))
     
     if missing_files:
         print_colored(f"\n❌ Fichiers manquants: {', '.join(missing_files)}", Colors.RED)
@@ -179,6 +182,10 @@ def launch_game():
     print_header("🚀 LANCEMENT DU JEU")
     
     try:
+        # Ajouter le répertoire parent au path pour les imports
+        project_root = Path(__file__).parent.parent
+        sys.path.insert(0, str(project_root))
+        
         print_colored("📥 Importation des modules...", Colors.BLUE)
         from core import GameManager
         
