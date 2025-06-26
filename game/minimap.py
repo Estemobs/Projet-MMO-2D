@@ -7,11 +7,11 @@ from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE
 
 class MiniMap:
     def __init__(self, screen_width, screen_height):
-        self.width = 160  # Réduit encore plus
-        self.height = 120  # Réduit encore plus
-        # Position complètement collée à droite
-        self.x = screen_width - self.width  # Pas de marge du tout
-        self.y = 0  # Complètement en haut
+        self.width = 280  # Beaucoup plus grande
+        self.height = 200  # Plus haute aussi
+        # Position dans le coin en haut à droite avec petite marge
+        self.x = screen_width - self.width - 10  # Petite marge à droite
+        self.y = 10  # Petite marge en haut
         self.screen_width = screen_width  # Garder la largeur pour les updates
         self.scale = min(self.width / (MAP_WIDTH * TILE_SIZE), self.height / (MAP_HEIGHT * TILE_SIZE))
         
@@ -100,6 +100,10 @@ class MiniMap:
     
     def draw(self, screen, player, enemies=None, camera=None, death_markers=None):
         """Dessine la minimap"""
+        # Fond de la minimap avec une bordure pour remplir l'espace
+        background_rect = pygame.Rect(self.x - 5, self.y, self.width + 5, self.height + 5)
+        pygame.draw.rect(screen, (20, 20, 20), background_rect)  # Fond gris foncé
+        
         # Fond de la minimap
         pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.width, self.height))
         pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.width, self.height), 2)

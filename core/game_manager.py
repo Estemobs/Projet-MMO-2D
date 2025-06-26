@@ -296,7 +296,8 @@ class GameManager:
         
         # Dessiner les entités avec le RenderManager
         self.render_manager.draw_entities(
-            self.player, self.enemies, self.dropped_inventories, self.camera
+            self.player, self.enemies, self.dropped_inventories, self.camera, 
+            self.gameplay_manager.item_manager
         )
         
         # Dessiner la minimap en haut à gauche
@@ -311,7 +312,7 @@ class GameManager:
         
         # Dessiner l'interface d'inventaire
         if self.inventory_ui.visible:
-            self.inventory_ui.draw(self.player.inventory)
+            self.inventory_ui.draw(self.player.inventory, self.recipes)
         self.inventory_ui.draw(self.player.inventory, self.recipes)
         
         # Instructions

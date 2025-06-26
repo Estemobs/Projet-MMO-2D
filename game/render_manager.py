@@ -169,8 +169,12 @@ class RenderManager:
                 self.screen.blit(text_bg, (marker_screen_x + 1, marker_screen_y - 21))
                 self.screen.blit(text_fg, (marker_screen_x, marker_screen_y - 22))
     
-    def draw_entities(self, player, enemies, death_markers, camera):
+    def draw_entities(self, player, enemies, death_markers, camera, item_manager=None):
         """Dessine toutes les entités du jeu"""
         self.draw_player(player, camera)
         self.draw_enemies(enemies, camera)
         self.draw_death_markers(death_markers, camera)
+        
+        # Dessiner les items dispersés
+        if item_manager:
+            item_manager.draw_all(self.screen, camera, self.sprite_manager)

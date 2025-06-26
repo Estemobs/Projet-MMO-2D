@@ -9,6 +9,7 @@ from .player import Player
 from .enemy import Enemy
 from .world import WorldGenerator
 from .camera import Camera
+from .item_system import ItemManager
 from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, ENEMY_COUNT
 
 class DeathMarker:
@@ -31,6 +32,7 @@ class GameplayManager:
         self.camera = None
         self.enemies = []
         self.death_markers = []
+        self.item_manager = ItemManager()  # Nouveau système d'items
         
         # Temps de jeu
         self.game_start_time = None
@@ -116,6 +118,14 @@ class GameplayManager:
         if dx != 0 or dy != 0:
             self.player.move(dx, dy, dt, self.world_map)
         
+        # Mise à jour du système d'items
+        self.item_manager.update(dt, self.world_map)
+        
+        # Ramassage automatique des items proches
+        picked_items = self.item_manager.try_pickup(self.player.x, self.player.y, self.player.inventory)
+        if picked_items:
+            print(f"🎒 Ramassé: {', '.join(picked_items)}")
+        
         # Vérifier si le joueur est mort
         if self.player.health <= 0:
             self.handle_player_death()
@@ -190,8 +200,11 @@ class GameplayManager:
             # Mode construction
             self.player.build_structure(self.world_map, mouse_pos, self.camera.x, self.camera.y)
         else:
-            # Mode récolte
-            self.player.harvest_resource(self.world_map, mouse_pos, self.camera.x, self.camera.y, items)
+            # Mode récolte avec nouveau système d'items
+            self.player.harvest_resource(
+                self.world_map, mouse_pos, self.camera.x, self.camera.y, 
+                items, self.item_manager
+            )
     
     def get_playtime(self):
         """Retourne le temps de jeu actuel formaté"""

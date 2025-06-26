@@ -43,7 +43,8 @@ class Player:
                 self.x = new_x
                 self.y = new_y
 
-    def harvest_resource(self, world_map, mouse_pos, camera_x, camera_y, items):
+    def harvest_resource(self, world_map, mouse_pos, camera_x, camera_y, items, item_manager=None):
+        """Récolte des ressources avec système de drop comme Surviv.io"""
         world_x = mouse_pos[0] + camera_x
         world_y = mouse_pos[1] + camera_y
         tile_x = int(world_x // TILE_SIZE)
@@ -51,42 +52,60 @@ class Player:
         player_tile_x = int(self.x // TILE_SIZE)
         player_tile_y = int(self.y // TILE_SIZE)
         distance = ((tile_x - player_tile_x)**2 + (tile_y - player_tile_y)**2) ** 0.5
+        
         if distance <= 2:
             if 0 <= tile_x < MAP_WIDTH and 0 <= tile_y < MAP_HEIGHT:
                 tile_type = world_map[tile_y][tile_x]
+                drop_x = tile_x * TILE_SIZE + TILE_SIZE // 2
+                drop_y = tile_y * TILE_SIZE + TILE_SIZE // 2
+                
+                drops = []  # Liste des drops avec probabilités
+                
                 if tile_type == TileType.TREE:
-                    self.inventory.add_item(items["wood"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
+                    drops.append((items["wood"], 1))  # Toujours du bois
+                    # Chance de pommes
+                    if random.random() < 0.3:  # 30% de chance
+                        drops.append((items["apple"], random.randint(1, 2)))
+                    
                 elif tile_type == TileType.STONE:
-                    self.inventory.add_item(items["stone"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
+                    drops.append((items["stone"], random.randint(1, 2)))
+                    
                 elif tile_type == TileType.IRON_ORE:
-                    self.inventory.add_item(items["iron_ore"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
+                    drops.append((items["iron_ore"], random.randint(1, 3)))
+                    
                 elif tile_type == TileType.GOLD_ORE:
-                    self.inventory.add_item(items["gold_ore"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
+                    drops.append((items["gold_ore"], random.randint(1, 2)))
+                    
                 elif tile_type == TileType.DIAMOND_ORE:
-                    self.inventory.add_item(items["diamond_ore"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
+                    drops.append((items["diamond_ore"], 1))
+                    # Bonus rare
+                    if random.random() < 0.1:
+                        drops.append((items["diamond_ore"], 1))
+                    
                 elif tile_type == TileType.COAL_ORE:
-                    self.inventory.add_item(items["coal"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
+                    drops.append((items["coal"], random.randint(2, 4)))
+                    
                 elif tile_type == TileType.APPLE_TREE:
-                    self.inventory.add_item(items["apple"], random.randint(1, 3))
-                    self.inventory.add_item(items["wood"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
+                    drops.append((items["wood"], 1))
+                    drops.append((items["apple"], random.randint(2, 5)))
+                    
                 elif tile_type == TileType.BERRY_BUSH:
-                    self.inventory.add_item(items["berry"], random.randint(2, 5))
+                    drops.append((items["berry"], random.randint(3, 6)))
+                
+                # Dropper les items avec le nouveau système
+                if drops and item_manager:
+                    for item, quantity in drops:
+                        item_manager.drop_item(drop_x, drop_y, item, quantity)
+                    
                     world_map[tile_y][tile_x] = TileType.GRASS
                     return True
+                elif drops and not item_manager:
+                    # Fallback: ajouter directement à l'inventaire
+                    for item, quantity in drops:
+                        self.inventory.add_item(item, quantity)
+                    world_map[tile_y][tile_x] = TileType.GRASS
+                    return True
+        
         return False
 
     def build_structure(self, world_map, mouse_pos, camera_x, camera_y):
