@@ -36,7 +36,9 @@ class Enemy:
                 tile_x = int(new_x // TILE_SIZE)
                 tile_y = int(new_y // TILE_SIZE)
                 
-                if world_map[tile_y][tile_x] in [TileType.GRASS, TileType.FOUNDATION]:
+                # Terrain praticable pour les ennemis
+                walkable_tiles = [TileType.GRASS, TileType.DIRT, TileType.FOUNDATION]
+                if world_map[tile_y][tile_x] in walkable_tiles:
                     self.x = new_x
                     self.y = new_y
     

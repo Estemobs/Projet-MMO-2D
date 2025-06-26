@@ -28,6 +28,8 @@ class MiniMap:
             'berry_bush': (128, 0, 128),
             'foundation': (160, 160, 160),
             'wall': (139, 69, 19),
+            'dirt': (139, 117, 78),  # Terre
+            'water': (64, 164, 223),  # Eau
             'player': (0, 100, 255),
             'enemy': (255, 0, 0),
             'death_marker': (255, 255, 255)
@@ -71,6 +73,8 @@ class MiniMap:
             TileType.BERRY_BUSH: self.colors['berry_bush'],
             TileType.FOUNDATION: self.colors['foundation'],
             TileType.WALL: self.colors['wall'],
+            TileType.DIRT: self.colors['dirt'],
+            TileType.WATER: self.colors['water'],
         }
         
         return tile_colors.get(tile_type, self.colors['grass'])

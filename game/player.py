@@ -39,9 +39,17 @@ class Player:
         if 0 <= new_x < MAP_WIDTH * TILE_SIZE and 0 <= new_y < MAP_HEIGHT * TILE_SIZE:
             tile_x = int(new_x // TILE_SIZE)
             tile_y = int(new_y // TILE_SIZE)
-            if world_map[tile_y][tile_x] == TileType.GRASS:
-                self.x = new_x
-                self.y = new_y
+            # Terrain praticable : herbe, terre, eau (avec vitesse réduite)
+            walkable_tiles = [TileType.GRASS, TileType.DIRT, TileType.WATER]
+            if world_map[tile_y][tile_x] in walkable_tiles:
+                # Réduire la vitesse dans l'eau
+                if world_map[tile_y][tile_x] == TileType.WATER:
+                    speed_multiplier = 0.5
+                else:
+                    speed_multiplier = 1.0
+                
+                self.x = self.x + dx * self.speed * dt * speed_multiplier
+                self.y = self.y + dy * self.speed * dt * speed_multiplier
 
     def harvest_resource(self, world_map, mouse_pos, camera_x, camera_y, items, item_manager=None):
         """Récolte des ressources avec système de drop comme Surviv.io"""

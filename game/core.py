@@ -166,9 +166,11 @@ class Game:
             TileType.DIAMOND_ORE: (185, 242, 255),  # Diamant
             TileType.COAL_ORE: (36, 36, 36),  # Charbon
             TileType.APPLE_TREE: (34, 139, 34),  # Vert pomme
-            TileType.BERRY_BUSH: (128, 0, 128)  # Violet baies
+            TileType.BERRY_BUSH: (128, 0, 128),  # Violet baies
+            TileType.DIRT: (139, 117, 78),  # Terre
+            TileType.WATER: (64, 164, 223),  # Eau
         }
-        return color_map[tile_type]
+        return color_map.get(tile_type, GREEN)  # Fallback vers vert
     
     def handle_events(self):
         for event in pygame.event.get():
