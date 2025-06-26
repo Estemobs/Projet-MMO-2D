@@ -96,7 +96,8 @@ def check_game_files():
     print_header("� Vérification des fichiers du jeu")
     
     required_files = [
-        ('main.py', 'Module principal du jeu'),
+        ('game/core.py', 'Module principal du jeu'),
+        ('game/__init__.py', 'Package de jeu'),
         ('config.py', 'Configuration du jeu'),
         ('inventory.py', 'Système d\'inventaire'),
         ('menu.py', 'Interface des menus'),
@@ -180,7 +181,7 @@ def launch_game():
     game = None
     try:
         print_colored("📥 Importation des modules...", Colors.BLUE)
-        from main import Game
+        from game.core import Game
         
         print_colored("✅ Modules chargés avec succès", Colors.GREEN)
         print_colored("🎯 Initialisation du jeu...", Colors.BLUE)

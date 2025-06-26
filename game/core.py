@@ -1,370 +1,29 @@
 import pygame
 import random
-import numpy as np
-from enum import Enum
 import math
-import json
-import os
 import time
-from datetime import datetime
-from menu import Menu
+import os
+import sys
+
+# Ajouter le répertoire parent au path pour les imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+
 from inventory import Item, ItemStack, Inventory, CraftingRecipe, InventoryUI
+from menu import Menu
+from .constants import *
+from .tiletype import TileType
+from .player import Player
+from .enemy import Enemy
+from .world import WorldGenerator
+from .camera import Camera
+from .hud import HUD
+from .factions import Faction
+from .building import Building
 
 # Initialisation de Pygame
 pygame.init()
-
-# Constantes du jeu
-WINDOW_WIDTH = 1024
-WINDOW_HEIGHT = 768
-TILE_SIZE = 32
-MAP_WIDTH = 100
-MAP_HEIGHT = 100
-
-# Couleurs
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-GREEN = (34, 139, 34)
-BROWN = (101, 67, 33)
-GRAY = (128, 128, 128)
-DARK_GRAY = (64, 64, 64)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-YELLOW = (255, 255, 0)
-ORANGE = (255, 165, 0)
-PURPLE = (128, 0, 128)
-
-class TileType(Enum):
-    GRASS = 0
-    TREE = 1
-    STONE = 2
-    IRON_ORE = 3
-    WALL = 4
-    FOUNDATION = 5
-    GOLD_ORE = 6
-    DIAMOND_ORE = 7
-    COAL_ORE = 8
-    APPLE_TREE = 9
-    BERRY_BUSH = 10
-
-class Player:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.speed = 100
-        self.health = 100
-        self.max_health = 100
-        self.faction = "player"
-        self.build_mode = False
-        self.selected_building = "foundation"
-        
-        # Nouveau système d'inventaire
-        self.inventory = Inventory(36)
-        
-        # Statistiques
-        self.hunger = 100
-        self.max_hunger = 100
-        
-    def move(self, dx, dy, dt, world_map):
-        # Calculer la nouvelle position
-        new_x = self.x + dx * self.speed * dt
-        new_y = self.y + dy * self.speed * dt
-        
-        # Vérifier les limites de la carte
-        if 0 <= new_x < MAP_WIDTH * TILE_SIZE and 0 <= new_y < MAP_HEIGHT * TILE_SIZE:
-            # Vérifier s'il n'y a pas d'obstacle
-            tile_x = int(new_x // TILE_SIZE)
-            tile_y = int(new_y // TILE_SIZE)
-            
-            if world_map[tile_y][tile_x] == TileType.GRASS:
-                self.x = new_x
-                self.y = new_y
-    
-    def harvest_resource(self, world_map, mouse_pos, camera_x, camera_y, items):
-        # Convertir la position de la souris en coordonnées du monde
-        world_x = mouse_pos[0] + camera_x
-        world_y = mouse_pos[1] + camera_y
-        
-        tile_x = int(world_x // TILE_SIZE)
-        tile_y = int(world_y // TILE_SIZE)
-        
-        # Vérifier si le joueur est assez proche de la ressource
-        player_tile_x = int(self.x // TILE_SIZE)
-        player_tile_y = int(self.y // TILE_SIZE)
-        
-        distance = math.sqrt((tile_x - player_tile_x)**2 + (tile_y - player_tile_y)**2)
-        
-        if distance <= 2:  # Portée de récolte
-            if 0 <= tile_x < MAP_WIDTH and 0 <= tile_y < MAP_HEIGHT:
-                tile_type = world_map[tile_y][tile_x]
-                
-                if tile_type == TileType.TREE:
-                    self.inventory.add_item(items["wood"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
-                elif tile_type == TileType.STONE:
-                    self.inventory.add_item(items["stone"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
-                elif tile_type == TileType.IRON_ORE:
-                    self.inventory.add_item(items["iron_ore"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
-                elif tile_type == TileType.GOLD_ORE:
-                    self.inventory.add_item(items["gold_ore"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
-                elif tile_type == TileType.DIAMOND_ORE:
-                    self.inventory.add_item(items["diamond_ore"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
-                elif tile_type == TileType.COAL_ORE:
-                    self.inventory.add_item(items["coal"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
-                elif tile_type == TileType.APPLE_TREE:
-                    self.inventory.add_item(items["apple"], random.randint(1, 3))
-                    self.inventory.add_item(items["wood"], 1)
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
-                elif tile_type == TileType.BERRY_BUSH:
-                    self.inventory.add_item(items["berry"], random.randint(2, 5))
-                    world_map[tile_y][tile_x] = TileType.GRASS
-                    return True
-        
-        return False
-    
-    def build_structure(self, world_map, mouse_pos, camera_x, camera_y):
-        # Convertir la position de la souris en coordonnées du monde
-        world_x = mouse_pos[0] + camera_x
-        world_y = mouse_pos[1] + camera_y
-        
-        tile_x = int(world_x // TILE_SIZE)
-        tile_y = int(world_y // TILE_SIZE)
-        
-        # Vérifier si le joueur est assez proche pour construire
-        player_tile_x = int(self.x // TILE_SIZE)
-        player_tile_y = int(self.y // TILE_SIZE)
-        
-        distance = math.sqrt((tile_x - player_tile_x)**2 + (tile_y - player_tile_y)**2)
-        
-        if distance <= 3:  # Portée de construction
-            if 0 <= tile_x < MAP_WIDTH and 0 <= tile_y < MAP_HEIGHT:
-                if world_map[tile_y][tile_x] == TileType.GRASS:
-                    # Coûts de construction
-                    building_costs = {
-                        "foundation": {"wood": 2, "stone": 1},
-                        "wall": {"wood": 1, "stone": 2}
-                    }
-                    
-                    if self.selected_building in building_costs:
-                        cost = building_costs[self.selected_building]
-                        
-                        # Vérifier si le joueur a assez de ressources
-                        can_build = all(self.inventory.has_item(resource, amount) 
-                                      for resource, amount in cost.items())
-                        
-                        if can_build:
-                            # Déduire les ressources
-                            for resource, amount in cost.items():
-                                self.inventory.remove_item(resource, amount)
-                            
-                            # Placer la structure
-                            if self.selected_building == "foundation":
-                                world_map[tile_y][tile_x] = TileType.FOUNDATION
-                            elif self.selected_building == "wall":
-                                world_map[tile_y][tile_x] = TileType.WALL
-                            
-                            return True
-        
-        return False
-
-    def eat_food(self, food_item, heal_amount):
-        """Consomme de la nourriture pour récupérer de la santé"""
-        if self.inventory.has_item(food_item, 1):
-            self.inventory.remove_item(food_item, 1)
-            self.health = min(self.max_health, self.health + heal_amount)
-            self.hunger = min(self.max_hunger, self.hunger + heal_amount // 2)
-            return True
-        return False
-
-class WorldGenerator:
-    @staticmethod
-    def generate_map():
-        # Créer une carte remplie d'herbe
-        world_map = [[TileType.GRASS for _ in range(MAP_WIDTH)] for _ in range(MAP_HEIGHT)]
-        
-        # Ajouter des arbres (15% de la carte)
-        for _ in range(int(MAP_WIDTH * MAP_HEIGHT * 0.15)):
-            x = random.randint(0, MAP_WIDTH - 1)
-            y = random.randint(0, MAP_HEIGHT - 1)
-            world_map[y][x] = TileType.TREE
-        
-        # Ajouter des pierres (8% de la carte)
-        for _ in range(int(MAP_WIDTH * MAP_HEIGHT * 0.08)):
-            x = random.randint(0, MAP_WIDTH - 1)
-            y = random.randint(0, MAP_HEIGHT - 1)
-            world_map[y][x] = TileType.STONE
-        
-        # Ajouter des minerais de fer (3% de la carte)
-        for _ in range(int(MAP_WIDTH * MAP_HEIGHT * 0.03)):
-            x = random.randint(0, MAP_WIDTH - 1)
-            y = random.randint(0, MAP_HEIGHT - 1)
-            world_map[y][x] = TileType.IRON_ORE
-        
-        # Ajouter des minerais d'or (1% de la carte)
-        for _ in range(int(MAP_WIDTH * MAP_HEIGHT * 0.01)):
-            x = random.randint(0, MAP_WIDTH - 1)
-            y = random.randint(0, MAP_HEIGHT - 1)
-            world_map[y][x] = TileType.GOLD_ORE
-        
-        # Ajouter des diamants (0.5% de la carte)
-        for _ in range(int(MAP_WIDTH * MAP_HEIGHT * 0.005)):
-            x = random.randint(0, MAP_WIDTH - 1)
-            y = random.randint(0, MAP_HEIGHT - 1)
-            world_map[y][x] = TileType.DIAMOND_ORE
-        
-        # Ajouter du charbon (2% de la carte)
-        for _ in range(int(MAP_WIDTH * MAP_HEIGHT * 0.02)):
-            x = random.randint(0, MAP_WIDTH - 1)
-            y = random.randint(0, MAP_HEIGHT - 1)
-            world_map[y][x] = TileType.COAL_ORE
-        
-        # Ajouter des arbres fruitiers (1% de la carte)
-        for _ in range(int(MAP_WIDTH * MAP_HEIGHT * 0.01)):
-            x = random.randint(0, MAP_WIDTH - 1)
-            y = random.randint(0, MAP_HEIGHT - 1)
-            world_map[y][x] = TileType.APPLE_TREE
-        
-        # Ajouter des buissons de baies (0.5% de la carte)
-        for _ in range(int(MAP_WIDTH * MAP_HEIGHT * 0.005)):
-            x = random.randint(0, MAP_WIDTH - 1)
-            y = random.randint(0, MAP_HEIGHT - 1)
-            world_map[y][x] = TileType.BERRY_BUSH
-        
-        return world_map
-
-class Camera:
-    def __init__(self):
-        self.x = 0
-        self.y = 0
-    
-    def update(self, player_x, player_y):
-        # Centrer la caméra sur le joueur
-        self.x = player_x - WINDOW_WIDTH // 2
-        self.y = player_y - WINDOW_HEIGHT // 2
-        
-        # Limiter la caméra aux bordures de la carte
-        self.x = max(0, min(self.x, MAP_WIDTH * TILE_SIZE - WINDOW_WIDTH))
-        self.y = max(0, min(self.y, MAP_HEIGHT * TILE_SIZE - WINDOW_HEIGHT))
-
-class HUD:
-    def __init__(self, font):
-        self.font = font
-    
-    def draw(self, screen, player, game_instance=None):
-        # Fond semi-transparent pour le HUD
-        hud_surface = pygame.Surface((WINDOW_WIDTH, 100))
-        hud_surface.set_alpha(180)
-        hud_surface.fill(BLACK)
-        screen.blit(hud_surface, (0, 0))
-        
-        # Afficher la santé
-        health_text = self.font.render(f"Santé: {player.health}/{player.max_health}", True, WHITE)
-        screen.blit(health_text, (10, 10))
-        
-        # Barre de santé
-        health_bar_width = 200
-        health_bar_height = 20
-        health_ratio = player.health / player.max_health
-        
-        pygame.draw.rect(screen, RED, (10, 35, health_bar_width, health_bar_height))
-        pygame.draw.rect(screen, GREEN, (10, 35, health_bar_width * health_ratio, health_bar_height))
-        pygame.draw.rect(screen, WHITE, (10, 35, health_bar_width, health_bar_height), 2)
-        
-        # Afficher quelques ressources importantes
-        inventory_y = 60
-        wood_count = player.inventory.get_item_count("wood")
-        stone_count = player.inventory.get_item_count("stone")
-        iron_count = player.inventory.get_item_count("iron_ore")
-        
-        wood_text = self.font.render(f"Bois: {wood_count}", True, WHITE)
-        stone_text = self.font.render(f"Pierre: {stone_count}", True, WHITE)
-        iron_text = self.font.render(f"Fer: {iron_count}", True, WHITE)
-        
-        screen.blit(wood_text, (10, inventory_y))
-        screen.blit(stone_text, (120, inventory_y))
-        screen.blit(iron_text, (250, inventory_y))
-        
-        # Mode de construction
-        if player.build_mode:
-            mode_text = self.font.render(f"MODE CONSTRUCTION: {player.selected_building}", True, YELLOW)
-            screen.blit(mode_text, (400, 10))
-        
-        # Temps de jeu
-        if game_instance:
-            playtime_text = self.font.render(f"Temps de jeu: {game_instance.get_playtime()}", True, WHITE)
-            screen.blit(playtime_text, (800, 10))
-
-class Building:
-    def __init__(self, x, y, building_type, resources_needed):
-        self.x = x
-        self.y = y
-        self.building_type = building_type
-        self.resources_needed = resources_needed
-        self.health = 100
-        self.max_health = 100
-
-class Enemy:
-    def __init__(self, x, y, faction="hostile"):
-        self.x = x
-        self.y = y
-        self.health = 50
-        self.max_health = 50
-        self.speed = 50
-        self.damage = 10
-        self.faction = faction
-        self.last_attack_time = 0
-        self.attack_cooldown = 1.0  # 1 seconde entre les attaques
-        self.detection_range = 3  # tiles de portée de détection
-    
-    def move_towards_player(self, player_x, player_y, dt, world_map):
-        # Calculer la direction vers le joueur
-        dx = player_x - self.x
-        dy = player_y - self.y
-        distance = math.sqrt(dx**2 + dy**2)
-        
-        if distance > 0:
-            # Normaliser la direction
-            dx /= distance
-            dy /= distance
-            
-            # Calculer la nouvelle position
-            new_x = self.x + dx * self.speed * dt
-            new_y = self.y + dy * self.speed * dt
-            
-            # Vérifier les limites et obstacles
-            if 0 <= new_x < MAP_WIDTH * TILE_SIZE and 0 <= new_y < MAP_HEIGHT * TILE_SIZE:
-                tile_x = int(new_x // TILE_SIZE)
-                tile_y = int(new_y // TILE_SIZE)
-                
-                if world_map[tile_y][tile_x] in [TileType.GRASS, TileType.FOUNDATION]:
-                    self.x = new_x
-                    self.y = new_y
-    
-    def attack_player(self, player, current_time):
-        if current_time - self.last_attack_time >= self.attack_cooldown:
-            player.health -= self.damage
-            self.last_attack_time = current_time
-            return True
-        return False
-
-class Faction:
-    def __init__(self, name, color):
-        self.name = name
-        self.color = color
-        self.members = []
-        self.enemies = []
-        self.allies = []
 
 class Game:
     def __init__(self):
@@ -716,11 +375,57 @@ class Game:
         
         pygame.quit()
     
-    def load_game(self):
+    def save_game(self, filename="savegame.json"):
+        """Sauvegarde la partie actuelle"""
+        if self.state != "playing":
+            return
+        
+        try:
+            import json
+            # Préparer les données de sauvegarde
+            save_data = {
+                "world_map": [[tile.value for tile in row] for row in self.world_map],
+                "player": {
+                    "x": self.player.x,
+                    "y": self.player.y,
+                    "health": self.player.health,
+                    "inventory": []
+                },
+                "enemies": []
+            }
+            
+            # Sauvegarder l'inventaire
+            for slot in self.player.inventory.slots:
+                if slot:
+                    save_data["player"]["inventory"].append({
+                        "name": slot.item.name,
+                        "quantity": slot.quantity
+                    })
+            
+            # Sauvegarder les ennemis
+            for enemy in self.enemies:
+                save_data["enemies"].append({
+                    "x": enemy.x,
+                    "y": enemy.y,
+                    "health": enemy.health
+                })
+            
+            # Écrire le fichier de sauvegarde
+            with open(filename, "w") as f:
+                json.dump(save_data, f, indent=2)
+            
+            print("✅ Partie sauvegardée!")
+        except Exception as e:
+            print(f"❌ Erreur lors de la sauvegarde: {e}")
+    
+    def load_game(self, filename="savegame.json"):
         """Charge une partie sauvegardée"""
         try:
-            if os.path.exists("savegame.json"):
-                with open("savegame.json", "r") as f:
+            import json
+            import os
+            
+            if os.path.exists(filename):
+                with open(filename, "r") as f:
                     save_data = json.load(f)
                 
                 # Recréer le monde
@@ -760,48 +465,6 @@ class Game:
             # Créer une nouvelle partie en cas d'erreur
             self.init_game()
     
-    def save_game(self):
-        """Sauvegarde la partie actuelle"""
-        if self.state != "playing":
-            return
-        
-        try:
-            # Préparer les données de sauvegarde
-            save_data = {
-                "world_map": [[tile.value for tile in row] for row in self.world_map],
-                "player": {
-                    "x": self.player.x,
-                    "y": self.player.y,
-                    "health": self.player.health,
-                    "inventory": []
-                },
-                "enemies": []
-            }
-            
-            # Sauvegarder l'inventaire
-            for slot in self.player.inventory.slots:
-                if slot:
-                    save_data["player"]["inventory"].append({
-                        "name": slot.item.name,
-                        "quantity": slot.quantity
-                    })
-            
-            # Sauvegarder les ennemis
-            for enemy in self.enemies:
-                save_data["enemies"].append({
-                    "x": enemy.x,
-                    "y": enemy.y,
-                    "health": enemy.health
-                })
-            
-            # Écrire le fichier de sauvegarde
-            with open("savegame.json", "w") as f:
-                json.dump(save_data, f, indent=2)
-            
-            print("✅ Partie sauvegardée!")
-        except Exception as e:
-            print(f"❌ Erreur lors de la sauvegarde: {e}")
-    
     def get_playtime(self):
         """Retourne le temps de jeu actuel"""
         if self.game_start_time and self.state == "playing":
@@ -821,3 +484,13 @@ class Game:
             current_session = time.time() - self.game_start_time
             self.total_playtime += current_session
             self.game_start_time = time.time()
+    
+    def load_game_from_slot(self, slot_number):
+        """Charge un jeu depuis un slot spécifique"""
+        filename = f"savegame_slot_{slot_number}.json"
+        self.load_game(filename)
+    
+    def save_game_to_slot(self, slot_number):
+        """Sauvegarde le jeu dans un slot spécifique"""
+        filename = f"savegame_slot_{slot_number}.json"
+        self.save_game(filename)
