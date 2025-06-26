@@ -1,0 +1,284 @@
+TIMELINE DE DÉVELOPPEMENT - PROJET MMO 2D
+=============================================
+
+PHASE 1 : FONDATIONS DU JEU
+============================
+
+Étape 1.1 - Amélioration du système de génération de monde
+- Ajouter plus de types de biomes (forêt, désert, montagne, plaine)
+- Créer un système de génération par chunks pour optimiser les performances
+- Ajouter des structures naturelles (lacs, rivières, grottes)
+
+Étape 1.2 - Optimisation du rendu
+- Implémenter le culling des objets hors écran
+- Optimiser le rendu des tiles avec des sprites au lieu de rectangles colorés
+- Ajouter un système de LOD (Level of Detail) pour les objets distants
+
+Étape 1.3 - Amélioration du système de collision
+- Refactoriser le système de collision pour être plus précis
+- Ajouter des formes de collision personnalisées pour différents objets
+- Implémenter la détection de collision avec les structures construites
+
+PHASE 2 : GAMEPLAY DE BASE
+==========================
+
+Étape 2.1 - Extension du système de récolte
+- Ajouter des outils avec durabilité (hache, pioche, épée)
+- Créer un système de niveaux pour les outils (bois, fer, or, diamant)
+- Implémenter des temps de récolte différents selon l'outil utilisé
+
+Étape 2.2 - Amélioration de l'inventaire
+- Ajouter un système de tri automatique
+- Créer des catégories d'objets dans l'inventaire
+- Implémenter le drag & drop pour réorganiser les objets
+
+Étape 2.3 - Système de crafting avancé
+- Ajouter une interface de crafting plus intuitive
+- Créer des stations de crafting (établi, forge, alchimie)
+- Implémenter des recettes à débloquer par progression
+
+Étape 2.4 - Extension du système de construction
+- Ajouter plus de types de structures (portes, fenêtres, toits)
+- Créer un système de blueprints pour sauvegarder des constructions
+- Implémenter la rotation des structures
+
+PHASE 3 : SYSTÈME DE COMBAT
+===========================
+
+Étape 3.1 - Combat de base
+- Améliorer le système d'attaque du joueur (animation, portée)
+- Ajouter différents types d'armes (épée, arc, magie)
+- Implémenter un système de dégâts basé sur les statistiques
+
+Étape 3.2 - IA des ennemis
+- Créer différents types d'ennemis avec comportements variés
+- Implémenter un système de pathfinding pour les ennemis
+- Ajouter des boss avec patterns d'attaque spéciaux
+
+Étape 3.3 - Système de niveau et XP
+- Créer un système d'expérience pour le joueur
+- Implémenter des compétences à débloquer
+- Ajouter des statistiques (force, agilité, intelligence)
+
+PHASE 4 : SYSTÈMES AVANCÉS
+==========================
+
+Étape 4.1 - Système de factions de base
+- Créer la structure de données pour les factions
+- Implémenter la création et adhésion aux factions
+- Ajouter un système de territoire pour les factions
+
+Étape 4.2 - Interface de gestion des factions
+- Créer l'UI pour gérer une faction
+- Implémenter les rangs et permissions dans les factions
+- Ajouter un système de chat pour les membres de faction
+
+Étape 4.3 - Système économique de base
+- Créer des PNJ marchands dans des villages
+- Implémenter un système de monnaie
+- Ajouter des quêtes simples avec récompenses
+
+PHASE 5 : MONDE PERSISTANT
+===========================
+
+Étape 5.1 - Amélioration du système de sauvegarde
+- Optimiser le format de sauvegarde (compression)
+- Implémenter la sauvegarde automatique périodique
+- Créer un système de backup des sauvegardes
+
+Étape 5.2 - Système de chunks persistants
+- Diviser le monde en chunks sauvegardés séparément
+- Implémenter le chargement/déchargement dynamique des chunks
+- Optimiser la mémoire en ne gardant que les chunks nécessaires
+
+Étape 5.3 - Événements mondiaux
+- Créer des événements aléatoires (invasions, météores)
+- Implémenter un cycle jour/nuit avec effets sur le gameplay
+- Ajouter des saisons qui affectent les ressources
+
+PHASE 6 : PRÉPARATION MULTIJOUEUR
+=================================
+
+Étape 6.1 - Architecture client-serveur
+- Refactoriser le code pour séparer client et serveur
+- Créer un protocole de communication réseau simple
+- Implémenter la synchronisation des positions des joueurs
+
+Étape 6.2 - Gestion des connexions
+- Créer un système d'authentification simple
+- Implémenter la gestion des déconnexions/reconnexions
+- Ajouter un système de lobby pour choisir les serveurs
+
+Étape 6.3 - Synchronisation du monde
+- Synchroniser les modifications du terrain entre joueurs
+- Implémenter la résolution des conflits (deux joueurs modifient le même bloc)
+- Optimiser le trafic réseau (ne transmettre que les changements)
+
+PHASE 7 : MULTIJOUEUR COMPLET
+=============================
+
+Étape 7.1 - Chat et communication
+- Implémenter un système de chat global
+- Ajouter le chat de faction et chat local
+- Créer un système de messages privés
+
+Étape 7.2 - PvP et guildes
+- Implémenter le combat entre joueurs
+- Créer des zones PvP et zones sécurisées
+- Ajouter des guerres de factions avec objectifs
+
+Étape 7.3 - Économie multijoueur
+- Créer un marché où les joueurs peuvent échanger
+- Implémenter un système d'enchères
+- Ajouter des taxes et l'économie de serveur
+
+PHASE 8 : CONTENU ET POLISH
+===========================
+
+Étape 8.1 - Donjons et instances
+- Créer des donjons générés aléatoirement
+- Implémenter des puzzles et mécaniques spéciales
+- Ajouter des récompenses uniques pour les donjons
+
+Étape 8.2 - Système de magie
+- Créer différentes écoles de magie
+- Implémenter un système de mana
+- Ajouter des sorts avec effets visuels
+
+Étape 8.3 - Amélioration de l'interface
+- Redesigner l'UI pour être plus moderne
+- Ajouter des animations et transitions fluides
+- Implémenter des raccourcis clavier personnalisables
+
+Étape 8.4 - Audio et effets
+- Ajouter des effets sonores pour toutes les actions
+- Implémenter une musique de fond adaptative
+- Créer des effets de particules pour les sorts et combats
+
+PHASE 9 : OPTIMISATION ET TEST
+==============================
+
+Étape 9.1 - Optimisation des performances
+- Profiler le jeu pour identifier les goulots d'étranglement
+- Optimiser les algorithmes les plus coûteux
+- Implémenter le multithreading pour les calculs lourds
+
+Étape 9.2 - Tests et débogage
+- Créer une suite de tests automatisés
+- Effectuer des tests de charge pour le multijoueur
+- Corriger tous les bugs critiques et majeurs
+
+Étape 9.3 - Interface d'administration
+- Créer des outils d'administration pour les serveurs
+- Implémenter des commandes de modération
+- Ajouter des statistiques et monitoring en temps réel
+
+PHASE 10 : RELEASE ET POST-LAUNCH
+=================================
+
+Étape 10.1 - Packaging et distribution
+- Préparer les builds pour différentes plateformes
+- Créer un installateur/launcher
+- Mettre en place la distribution (Steam, itch.io, etc.)
+
+Étape 10.2 - Documentation et guides
+- Rédiger la documentation complète du jeu
+- Créer des tutoriels pour les nouveaux joueurs
+- Préparer les guides pour les administrateurs de serveur
+
+Étape 10.3 - Support et mises à jour
+- Mettre en place un système de mise à jour automatique
+- Préparer un plan de contenu post-launch
+- Créer une communauté et support client
+
+====================================================
+
+NOTES IMPORTANTES :
+- Chaque étape doit être complétée et testée avant de passer à la suivante
+- Prévoir 1-3 jours de développement par étape selon la complexité
+- Toujours faire des sauvegardes et utiliser un système de contrôle de version
+- Tester régulièrement sur différentes configurations
+- Maintenir une documentation à jour pour chaque fonctionnalité ajoutée
+
+ÉTAT ACTUEL : Phase 2, Étape 2.3 en cours
+Le jeu a déjà les fondations de base implémentées.
+
+====================================================
+
+ÉTAPES RAPIDES (1 REQUÊTE CHACUNE) :
+====================================
+
+ÉTAPE IMMÉDIATE 1 : Ajouter système de durabilité des outils
+- Ajouter un attribut durabilité aux outils
+- Implémenter la dégradation à l'usage
+- Ajouter indicateur visuel de durabilité dans l'UI
+
+ÉTAPE IMMÉDIATE 2 : Améliorer l'interface de crafting
+- Créer une fenêtre de crafting dédiée
+- Ajouter aperçu des recettes disponibles
+- Implémenter craft en un clic
+
+ÉTAPE IMMÉDIATE 3 : Ajouter plus de types d'ennemis
+- Créer 3 nouveaux types d'ennemis avec comportements différents
+- Gobelin (rapide), Orc (fort), Slime (régénération)
+- Différentes statistiques et drops
+
+ÉTAPE IMMÉDIATE 4 : Système de faim/soif
+- Ajouter barres de faim et soif au HUD
+- Décrémenter automatiquement au fil du temps
+- Effets sur la santé si trop bas
+
+ÉTAPE IMMÉDIATE 5 : Cycle jour/nuit basique
+- Implémenter un timer pour le cycle
+- Changer la couleur d'ambiance (jour=clair, nuit=sombre)
+- Ennemis plus agressifs la nuit
+
+ÉTAPE IMMÉDIATE 6 : Système de spawn des ressources
+- Respawn automatique des arbres après X temps
+- Respawn des minerais plus rare
+- Éviter le respawn sur les constructions
+
+ÉTAPE IMMÉDIATE 7 : Amélioration du système de construction
+- Ajouter prévisualisation avant placement
+- Interdire construction trop près d'autres joueurs
+- Ajouter coût en ressources visible
+
+ÉTAPE IMMÉDIATE 8 : Système de quêtes basiques
+- PNJ qui donne des quêtes simples (collecter X ressources)
+- Récompenses en items ou monnaie
+- Interface de suivi des quêtes
+
+ÉTAPE IMMÉDIATE 9 : Système de monnaie
+- Ajouter pièces d'or comme monnaie
+- Marchands qui achètent/vendent des items
+- Prix dynamiques selon l'offre/demande
+
+ÉTAPE IMMÉDIATE 10 : Amélioration de l'IA des ennemis
+- Ajouter pathfinding simple (éviter obstacles)
+- Comportement de fuite quand santé basse
+- Patrouilles prédéfinies
+
+ÉTAPE IMMÉDIATE 11 : Système d'équipement
+- Slots d'équipement (arme, armure, accessoires)
+- Bonus de statistiques selon l'équipement
+- Interface pour équiper/déséquiper
+
+ÉTAPE IMMÉDIATE 12 : Particules et effets visuels
+- Effets de particules pour les sorts
+- Animations de dégâts (texte qui remonte)
+- Effets de récolte (particules de ressources)
+
+ÉTAPE IMMÉDIATE 13 : Système de mini-map
+- Mini-carte dans un coin de l'écran
+- Affichage des joueurs, ennemis, ressources
+- Marqueurs personnalisables
+
+ÉTAPE IMMÉDIATE 14 : Système de chat basique
+- Chat global pour tous les joueurs connectés
+- Commandes de base (/help, /time, etc.)
+- Historique des messages
+
+ÉTAPE IMMÉDIATE 15 : Amélioration du HUD
+- Redesign plus moderne du HUD
+- Barres de progression plus attrayantes
+- Affichage des cooldowns et buffs
