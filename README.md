@@ -2,22 +2,53 @@
 
 Un jeu 2D de survie et de construction en vue de dessus, développé avec Python et Pygame.
 
-## Fonctionnalités
+## 🚀 Installation et Lancement Rapide
 
-### ✅ Implémentées
-- **Génération de terrain aléatoire** : Cartes générées procéduralement avec herbe, arbres, pierres et minerais de fer
-- **Système de déplacement fluide** : Déplacement du joueur avec les touches WASD ou les flèches directionnelles
-- **Récolte de ressources** : Cliquez sur les arbres, pierres et minerais pour les récolter
-- **Inventaire simple** : Stockage du bois, de la pierre et du fer
-- **Système de construction** : Construisez des fondations et des murs avec vos ressources
-- **Ennemis basiques** : IA ennemie qui détecte et attaque le joueur
-- **Système de factions** : Base pour la gestion des factions (joueur vs hostile)
-- **HUD informatif** : Affichage de la santé, inventaire et ressources
-- **Caméra qui suit le joueur** : Vue centrée sur le joueur avec défilement fluide
+### 1. Cloner le projet
+```bash
+git clone <url-du-repo>
+cd "Projet MMO 2D"
+```
 
-## Installation et Lancement
+### 2. Créer un environnement virtuel (recommandé)
+```bash
+python3 -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# ou
+.venv\Scripts\activate     # Windows
+```
 
-### Prérequis
+### 3. Installer les dépendances
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Lancer le jeu
+```bash
+# Lancement simple
+python launch.py
+
+# Avec vérification d'intégrité
+python launch.py --check
+
+# Vérification seulement (sans lancer)
+python launch.py --check-only
+```
+
+## 🎮 Contrôles
+
+| Action | Touches |
+|--------|---------|
+| 🚶 Se déplacer | WASD ou flèches directionnelles |
+| 🔨 Récolter/Construire | Clic gauche |
+| 🏗️ Mode construction | B |
+| 🧱 Fondation | 1 |
+| 🏠 Mur | 2 |
+| 🎒 Inventaire | I |
+| 💾 Sauvegarder | F5 |
+| 🏃 Quitter | Échap |
+
+## ✨ Fonctionnalités
 - Python 3.7 ou plus récent
 - pip (gestionnaire de paquets Python)
 
