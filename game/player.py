@@ -11,6 +11,14 @@ from ui.inventory import Inventory
 from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE
 from .tiletype import TileType
 
+class DroppedInventory:
+    """Représente un inventaire déposé au sol"""
+    def __init__(self, x, y, inventory):
+        self.x = x
+        self.y = y
+        self.inventory = inventory
+        self.size = TILE_SIZE
+
 class Player:
     def __init__(self, x, y):
         self.x = x
@@ -119,12 +127,12 @@ class Player:
 
     def update(self, keys, dt, controls=None):
         """Met à jour l'état du joueur"""
-        # Diminuer la faim au fil du temps
-        self.hunger = max(0, self.hunger - 5 * dt)
+        # Diminuer la faim au fil du temps (plus lentement)
+        self.hunger = max(0, self.hunger - 1 * dt)  # Réduit de 5 à 1
         
-        # Si le joueur a faim, perdre de la santé
+        # Si le joueur a faim, perdre de la santé (plus lentement)
         if self.hunger <= 0:
-            self.health = max(0, self.health - 10 * dt)
+            self.health = max(0, self.health - 3 * dt)  # Réduit de 10 à 3
         
         # Régénération naturelle si le joueur n'a pas faim
         elif self.hunger > 50 and self.health < self.max_health:
@@ -168,3 +176,35 @@ class Player:
         else:
             # Mode récolte
             self.harvest_resource(world_map, mouse_pos, camera_x, camera_y, items)
+    
+    def is_dead(self):
+        """Vérifie si le joueur est mort"""
+        return self.health <= 0
+    
+    def die(self):
+        """Fait mourir le joueur et retourne son inventaire"""
+        if self.health <= 0:
+            # Sauvegarder l'inventaire à déposer
+            dropped_inventory = DroppedInventory(self.x, self.y, self.inventory)
+            
+            # Respawn du joueur
+            self.respawn()
+            
+            return dropped_inventory
+        return None
+    
+    def respawn(self):
+        """Fait respawn le joueur"""
+        # Position de spawn (centre de la carte)
+        self.x = MAP_WIDTH * TILE_SIZE // 2
+        self.y = MAP_HEIGHT * TILE_SIZE // 2
+        
+        # Restaurer les stats
+        self.health = self.max_health
+        self.hunger = self.max_hunger
+        
+        # Nouvel inventaire vide
+        self.inventory = Inventory(36)
+        
+        print("💀 Vous êtes mort ! Vous avez respawn au centre de la carte.")
+        print("🎒 Votre inventaire a été déposé à l'endroit de votre mort.")

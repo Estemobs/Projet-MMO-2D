@@ -72,6 +72,7 @@ class GameManager:
         self.camera = None
         self.hud = None
         self.enemies = []
+        self.dropped_inventories = []  # Liste des inventaires déposés
         
         # Système de temps
         self.game_start_time = None
@@ -92,6 +93,7 @@ class GameManager:
         self.player = Player(MAP_WIDTH * TILE_SIZE // 2, MAP_HEIGHT * TILE_SIZE // 2)
         self.camera = Camera(self.screen.get_width(), self.screen.get_height())
         self.hud = HUD(self.font)
+        self.dropped_inventories = []  # Réinitialiser les inventaires déposés
         
         # Initialiser le temps de jeu
         self.game_start_time = time.time()
@@ -296,10 +298,19 @@ class GameManager:
             if dx != 0 or dy != 0:
                 self.player.move(dx, dy, dt, self.world_map)
             
+            # Vérifier si le joueur est mort
+            if self.player.is_dead():
+                dropped_inventory = self.player.die()
+                if dropped_inventory:
+                    self.dropped_inventories.append(dropped_inventory)
+            
             # Gestion des clics de souris
             if mouse_buttons[0]:  # Clic gauche
-                self.player.handle_mouse_click(mouse_pos, self.world_map, 
-                                             self.camera.x, self.camera.y, self.items)
+                # Vérifier d'abord s'il y a un inventaire déposé à récupérer
+                if not self._try_pickup_dropped_inventory(mouse_pos):
+                    # Sinon, gestion normale
+                    self.player.handle_mouse_click(mouse_pos, self.world_map, 
+                                                 self.camera.x, self.camera.y, self.items)
             
             # Mise à jour des ennemis
             for enemy in self.enemies:
@@ -566,3 +577,28 @@ class GameManager:
         minutes = int((total_time % 3600) // 60)
         seconds = int(total_time % 60)
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    
+    def _try_pickup_dropped_inventory(self, mouse_pos):
+        """Essaie de récupérer un inventaire déposé"""
+        world_x = mouse_pos[0] + self.camera.x
+        world_y = mouse_pos[1] + self.camera.y
+        
+        for i, dropped_inv in enumerate(self.dropped_inventories):
+            # Vérifier si le clic est sur l'inventaire déposé
+            distance = ((world_x - dropped_inv.x)**2 + (world_y - dropped_inv.y)**2)**0.5
+            if distance <= TILE_SIZE:
+                # Récupérer l'inventaire
+                print("🎒 Inventaire récupéré !")
+                
+                # Transférer tous les items vers le joueur
+                for slot in dropped_inv.inventory.slots:
+                    if slot:
+                        remaining = self.player.inventory.add_item(slot.item, slot.quantity)
+                        if remaining > 0:
+                            print(f"⚠️ Impossible de récupérer {remaining} x {slot.item.name}")
+                
+                # Retirer l'inventaire déposé
+                self.dropped_inventories.pop(i)
+                return True
+        
+        return False
