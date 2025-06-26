@@ -110,6 +110,9 @@ class GameManager:
         # Initialiser le HUD
         self.hud = HUD(self.font)
         
+        # Initialiser la minimap avec la carte du monde
+        self.minimap.generate_world_minimap(self.world_map)
+        
         # Donner quelques items de départ au joueur
         self._give_starting_items()
         
@@ -153,6 +156,9 @@ class GameManager:
         
         # Réinitialiser le HUD
         self.hud = HUD(self.font)
+        
+        # Initialiser la minimap avec la carte du monde chargée
+        self.minimap.generate_world_minimap(self.world_map)
         
         self.state = "playing"
         return True
@@ -294,10 +300,7 @@ class GameManager:
         )
         
         # Dessiner la minimap en haut à gauche
-        self.minimap.draw(
-            self.screen, self.world_map, self.player, 
-            self.enemies, self.dropped_inventories, 10, 10
-        )
+        self.minimap.draw(self.screen, self.player, self.enemies, self.camera, self.dropped_inventories)
         
         # Dessiner le HUD
         self.hud.draw(self.screen, self.player, self)

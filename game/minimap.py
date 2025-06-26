@@ -22,7 +22,8 @@ class MiniMap:
             'gold_ore': (255, 215, 0),
             'diamond_ore': (185, 242, 255),
             'coal_ore': (64, 64, 64),
-            'fruit_tree': (255, 0, 0),
+            'apple_tree': (255, 0, 0),
+            'berry_bush': (128, 0, 128),
             'foundation': (160, 160, 160),
             'wall': (139, 69, 19),
             'player': (0, 100, 255),
@@ -64,7 +65,8 @@ class MiniMap:
             TileType.GOLD_ORE: self.colors['gold_ore'],
             TileType.DIAMOND_ORE: self.colors['diamond_ore'],
             TileType.COAL_ORE: self.colors['coal_ore'],
-            TileType.FRUIT_TREE: self.colors['fruit_tree'],
+            TileType.APPLE_TREE: self.colors['apple_tree'],
+            TileType.BERRY_BUSH: self.colors['berry_bush'],
             TileType.FOUNDATION: self.colors['foundation'],
             TileType.WALL: self.colors['wall'],
         }
@@ -88,7 +90,7 @@ class MiniMap:
         mini_y = int(world_y * self.scale)
         return mini_x, mini_y
     
-    def draw(self, screen, player, enemies=None, camera=None):
+    def draw(self, screen, player, enemies=None, camera=None, death_markers=None):
         """Dessine la minimap"""
         # Fond de la minimap
         pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.width, self.height))
@@ -98,7 +100,21 @@ class MiniMap:
         if self.world_surface:
             screen.blit(self.world_surface, (self.x, self.y))
         
-        # Dessiner les marqueurs de mort
+        # Dessiner les marqueurs de mort passés en paramètre
+        if death_markers:
+            for marker in death_markers:
+                marker_mini_x, marker_mini_y = self.world_to_minimap(marker.x, marker.y)
+                pygame.draw.circle(screen, self.colors['death_marker'], 
+                                 (self.x + marker_mini_x, self.y + marker_mini_y), 3)
+                # Ajouter une croix
+                pygame.draw.line(screen, (255, 0, 0), 
+                               (self.x + marker_mini_x - 2, self.y + marker_mini_y - 2),
+                               (self.x + marker_mini_x + 2, self.y + marker_mini_y + 2), 2)
+                pygame.draw.line(screen, (255, 0, 0), 
+                               (self.x + marker_mini_x + 2, self.y + marker_mini_y - 2),
+                               (self.x + marker_mini_x - 2, self.y + marker_mini_y + 2), 2)
+        
+        # Dessiner les marqueurs de mort stockés localement (rétro-compatibilité)
         for marker_x, marker_y in self.death_markers:
             pygame.draw.circle(screen, self.colors['death_marker'], 
                              (self.x + marker_x, self.y + marker_y), 3)
