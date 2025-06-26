@@ -424,6 +424,10 @@ class GameManager:
         print(f"📝 Appuyez sur une nouvelle touche pour '{self.menu.control_names[control_key]}'...")
         print("   (Appuyez sur Échap pour annuler)")
         
+        # Sauvegarder l'état actuel du menu
+        previous_menu = self.menu.current_menu
+        previous_selected = self.menu.controls_menu_selected
+        
         # Attendre l'input de l'utilisateur
         waiting_for_key = True
         while waiting_for_key:
@@ -450,23 +454,38 @@ class GameManager:
             # Redessiner l'écran pendant l'attente
             self.menu.draw()
             
-            # Afficher un message d'attente
-            waiting_text = self.font.render(f"Nouvelle touche pour '{self.menu.control_names[control_key]}'...", 
-                                          True, (255, 255, 0))
-            text_rect = waiting_text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2))
-            
-            # Fond semi-transparent
+            # Afficher un message d'attente avec un fond plus visible
             overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
-            overlay.set_alpha(128)
+            overlay.set_alpha(180)
             overlay.fill((0, 0, 0))
             self.screen.blit(overlay, (0, 0))
             
-            # Texte
-            self.screen.blit(waiting_text, text_rect)
+            # Boîte de dialogue
+            dialog_width = 500
+            dialog_height = 150
+            dialog_x = (self.screen.get_width() - dialog_width) // 2
+            dialog_y = (self.screen.get_height() - dialog_height) // 2
             
-            cancel_text = self.font.render("(Échap pour annuler)", True, (200, 200, 200))
-            cancel_rect = cancel_text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2 + 40))
-            self.screen.blit(cancel_text, cancel_rect)
+            # Fond de la boîte
+            pygame.draw.rect(self.screen, (40, 40, 40), (dialog_x, dialog_y, dialog_width, dialog_height))
+            pygame.draw.rect(self.screen, (255, 255, 255), (dialog_x, dialog_y, dialog_width, dialog_height), 3)
+            
+            # Titre
+            title_text = f"Modifier: {self.menu.control_names[control_key]}"
+            title_surf = self.font.render(title_text, True, (255, 255, 255))
+            title_rect = title_surf.get_rect(center=(dialog_x + dialog_width//2, dialog_y + 40))
+            self.screen.blit(title_surf, title_rect)
+            
+            # Instructions
+            waiting_text = "Appuyez sur une nouvelle touche..."
+            waiting_surf = self.font.render(waiting_text, True, (255, 255, 0))
+            waiting_rect = waiting_surf.get_rect(center=(dialog_x + dialog_width//2, dialog_y + 80))
+            self.screen.blit(waiting_surf, waiting_rect)
+            
+            cancel_text = "(Échap pour annuler)"
+            cancel_surf = self.small_font.render(cancel_text, True, (200, 200, 200))
+            cancel_rect = cancel_surf.get_rect(center=(dialog_x + dialog_width//2, dialog_y + 110))
+            self.screen.blit(cancel_surf, cancel_rect)
             
             pygame.display.flip()
             self.clock.tick(30)  # Limiter le FPS pendant l'attente

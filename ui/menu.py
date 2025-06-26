@@ -23,6 +23,7 @@ class Menu:
         # État du menu
         self.current_menu = "main"
         self.selected_button = 0
+        self.controls_menu_selected = 0
         
         # Boutons du menu principal
         self.main_buttons = [
@@ -164,46 +165,87 @@ class Menu:
         fs_surf = self.font.render(fs_text, True, self.WHITE)
         self.screen.blit(fs_surf, (50, y))
         self.draw_button("Basculer", 400, y-5, 100, 30, self.selected_button == 2)
+        y += 50
+        
+        # Contrôles - Bouton pour accéder au menu des contrôles
+        controls_text = "Contrôles"
+        controls_surf = self.font.render(controls_text, True, self.WHITE)
+        self.screen.blit(controls_surf, (50, y))
+        self.draw_button("Modifier", 400, y-5, 100, 30, self.selected_button == 3)
         y += 80
         
-        # Contrôles
-        controls_title = self.font.render("Contrôles:", True, self.WHITE)
-        self.screen.blit(controls_title, (50, y))
-        y += 40
+        # Instructions
+        instr1 = self.small_font.render("Utilisez ↑↓ pour naviguer, ←→ pour changer la résolution", True, self.GRAY)
+        self.screen.blit(instr1, (50, y))
+        y += 20
+        instr2 = self.small_font.render("Entrée pour sélectionner", True, self.GRAY)
+        self.screen.blit(instr2, (50, y))
+        
+        # Bouton retour
+        self.draw_button("Retour", 50, self.screen.get_height() - 80, 100, 50, 
+                        self.selected_button == 4)
+    
+    def draw_controls_menu(self):
+        """Dessine le menu dédié aux contrôles"""
+        self.screen.fill(self.BLACK)
+        
+        # Titre
+        title = self.big_font.render("Configuration des Contrôles", True, self.WHITE)
+        title_rect = title.get_rect(center=(self.screen.get_width()//2, 50))
+        self.screen.blit(title, title_rect)
+        
+        # Instructions
+        instr = self.font.render("Cliquez sur un bouton pour modifier la touche correspondante", True, self.GRAY)
+        instr_rect = instr.get_rect(center=(self.screen.get_width()//2, 100))
+        self.screen.blit(instr, instr_rect)
         
         # Filtrer les contrôles modifiables (exclure la souris)
         modifiable_controls = [(k, v) for k, v in self.control_names.items() if k != "harvest"]
         
+        # Afficher les contrôles avec de vrais boutons
+        y = 150
+        button_width = 200
+        button_height = 40
+        
         for i, (key, name) in enumerate(modifiable_controls):
+            # Nom du contrôle
+            name_surf = self.font.render(f"{name}:", True, self.WHITE)
+            self.screen.blit(name_surf, (100, y + 10))
+            
+            # Touche actuelle
             key_name = pygame.key.name(self.controls[key]).upper()
-            text = f"{name}: {key_name}"
             
-            # Colorier selon la sélection
-            is_selected = self.selected_button == 3 + i
-            color = self.GREEN if is_selected else self.WHITE
+            # Bouton pour modifier
+            is_selected = self.controls_menu_selected == i
+            button_color = self.BLUE if is_selected else self.GRAY
+            border_color = self.WHITE if is_selected else self.DARK_GRAY
             
-            control_surf = self.small_font.render(text, True, color)
-            self.screen.blit(control_surf, (70, y))
+            button_x = 350
+            button_rect = pygame.Rect(button_x, y, button_width, button_height)
             
-            if is_selected:
-                # Ajouter une indication de sélection
-                indicator = self.small_font.render("← Entrée pour modifier", True, self.YELLOW)
-                self.screen.blit(indicator, (350, y))
+            pygame.draw.rect(self.screen, button_color, button_rect)
+            pygame.draw.rect(self.screen, border_color, button_rect, 2)
             
-            y += 25
+            # Texte du bouton
+            button_text = f"{key_name} (Cliquer pour modifier)"
+            text_surf = self.button_font.render(button_text, True, self.WHITE)
+            text_rect = text_surf.get_rect(center=button_rect.center)
+            self.screen.blit(text_surf, text_rect)
+            
+            y += 60
         
-        # Instructions
-        y += 20
-        instr1 = self.small_font.render("Utilisez ↑↓ pour naviguer, ←→ pour changer la résolution", True, self.GRAY)
-        self.screen.blit(instr1, (50, y))
-        y += 20
-        instr2 = self.small_font.render("Entrée pour modifier les contrôles ou basculer le plein écran", True, self.GRAY)
-        self.screen.blit(instr2, (50, y))
+        # Bouton pour retourner aux options
+        retour_button_index = len(modifiable_controls)
+        self.draw_button("Retour aux Options", self.screen.get_width()//2 - 100, 
+                        self.screen.get_height() - 100, 200, 50, 
+                        self.controls_menu_selected == retour_button_index)
         
-        # Bouton retour
-        retour_button_index = 3 + len(modifiable_controls)
-        self.draw_button("Retour", 50, self.screen.get_height() - 80, 100, 50, 
-                        self.selected_button == retour_button_index)
+        # Instructions de navigation
+        y = self.screen.get_height() - 50
+        nav_text = "↑↓: Naviguer • Entrée/Clic: Modifier • Échap: Retour"
+        nav_surf = self.small_font.render(nav_text, True, self.GRAY)
+        nav_rect = nav_surf.get_rect(center=(self.screen.get_width()//2, y))
+        self.screen.blit(nav_surf, nav_rect)
     
     def load_save_slots_info(self):
         """Charge les informations des slots de sauvegarde"""
@@ -343,6 +385,8 @@ class Menu:
             return self.handle_main_menu_event(event)
         elif self.current_menu == "options":
             return self.handle_options_event(event)
+        elif self.current_menu == "controls":
+            return self.handle_controls_event(event)
         elif self.current_menu == "load_menu":
             return self.handle_save_load_event(event, "load")
         elif self.current_menu == "save_menu":
@@ -378,10 +422,6 @@ class Menu:
     
     def handle_options_event(self, event):
         """Gère les événements du menu des options"""
-        # Calculer le nombre maximum de sélections
-        modifiable_controls = [k for k in self.control_names.keys() if k != "harvest"]
-        max_selection = 3 + len(modifiable_controls)  # 0,1,2 pour résolution/fullscreen, puis contrôles, puis retour
-        
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.current_menu = "main"
@@ -390,7 +430,7 @@ class Menu:
             elif event.key == pygame.K_UP:
                 self.selected_button = max(0, self.selected_button - 1)
             elif event.key == pygame.K_DOWN:
-                self.selected_button = min(max_selection, self.selected_button + 1)
+                self.selected_button = min(4, self.selected_button + 1)  # 0-4: résolution(</>), fullscreen, contrôles, retour
             elif event.key == pygame.K_LEFT:
                 if self.selected_button == 0 or self.selected_button == 1:  # Résolution
                     self.current_resolution = (self.current_resolution - 1) % len(self.resolutions)
@@ -409,13 +449,11 @@ class Menu:
                 elif self.selected_button == 2:  # Basculer plein écran
                     self.fullscreen = not self.fullscreen
                     self.save_settings()
-                    return "toggle_fullscreen"  # Signal pour changer la résolution
-                elif self.selected_button >= 3 and self.selected_button < 3 + len(modifiable_controls):
-                    # Modification de contrôle
-                    control_index = self.selected_button - 3
-                    if control_index < len(modifiable_controls):
-                        return f"remap_control_{modifiable_controls[control_index]}"
-                elif self.selected_button == max_selection:  # Retour
+                    return "toggle_fullscreen"
+                elif self.selected_button == 3:  # Menu contrôles
+                    self.current_menu = "controls"
+                    self.controls_menu_selected = 0
+                elif self.selected_button == 4:  # Retour
                     self.current_menu = "main"
                     self.selected_button = 0
                     self.save_settings()
@@ -435,19 +473,64 @@ class Menu:
                 self.fullscreen = not self.fullscreen
                 self.save_settings()
                 return "toggle_fullscreen"
+            # Clic sur le bouton contrôles
+            elif pygame.Rect(400, 215, 100, 30).collidepoint(mouse_pos):
+                self.current_menu = "controls"
+                self.controls_menu_selected = 0
             # Clic sur le bouton retour
             elif pygame.Rect(50, self.screen.get_height() - 80, 100, 50).collidepoint(mouse_pos):
                 self.current_menu = "main"
                 self.selected_button = 0
                 self.save_settings()
-            # Clic sur les contrôles (zone approximative)
-            else:
-                # Calculer quelle ligne de contrôle a été cliquée
-                control_start_y = 240  # Position approximative des contrôles
-                for i, control_key in enumerate(modifiable_controls):
-                    control_y = control_start_y + i * 25
-                    if control_y <= mouse_pos[1] <= control_y + 25 and 70 <= mouse_pos[0] <= 400:
-                        return f"remap_control_{control_key}"
+        
+        return None
+    
+    def handle_controls_event(self, event):
+        """Gère les événements du menu des contrôles"""
+        modifiable_controls = [k for k in self.control_names.keys() if k != "harvest"]
+        max_selection = len(modifiable_controls)  # +1 pour le bouton retour sera géré séparément
+        
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.current_menu = "options"
+                self.selected_button = 3  # Retour sur le bouton contrôles
+                self.save_settings()
+            elif event.key == pygame.K_UP:
+                self.controls_menu_selected = max(0, self.controls_menu_selected - 1)
+            elif event.key == pygame.K_DOWN:
+                self.controls_menu_selected = min(max_selection, self.controls_menu_selected + 1)
+            elif event.key == pygame.K_RETURN:
+                if self.controls_menu_selected < max_selection:
+                    # Modifier un contrôle
+                    control_key = modifiable_controls[self.controls_menu_selected]
+                    return f"remap_control_{control_key}"
+                else:
+                    # Bouton retour
+                    self.current_menu = "options"
+                    self.selected_button = 3
+                    self.save_settings()
+        
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            
+            # Vérifier les clics sur les boutons de contrôles
+            y = 150
+            button_height = 40
+            button_width = 200
+            button_x = 350
+            
+            for i, control_key in enumerate(modifiable_controls):
+                button_rect = pygame.Rect(button_x, y + i * 60, button_width, button_height)
+                if button_rect.collidepoint(mouse_pos):
+                    return f"remap_control_{control_key}"
+            
+            # Vérifier le clic sur le bouton retour
+            retour_rect = pygame.Rect(self.screen.get_width()//2 - 100, 
+                                    self.screen.get_height() - 100, 200, 50)
+            if retour_rect.collidepoint(mouse_pos):
+                self.current_menu = "options"
+                self.selected_button = 3
+                self.save_settings()
         
         return None
     
@@ -510,6 +593,8 @@ class Menu:
             self.draw_main_menu()
         elif self.current_menu == "options":
             self.draw_options_menu()
+        elif self.current_menu == "controls":
+            self.draw_controls_menu()
         elif self.current_menu == "load_menu":
             self.draw_save_load_menu("load")
         elif self.current_menu == "save_menu":
