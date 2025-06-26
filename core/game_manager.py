@@ -64,6 +64,10 @@ class GameManager:
         # Système de sauvegarde
         self.save_system = SaveSystem()
         
+        # Variables pour le message de sauvegarde
+        self.show_save_message = False
+        self.save_message_timer = 0.0
+        
         self.running = True
 
     def init_game(self):
@@ -188,10 +192,12 @@ class GameManager:
             self.menu.selected_save_slot = 0
             self.menu.refresh_save_slots()
         elif action == "save_menu":
-            if self.state == "playing":
+            if self.player is not None:  # Autorise si un jeu est en cours
                 self.menu.current_menu = "save_menu"
                 self.menu.selected_save_slot = 0
                 self.menu.refresh_save_slots()
+            else:
+                print("❌ Aucun jeu en cours à sauvegarder")
         elif action == "options":
             self.menu.current_menu = "options"
             self.menu.selected_button = 0
@@ -208,6 +214,11 @@ class GameManager:
             if self.save_game(slot_number):
                 print(f"✅ Partie sauvegardée dans le slot {slot_number}")
                 self.menu.refresh_save_slots()  # Actualiser l'affichage
+                
+                # Retourner au jeu avec un message de confirmation
+                self.state = "playing"
+                self.show_save_message = True
+                self.save_message_timer = 3.0  # Afficher pendant 3 secondes
             else:
                 print(f"❌ Impossible de sauvegarder dans le slot {slot_number}")
 
@@ -221,6 +232,9 @@ class GameManager:
             elif event.key == pygame.K_F5:
                 if self.save_game():
                     print("✅ Partie sauvegardée!")
+                    # Afficher le message à l'écran aussi
+                    self.show_save_message = True
+                    self.save_message_timer = 3.0  # Afficher pendant 3 secondes
                 else:
                     print("❌ Erreur lors de la sauvegarde")
             elif event.key == pygame.K_i:
@@ -255,6 +269,13 @@ class GameManager:
             
             # Mise à jour de la caméra
             self.camera.follow_player(self.player)
+            
+            # Gestion du timer du message de sauvegarde
+            if hasattr(self, 'show_save_message') and self.show_save_message:
+                if hasattr(self, 'save_message_timer') and self.save_message_timer > 0:
+                    self.save_message_timer -= dt
+                    if self.save_message_timer <= 0:
+                        self.show_save_message = False
 
     def draw(self):
         """Dessine tout le contenu du jeu"""
@@ -311,6 +332,10 @@ class GameManager:
         # Dessiner le HUD
         self.hud.draw(self.screen, self.player, self)
         
+        # Afficher le message de sauvegarde si nécessaire
+        if hasattr(self, 'show_save_message') and self.show_save_message:
+            self._draw_save_confirmation()
+        
         # Dessiner l'interface d'inventaire
         self.inventory_ui.draw(self.player.inventory, self.recipes)
         
@@ -332,6 +357,39 @@ class GameManager:
         for i, instruction in enumerate(instructions):
             text = self.font.render(instruction, True, COLORS["WHITE"])
             self.screen.blit(text, (10, WINDOW_HEIGHT - 120 + i * 20))
+
+    def _draw_save_confirmation(self):
+        """Dessine le message de confirmation de sauvegarde"""
+        # Créer le texte du message
+        message = "✅ Partie sauvegardée !"
+        big_font = pygame.font.Font(None, 48)
+        text_surface = big_font.render(message, True, COLORS["GREEN"])
+        
+        # Calculer la position centrée
+        text_rect = text_surface.get_rect()
+        text_x = (WINDOW_WIDTH - text_rect.width) // 2
+        text_y = WINDOW_HEIGHT // 4
+        
+        # Dessiner un fond semi-transparent
+        background_padding = 20
+        background_rect = pygame.Rect(
+            text_x - background_padding,
+            text_y - background_padding,
+            text_rect.width + 2 * background_padding,
+            text_rect.height + 2 * background_padding
+        )
+        
+        # Surface avec transparence
+        background_surface = pygame.Surface((background_rect.width, background_rect.height))
+        background_surface.set_alpha(180)
+        background_surface.fill(COLORS["BLACK"])
+        self.screen.blit(background_surface, (background_rect.x, background_rect.y))
+        
+        # Bordure verte
+        pygame.draw.rect(self.screen, COLORS["GREEN"], background_rect, 3)
+        
+        # Afficher le texte
+        self.screen.blit(text_surface, (text_x, text_y))
 
     def run(self):
         """Boucle principale du jeu"""
