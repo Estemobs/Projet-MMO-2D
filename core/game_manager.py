@@ -243,8 +243,17 @@ class GameManager:
                     self.save_message_timer = 3.0  # Afficher pendant 3 secondes
                 else:
                     print("❌ Erreur lors de la sauvegarde")
-            elif event.key == pygame.K_i:
-                self.inventory_ui.toggle()
+            elif event.key == self.menu.controls["inventory"]:
+                self.inventory_ui.toggle_visibility()
+            elif event.key == self.menu.controls["build_mode"]:
+                self.player.build_mode = not self.player.build_mode
+                print(f"🏗️ Mode construction: {'ACTIVÉ' if self.player.build_mode else 'DÉSACTIVÉ'}")
+            elif event.key == self.menu.controls["foundation"]:
+                self.player.selected_building = "foundation"
+                print("🧱 Sélectionné: Fondation")
+            elif event.key == self.menu.controls["wall"]:
+                self.player.selected_building = "wall"
+                print("🏠 Sélectionné: Mur")
         
         # Passer les événements aux composants du jeu
         if hasattr(self.player, 'handle_event'):
@@ -262,7 +271,11 @@ class GameManager:
             mouse_pos = pygame.mouse.get_pos()
             
             # Mise à jour du joueur
-            self.player.update(keys, dt)
+            dx, dy = self.player.update(keys, dt, self.menu.controls)
+            
+            # Appliquer le mouvement au joueur
+            if dx != 0 or dy != 0:
+                self.player.move(dx, dy, dt, self.world_map)
             
             # Gestion des clics de souris
             if mouse_buttons[0]:  # Clic gauche

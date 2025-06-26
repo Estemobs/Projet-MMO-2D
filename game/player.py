@@ -117,7 +117,7 @@ class Player:
             return True
         return False
 
-    def update(self, keys, dt):
+    def update(self, keys, dt, controls=None):
         """Met à jour l'état du joueur"""
         # Diminuer la faim au fil du temps
         self.hunger = max(0, self.hunger - 5 * dt)
@@ -129,6 +129,36 @@ class Player:
         # Régénération naturelle si le joueur n'a pas faim
         elif self.hunger > 50 and self.health < self.max_health:
             self.health = min(self.max_health, self.health + 2 * dt)
+        
+        # Gestion du déplacement avec les contrôles configurés
+        if controls is None:
+            # Contrôles par défaut si aucun contrôle personnalisé n'est fourni
+            import pygame
+            controls = {
+                "move_up": pygame.K_w,
+                "move_down": pygame.K_s,
+                "move_left": pygame.K_a,
+                "move_right": pygame.K_d
+            }
+        
+        dx = 0
+        dy = 0
+        
+        if keys[controls["move_up"]]:
+            dy -= 1
+        if keys[controls["move_down"]]:
+            dy += 1
+        if keys[controls["move_left"]]:
+            dx -= 1
+        if keys[controls["move_right"]]:
+            dx += 1
+        
+        # Normaliser le vecteur de déplacement si mouvement diagonal
+        if dx != 0 and dy != 0:
+            dx *= 0.707  # 1/sqrt(2)
+            dy *= 0.707
+            
+        return dx, dy
 
     def handle_mouse_click(self, mouse_pos, world_map, camera_x, camera_y, items):
         """Gère les clics de souris du joueur"""
