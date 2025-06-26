@@ -9,8 +9,10 @@ class MiniMap:
     def __init__(self, screen_width, screen_height):
         self.width = 200
         self.height = 150
-        self.x = 10
+        # Position en haut à droite
+        self.x = screen_width - self.width - 10  # 10 pixels du bord droit
         self.y = 10
+        self.screen_width = screen_width  # Garder la largeur pour les updates
         self.scale = min(self.width / (MAP_WIDTH * TILE_SIZE), self.height / (MAP_HEIGHT * TILE_SIZE))
         
         # Couleurs pour la minimap
@@ -89,6 +91,12 @@ class MiniMap:
         mini_x = int(world_x * self.scale)
         mini_y = int(world_y * self.scale)
         return mini_x, mini_y
+    
+    def update_position(self, screen_width, screen_height):
+        """Met à jour la position de la minimap selon la taille d'écran"""
+        self.screen_width = screen_width
+        self.x = screen_width - self.width - 10  # 10 pixels du bord droit
+        self.y = 10
     
     def draw(self, screen, player, enemies=None, camera=None, death_markers=None):
         """Dessine la minimap"""

@@ -72,7 +72,7 @@ class GameManager:
         # Nouveaux gestionnaires modulaires
         self.render_manager = RenderManager(self.screen)
         self.gameplay_manager = GameplayManager()
-        self.minimap = MiniMap(200, 200)  # Taille de la minimap
+        self.minimap = MiniMap(self.screen.get_width(), self.screen.get_height())  # Passer la vraie taille
         
         # Composants du jeu (initialisés quand on commence une partie)
         self.world_map = None
