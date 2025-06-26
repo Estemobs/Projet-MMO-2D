@@ -55,7 +55,7 @@ class Game:
         # Système d'items et crafting
         self.items = self.create_items()
         self.recipes = self.create_recipes()
-        self.inventory_ui = InventoryUI(self.screen, self.font)
+        self.inventory_ui = InventoryUI(self.screen, self.font, self.sprite_manager)
         
         # Système de temps de jeu
         self.game_start_time = None
@@ -67,35 +67,36 @@ class Game:
         """Crée tous les items du jeu"""
         items = {
             # Ressources de base
-            "wood": Item("Bois", "resource", "Matériau de base pour la construction", 99, BROWN),
-            "stone": Item("Pierre", "resource", "Matériau solide pour les constructions", 99, GRAY),
-            "iron_ore": Item("Minerai de fer", "resource", "Utilisé pour créer des outils", 99, DARK_GRAY),
-            "gold_ore": Item("Minerai d'or", "resource", "Précieux minerai doré", 99, (255, 215, 0)),
-            "diamond_ore": Item("Minerai de diamant", "resource", "Le plus précieux des minerais", 99, (185, 242, 255)),
-            "coal": Item("Charbon", "resource", "Combustible et matériau", 99, (36, 36, 36)),
+            "wood": Item("Bois", "resource", "Matériau de base pour la construction", 99, BROWN, "wood"),
+            "stone": Item("Pierre", "resource", "Matériau solide pour les constructions", 99, GRAY, "stone"),
+            "iron_ore": Item("Minerai de fer", "resource", "Utilisé pour créer des outils", 99, DARK_GRAY, "iron_ore"),
+            "gold_ore": Item("Minerai d'or", "resource", "Précieux minerai doré", 99, (255, 215, 0), "gold_ore"),
+            "diamond_ore": Item("Minerai de diamant", "resource", "Le plus précieux des minerais", 99, (185, 242, 255), "diamond"),
+            "coal": Item("Charbon", "resource", "Combustible et matériau", 99, (36, 36, 36), "coal"),
             
             # Nourriture
-            "apple": Item("Pomme", "food", "Restaure 10 points de vie", 10, RED),
-            "berry": Item("Baie", "food", "Restaure 5 points de vie", 20, PURPLE),
-            "bread": Item("Pain", "food", "Restaure 20 points de vie", 5, (222, 184, 135)),
+            "apple": Item("Pomme", "food", "Restaure 10 points de vie", 10, RED, "apple"),
+            "berry": Item("Baie", "food", "Restaure 5 points de vie", 20, PURPLE, "berry"),
+            "bread": Item("Pain", "food", "Restaure 20 points de vie", 5, (222, 184, 135), "bread"),
+            "meat": Item("Viande", "food", "Restaure 15 points de vie", 8, (139, 69, 19), "meat"),
             
             # Matériaux raffinés
-            "iron_ingot": Item("Lingot de fer", "material", "Fer purifié", 99, (169, 169, 169)),
-            "gold_ingot": Item("Lingot d'or", "material", "Or purifié", 99, (255, 215, 0)),
-            "diamond": Item("Diamant", "material", "Diamant taillé", 99, (185, 242, 255)),
+            "iron_ingot": Item("Lingot de fer", "material", "Fer purifié", 99, (169, 169, 169), "iron_ingot"),
+            "gold_ingot": Item("Lingot d'or", "material", "Or purifié", 99, (255, 215, 0), "gold_ingot"),
+            "diamond": Item("Diamant", "material", "Diamant taillé", 99, (185, 242, 255), "diamond"),
             
             # Outils
-            "wooden_sword": Item("Épée en bois", "weapon", "Arme basique", 1, BROWN),
-            "iron_sword": Item("Épée en fer", "weapon", "Arme solide", 1, DARK_GRAY),
-            "gold_sword": Item("Épée en or", "weapon", "Arme précieuse", 1, (255, 215, 0)),
-            "diamond_sword": Item("Épée en diamant", "weapon", "L'arme ultime", 1, (185, 242, 255)),
+            "wooden_sword": Item("Épée en bois", "weapon", "Arme basique", 1, BROWN, "wooden_sword"),
+            "iron_sword": Item("Épée en fer", "weapon", "Arme solide", 1, DARK_GRAY, "iron_sword"),
+            "gold_sword": Item("Épée en or", "weapon", "Arme précieuse", 1, (255, 215, 0), "wooden_sword"),
+            "diamond_sword": Item("Épée en diamant", "weapon", "L'arme ultime", 1, (185, 242, 255), "iron_sword"),
             
-            "wooden_pickaxe": Item("Pioche en bois", "tool", "Outil de minage basique", 1, BROWN),
-            "iron_pickaxe": Item("Pioche en fer", "tool", "Outil de minage avancé", 1, DARK_GRAY),
+            "wooden_pickaxe": Item("Pioche en bois", "tool", "Outil de minage basique", 1, BROWN, "wooden_pickaxe"),
+            "iron_pickaxe": Item("Pioche en fer", "tool", "Outil de minage avancé", 1, DARK_GRAY, "wooden_pickaxe"),
             
             # Armures
-            "leather_armor": Item("Armure en cuir", "armor", "Protection basique", 1, (139, 69, 19)),
-            "iron_armor": Item("Armure en fer", "armor", "Protection solide", 1, DARK_GRAY),
+            "leather_armor": Item("Armure en cuir", "armor", "Protection basique", 1, (139, 69, 19), "leather_armor"),
+            "iron_armor": Item("Armure en fer", "armor", "Protection solide", 1, DARK_GRAY, "iron_armor"),
         }
         return items
     

@@ -1,13 +1,16 @@
 import pygame
 import json
+import os
 
 class Item:
-    def __init__(self, name, item_type, description, stack_size=99, color=(255, 255, 255)):
+    def __init__(self, name, item_type, description, stack_size=99, color=(255, 255, 255), sprite_name=None):
         self.name = name
         self.type = item_type  # "resource", "tool", "food", "weapon"
         self.description = description
         self.stack_size = stack_size
         self.color = color
+        # Le nom du sprite correspond au nom de l'item par défaut
+        self.sprite_name = sprite_name if sprite_name else name.lower().replace(" ", "_")
 
 class ItemStack:
     def __init__(self, item, quantity=1):
@@ -119,10 +122,11 @@ class CraftingRecipe:
         return True
 
 class InventoryUI:
-    def __init__(self, screen, font):
+    def __init__(self, screen, font, sprite_manager=None):
         self.screen = screen
         self.font = font
         self.small_font = pygame.font.Font(None, 16)
+        self.sprite_manager = sprite_manager
         
         # Couleurs
         self.WHITE = (255, 255, 255)
@@ -149,15 +153,31 @@ class InventoryUI:
         pygame.draw.rect(self.screen, self.WHITE, (x, y, self.slot_size, self.slot_size), 2)
         
         if item_stack:
-            # Couleur de l'item
-            item_color = item_stack.item.color
-            pygame.draw.rect(self.screen, item_color, 
-                           (x + 5, y + 5, self.slot_size - 10, self.slot_size - 10))
+            # Essayer d'afficher le sprite de l'item
+            sprite_drawn = False
+            if self.sprite_manager:
+                sprite = self.sprite_manager.get_item_sprite(item_stack.item.sprite_name)
+                if sprite:
+                    # Redimensionner le sprite pour s'adapter au slot
+                    item_size = self.slot_size - 10
+                    sprite_scaled = pygame.transform.scale(sprite, (item_size, item_size))
+                    self.screen.blit(sprite_scaled, (x + 5, y + 5))
+                    sprite_drawn = True
+            
+            # Si pas de sprite trouvé, utiliser la couleur comme avant
+            if not sprite_drawn:
+                item_color = item_stack.item.color
+                pygame.draw.rect(self.screen, item_color, 
+                               (x + 5, y + 5, self.slot_size - 10, self.slot_size - 10))
             
             # Quantité
             if item_stack.quantity > 1:
                 qty_text = self.small_font.render(str(item_stack.quantity), True, self.WHITE)
-                self.screen.blit(qty_text, (x + self.slot_size - 15, y + self.slot_size - 15))
+                # Fond noir pour mieux voir le texte
+                text_rect = qty_text.get_rect()
+                text_rect.bottomright = (x + self.slot_size - 2, y + self.slot_size - 2)
+                pygame.draw.rect(self.screen, self.BLACK, text_rect.inflate(2, 1))
+                self.screen.blit(qty_text, text_rect)
     
     def draw_inventory_tab(self, inventory):
         """Dessine l'onglet inventaire."""

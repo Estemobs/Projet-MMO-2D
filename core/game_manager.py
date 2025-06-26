@@ -26,6 +26,7 @@ from game.hud import HUD
 from game.render_manager import RenderManager
 from game.gameplay_manager import GameplayManager
 from game.minimap import MiniMap
+from game.sprite_manager import get_sprite_manager
 from core.items import create_items, create_recipes
 from systems.save_system import SaveSystem
 
@@ -65,9 +66,12 @@ class GameManager:
         self.items = create_items()
         self.recipes = create_recipes(self.items)
         
+        # Sprite manager
+        self.sprite_manager = get_sprite_manager()
+        
         # Interfaces
         self.menu = Menu(self.screen, self.font)
-        self.inventory_ui = InventoryUI(self.screen, self.font)
+        self.inventory_ui = InventoryUI(self.screen, self.font, self.sprite_manager)
         
         # Nouveaux gestionnaires modulaires
         self.render_manager = RenderManager(self.screen)
