@@ -11,6 +11,36 @@
 			"group": "build",
 			"isBackground": false,
 			"problemMatcher": []
+		},
+		{
+			"label": "Tester le jeu MMO 2D",
+			"type": "shell",
+			"command": "/home/estemobs/Documents/Projet MMO 2D/.venv/bin/python",
+			"args": [
+				"test_setup.py"
+			],
+			"group": "test",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Tester les performances",
+			"type": "shell",
+			"command": "/home/estemobs/Documents/Projet MMO 2D/.venv/bin/python",
+			"args": [
+				"test_performance.py"
+			],
+			"group": "test",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Lancer avec script bash",
+			"type": "shell",
+			"command": "./start_game.sh",
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": []
 		}
 	]
 }

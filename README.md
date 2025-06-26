@@ -29,8 +29,25 @@ pip install -r requirements.txt
 ```
 
 ### Lancement
+**Option 1 - Simple :**
 ```bash
 python main.py
+```
+
+**Option 2 - Script de lancement (recommandé sur Linux) :**
+```bash
+./start_game.sh
+```
+
+**Option 3 - Script Python dédié :**
+```bash
+python launch.py
+```
+
+**Option 4 - Test avant lancement :**
+```bash
+python test_setup.py  # Vérifier que tout fonctionne
+python main.py        # Lancer le jeu
 ```
 
 ## Contrôles
@@ -44,6 +61,12 @@ python main.py
 - Le joueur doit être à proximité de la ressource (dans un rayon de 2 cases)
 - Les ressources récoltées sont automatiquement ajoutées à l'inventaire
 
+### Inventaire et Artisanat
+- **Touche I** : Ouvrir/fermer l'inventaire
+- **TAB** (dans l'inventaire) : Changer d'onglet (Inventaire/Artisanat/Équipement)
+- **WASD** (dans l'inventaire) : Naviguer dans les menus
+- **ENTER** (dans l'inventaire) : Crafter un objet ou équiper
+
 ### Construction
 - **Touche B** : Activer/désactiver le mode construction
 - **Touche 1** : Sélectionner les fondations (coût: 2 bois + 1 pierre)
@@ -51,10 +74,16 @@ python main.py
 - **Clic gauche** (en mode construction) : Placer une structure
 - La portée de construction est de 3 cases
 
-### Combat
+### Combat et Survie
 - Les ennemis (cercles rouges) détectent le joueur dans un rayon de 3 cases
 - Ils se dirigent automatiquement vers le joueur et l'attaquent au contact
 - La santé du joueur diminue lors des attaques
+- **Touche H** : Consommer de la nourriture pour récupérer de la santé
+
+### Sauvegarde
+- **F5** : Sauvegarder la partie en cours
+- **Charger Partie** dans le menu : Reprendre la dernière sauvegarde
+- Les sauvegardes incluent : position, inventaire, monde, ennemis
 
 ## Éléments du Jeu
 
