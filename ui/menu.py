@@ -47,8 +47,8 @@ class Menu:
             (1366, 768),
             (1920, 1080)
         ]
-        self.current_resolution = 1  # 1024x768 par défaut
-        self.fullscreen = False
+        self.current_resolution = 4  # 1920x1080 par défaut
+        self.fullscreen = True  # Plein écran par défaut
         
         # Contrôles
         self.controls = {

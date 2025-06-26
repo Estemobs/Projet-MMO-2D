@@ -37,7 +37,22 @@ class GameManager:
         self.state = "menu"  # "menu", "playing", "paused"
         
         # Initialisation basique
-        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        # Créer un écran temporaire pour charger les paramètres
+        temp_screen = pygame.display.set_mode((800, 600))
+        temp_font = pygame.font.Font(None, 24)
+        
+        # Charger les paramètres d'affichage
+        temp_menu = Menu(temp_screen, temp_font)
+        
+        if temp_menu.fullscreen:
+            info = pygame.display.Info()
+            self.screen = pygame.display.set_mode((info.current_w, info.current_h), pygame.FULLSCREEN)
+            print(f"✅ Lancement en mode plein écran ({info.current_w}x{info.current_h})")
+        else:
+            resolution = temp_menu.resolutions[temp_menu.current_resolution]
+            self.screen = pygame.display.set_mode(resolution)
+            print(f"✅ Lancement en mode fenêtré ({resolution[0]}x{resolution[1]})")
+            
         pygame.display.set_caption("MMO 2D - Jeu de survie")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 24)
@@ -75,7 +90,7 @@ class GameManager:
         """Initialise une nouvelle partie"""
         self.world_map = WorldGenerator.generate_map()
         self.player = Player(MAP_WIDTH * TILE_SIZE // 2, MAP_HEIGHT * TILE_SIZE // 2)
-        self.camera = Camera()
+        self.camera = Camera(self.screen.get_width(), self.screen.get_height())
         self.hud = HUD(self.font)
         
         # Initialiser le temps de jeu
@@ -158,7 +173,7 @@ class GameManager:
         self.total_playtime = game_data["playtime"]
         
         # Réinitialiser les composants
-        self.camera = Camera()
+        self.camera = Camera(self.screen.get_width(), self.screen.get_height())
         self.hud = HUD(self.font)
         
         # Restaurer les ennemis
@@ -425,14 +440,14 @@ class GameManager:
     def _toggle_fullscreen(self):
         """Bascule entre le mode plein écran et fenêtré"""
         try:
-            current_resolution = self.menu.get_resolution()
             if self.menu.is_fullscreen():
-                # Mode plein écran - utiliser la résolution native de l'écran
-                self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-                actual_size = self.screen.get_size()
-                print(f"✅ Mode plein écran activé ({actual_size[0]}x{actual_size[1]})")
+                # Mode plein écran - utiliser toute la résolution de l'écran
+                info = pygame.display.Info()
+                self.screen = pygame.display.set_mode((info.current_w, info.current_h), pygame.FULLSCREEN)
+                print(f"✅ Mode plein écran activé ({info.current_w}x{info.current_h})")
             else:
                 # Mode fenêtré
+                current_resolution = self.menu.get_resolution()
                 self.screen = pygame.display.set_mode(current_resolution)
                 print(f"✅ Mode fenêtré activé ({current_resolution[0]}x{current_resolution[1]})")
             
@@ -440,8 +455,11 @@ class GameManager:
             self.menu.screen = self.screen
             
             # Si on est en jeu, mettre à jour les autres composants
-            if self.state == "playing" and hasattr(self, 'hud') and self.hud:
-                self.hud.screen = self.screen
+            if self.state == "playing":
+                if hasattr(self, 'hud') and self.hud:
+                    self.hud.screen = self.screen
+                if hasattr(self, 'camera') and self.camera:
+                    self.camera.update_screen_size(self.screen.get_width(), self.screen.get_height())
             
         except Exception as e:
             print(f"❌ Erreur lors du changement de mode d'affichage: {e}")
