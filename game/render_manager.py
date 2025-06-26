@@ -31,21 +31,28 @@ class RenderManager:
         }
         return tile_colors.get(tile_type, COLORS["GREEN"])
     
-    def get_tile_sprite_name(self, tile_type):
-        """Retourne le nom du sprite pour une tile avec variantes naturelles"""
-        import random
+    def get_tile_sprite_name(self, tile_type, x=0, y=0):
+        """Retourne le nom du sprite pour une tile avec variantes consistantes"""
         
-        # Pour les types avec variantes, choisir aléatoirement
+        # Utiliser la position pour avoir des sprites consistants
+        seed = (x * 7 + y * 13) % 1000
+        
+        # Pour les types avec variantes, choisir de façon déterministe
         if tile_type == TileType.GRASS:
-            return f"grass_{random.randint(1, 4)}"
+            # Un seul type d'herbe pour éviter la superposition
+            return "grass_1"
         elif tile_type == TileType.DIRT:
-            return f"dirt_{random.randint(1, 3)}"
+            variant = (seed % 3) + 1
+            return f"dirt_{variant}"
         elif tile_type == TileType.WATER:
-            return f"water_{random.randint(1, 3)}"
+            variant = (seed % 3) + 1
+            return f"water_{variant}"
         elif tile_type == TileType.TREE:
-            return random.choice(["tree_oak", "tree_birch", "tree_pine"])
+            variants = ["tree_oak", "tree_birch", "tree_pine"]
+            return variants[seed % 3]
         elif tile_type == TileType.STONE:
-            return f"stones_{random.randint(1, 3)}"
+            variant = (seed % 3) + 1
+            return f"stones_{variant}"
         else:
             # Types de base
             tile_names = {
@@ -79,7 +86,7 @@ class RenderManager:
                 screen_y = y * TILE_SIZE - camera.y
                 
                 # Essayer d'utiliser un sprite
-                sprite_name = self.get_tile_sprite_name(tile_type)
+                sprite_name = self.get_tile_sprite_name(tile_type, x, y)
                 if not self.sprite_manager.draw_tile(self.screen, sprite_name, screen_x, screen_y):
                     # Fallback: dessiner avec des couleurs
                     color = self.get_tile_color(tile_type)
