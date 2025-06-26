@@ -1,0 +1,16 @@
+{
+    "resolution": 4,
+    "fullscreen": true,
+    "controls": {
+        "move_up": 122,
+        "move_down": 115,
+        "move_left": 113,
+        "move_right": 100,
+        "harvest": 1025,
+        "build_mode": 98,
+        "inventory": 105,
+        "crafting": 99,
+        "foundation": 49,
+        "wall": 50
+    }
+}

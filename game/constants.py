@@ -1,0 +1,38 @@
+# Constantes globales du jeu
+WINDOW_WIDTH = 1024
+WINDOW_HEIGHT = 768
+TILE_SIZE = 32
+MAP_WIDTH = 100
+MAP_HEIGHT = 100
+
+# Paramètres de jeu
+ENEMY_COUNT = 20
+TARGET_FPS = 60
+
+# Couleurs
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (34, 139, 34)
+BROWN = (101, 67, 33)
+GRAY = (128, 128, 128)
+DARK_GRAY = (64, 64, 64)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+ORANGE = (255, 165, 0)
+PURPLE = (128, 0, 128)
+
+# Dictionnaire des couleurs pour compatibilité
+COLORS = {
+    'BLACK': BLACK,
+    'WHITE': WHITE,
+    'GREEN': GREEN,
+    'BROWN': BROWN,
+    'GRAY': GRAY,
+    'DARK_GRAY': DARK_GRAY,
+    'RED': RED,
+    'BLUE': BLUE,
+    'YELLOW': YELLOW,
+    'ORANGE': ORANGE,
+    'PURPLE': PURPLE
+}
