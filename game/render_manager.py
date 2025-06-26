@@ -94,13 +94,33 @@ class RenderManager:
                     pygame.draw.rect(self.screen, COLORS["BLACK"], (screen_x, screen_y, TILE_SIZE, TILE_SIZE), 1)
     
     def draw_player(self, player, camera):
-        """Dessine le joueur"""
+        """Dessine le joueur avec animation de marche"""
         player_screen_x = player.x - camera.x
         player_screen_y = player.y - camera.y
         
-        # Essayer d'utiliser un sprite
-        if not self.sprite_manager.draw_entity(self.screen, "player", 
-                                               int(player_screen_x), int(player_screen_y)):
+        # Centrer le sprite plus grand (48x48) sur la position du joueur
+        offset_x = (48 - TILE_SIZE) // 2
+        offset_y = (48 - TILE_SIZE) // 2
+        draw_x = int(player_screen_x - offset_x)
+        draw_y = int(player_screen_y - offset_y)
+        
+        # Choisir le sprite en fonction de l'animation
+        sprite_name = "player"  # Sprite par défaut
+        
+        if hasattr(player, 'is_moving') and player.is_moving:
+            # Animation de marche : alterner entre les frames
+            if hasattr(player, 'animation_time'):
+                # Alterner toutes les 0.3 secondes
+                frame_duration = 0.3
+                animation_cycle = player.animation_time % (frame_duration * 2)
+                
+                if animation_cycle < frame_duration:
+                    sprite_name = "player_walk1"
+                else:
+                    sprite_name = "player_walk2"
+        
+        # Essayer d'utiliser le sprite animé
+        if not self.sprite_manager.draw_entity(self.screen, sprite_name, draw_x, draw_y):
             # Fallback: cercle bleu
             pygame.draw.circle(self.screen, COLORS["BLUE"], 
                              (int(player_screen_x + TILE_SIZE // 2), 
@@ -108,7 +128,7 @@ class RenderManager:
                              TILE_SIZE // 3)
     
     def draw_enemies(self, enemies, camera):
-        """Dessine les ennemis"""
+        """Dessine les ennemis avec animation"""
         screen_width = self.screen.get_width()
         screen_height = self.screen.get_height()
         
@@ -119,24 +139,44 @@ class RenderManager:
             if (-TILE_SIZE <= enemy_screen_x <= screen_width and 
                 -TILE_SIZE <= enemy_screen_y <= screen_height):
                 
-                # Essayer d'utiliser un sprite
-                if not self.sprite_manager.draw_entity(self.screen, "enemy", 
-                                                       int(enemy_screen_x), int(enemy_screen_y)):
+                # Centrer le sprite plus grand (48x48) sur la position de l'ennemi
+                offset_x = (48 - TILE_SIZE) // 2
+                offset_y = (48 - TILE_SIZE) // 2
+                draw_x = int(enemy_screen_x - offset_x)
+                draw_y = int(enemy_screen_y - offset_y)
+                
+                # Choisir le sprite en fonction du mouvement
+                sprite_name = "enemy"  # Sprite par défaut
+                
+                if hasattr(enemy, 'is_moving') and enemy.is_moving:
+                    # Animation de mouvement : alterner entre les frames
+                    if hasattr(enemy, 'animation_time'):
+                        # Alterner toutes les 0.5 secondes (plus lent que le joueur)
+                        frame_duration = 0.5
+                        animation_cycle = enemy.animation_time % (frame_duration * 2)
+                        
+                        if animation_cycle < frame_duration:
+                            sprite_name = "enemy_move1"
+                        else:
+                            sprite_name = "enemy"
+                
+                # Essayer d'utiliser le sprite animé
+                if not self.sprite_manager.draw_entity(self.screen, sprite_name, draw_x, draw_y):
                     # Fallback: cercle rouge
                     pygame.draw.circle(self.screen, COLORS["RED"], 
                                      (int(enemy_screen_x + TILE_SIZE // 2), 
                                       int(enemy_screen_y + TILE_SIZE // 2)), 
                                      TILE_SIZE // 3)
                 
-                # Barre de vie de l'ennemi
-                bar_width = TILE_SIZE
+                # Barre de vie de l'ennemi (ajustée pour les sprites plus grands)
+                bar_width = 48  # Largeur du nouveau sprite
                 bar_height = 4
                 health_ratio = enemy.health / enemy.max_health
                 
                 pygame.draw.rect(self.screen, COLORS["RED"], 
-                               (enemy_screen_x, enemy_screen_y - 8, bar_width, bar_height))
+                               (draw_x, draw_y - 8, bar_width, bar_height))
                 pygame.draw.rect(self.screen, COLORS["GREEN"], 
-                               (enemy_screen_x, enemy_screen_y - 8, bar_width * health_ratio, bar_height))
+                               (draw_x, draw_y - 8, bar_width * health_ratio, bar_height))
     
     def draw_death_markers(self, death_markers, camera):
         """Dessine les marqueurs de mort"""

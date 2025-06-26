@@ -34,20 +34,11 @@ class NaturalWorldGenerator:
     
     @staticmethod
     def _generate_biomes(world_map):
-        """Génère des biomes naturels avec variation d'herbe"""
-        # Créer des zones avec différents types d'herbe
+        """Génère des biomes naturels avec seulement de l'herbe (pas de terre éparpillée)"""
+        # Remplir uniquement d'herbe - aucune terre éparpillée !
         for y in range(MAP_HEIGHT):
             for x in range(MAP_WIDTH):
-                # Utiliser une fonction de bruit simple pour varier l'herbe
-                seed_value = (x * 12345 + y * 67890) % 1000
-                random.seed(seed_value)
-                
-                # 80% herbe normale, 20% variations
-                if random.random() < 0.8:
-                    world_map[y][x] = TileType.GRASS
-                else:
-                    # Petit pourcentage de terre naturelle pour la variété
-                    world_map[y][x] = TileType.DIRT if random.random() < 0.3 else TileType.GRASS
+                world_map[y][x] = TileType.GRASS
     
     @staticmethod
     def _generate_natural_paths(world_map):
@@ -186,27 +177,27 @@ class NaturalWorldGenerator:
     
     @staticmethod
     def _place_natural_resources(world_map):
-        """Place des ressources minérales de façon naturelle"""
-        # Zones rocheuses rares
-        for _ in range(random.randint(2, 4)):
+        """Place plus de ressources minérales utiles (au lieu de terre éparpillée)"""
+        # Plus de zones rocheuses utiles (pour remplacer la terre)
+        for _ in range(random.randint(8, 12)):  # Plus de zones rocheuses
             center_x = random.randint(10, MAP_WIDTH - 10)
             center_y = random.randint(10, MAP_HEIGHT - 10)
             
-            # Petit amas de rochers
-            for _ in range(random.randint(3, 8)):
-                x = center_x + random.randint(-5, 5)
-                y = center_y + random.randint(-5, 5)
+            # Amas de rochers plus gros et plus denses
+            for _ in range(random.randint(10, 20)):
+                x = center_x + random.randint(-10, 10)
+                y = center_y + random.randint(-10, 10)
                 
                 if (0 <= x < MAP_WIDTH and 0 <= y < MAP_HEIGHT and 
                     world_map[y][x] == TileType.GRASS):
                     world_map[y][x] = TileType.STONE
         
-        # Minerais très rares et dispersés
+        # Beaucoup plus de minerais dispersés (remplacent la terre)
         minerals = [
-            (TileType.IRON_ORE, 8),
-            (TileType.COAL_ORE, 6),
-            (TileType.GOLD_ORE, 3),
-            (TileType.DIAMOND_ORE, 1),
+            (TileType.IRON_ORE, 35),    # Encore plus de fer
+            (TileType.COAL_ORE, 30),   # Encore plus de charbon
+            (TileType.GOLD_ORE, 18),   # Plus d'or
+            (TileType.DIAMOND_ORE, 10), # Plus de diamant
         ]
         
         for mineral_type, count in minerals:
@@ -215,3 +206,13 @@ class NaturalWorldGenerator:
                 y = random.randint(0, MAP_HEIGHT - 1)
                 if world_map[y][x] == TileType.GRASS:
                     world_map[y][x] = mineral_type
+        
+        # Plus d'arbres fruitiers utiles (remplacent la terre)
+        for _ in range(random.randint(20, 35)):
+            x = random.randint(0, MAP_WIDTH - 1)
+            y = random.randint(0, MAP_HEIGHT - 1)
+            if world_map[y][x] == TileType.GRASS:
+                if random.random() < 0.7:
+                    world_map[y][x] = TileType.APPLE_TREE
+                else:
+                    world_map[y][x] = TileType.BERRY_BUSH

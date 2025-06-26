@@ -28,12 +28,26 @@ class Player:
         self.max_health = 100
         self.faction = "player"
         self.build_mode = False
+        
+        # Animation
+        self.is_moving = False
+        self.animation_time = 0
+        self.animation_speed = 0.3  # Secondes entre les frames
         self.selected_building = "foundation"
         self.inventory = Inventory(36)
         self.hunger = 100
         self.max_hunger = 100
 
     def move(self, dx, dy, dt, world_map):
+        # Déterminer si le joueur bouge
+        self.is_moving = (dx != 0 or dy != 0)
+        
+        # Mettre à jour l'animation si en mouvement
+        if self.is_moving:
+            self.animation_time += dt
+        else:
+            self.animation_time = 0
+        
         new_x = self.x + dx * self.speed * dt
         new_y = self.y + dy * self.speed * dt
         if 0 <= new_x < MAP_WIDTH * TILE_SIZE and 0 <= new_y < MAP_HEIGHT * TILE_SIZE:
@@ -50,6 +64,18 @@ class Player:
                 
                 self.x = self.x + dx * self.speed * dt * speed_multiplier
                 self.y = self.y + dy * self.speed * dt * speed_multiplier
+    
+    def get_current_sprite(self):
+        """Retourne le nom du sprite actuel selon l'animation"""
+        if not self.is_moving:
+            return "player"
+        
+        # Alterner entre les sprites de marche
+        cycle_time = self.animation_time % (self.animation_speed * 2)
+        if cycle_time < self.animation_speed:
+            return "player_walk1"
+        else:
+            return "player_walk2"
 
     def harvest_resource(self, world_map, mouse_pos, camera_x, camera_y, items, item_manager=None):
         """Récolte des ressources avec système de drop comme Surviv.io"""

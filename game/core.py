@@ -324,21 +324,23 @@ class Game:
                     # Ajouter des bordures pour mieux voir les tiles
                     pygame.draw.rect(self.screen, BLACK, (screen_x, screen_y, TILE_SIZE, TILE_SIZE), 1)
             
-            # Dessiner le joueur avec sprite
-            player_screen_x = self.player.x - self.camera.x
-            player_screen_y = self.player.y - self.camera.y
+            # Dessiner le joueur avec sprite animé (plus gros)
+            player_screen_x = self.player.x - self.camera.x - 8  # Décaler pour centrer le sprite 48x48
+            player_screen_y = self.player.y - self.camera.y - 8
             
-            # Essayer d'utiliser le sprite, sinon fallback sur cercle
-            if not self.sprite_manager.draw_entity(self.screen, "player", int(player_screen_x), int(player_screen_y)):
+            # Utiliser le sprite animé
+            current_sprite = self.player.get_current_sprite()
+            if not self.sprite_manager.draw_entity(self.screen, current_sprite, int(player_screen_x), int(player_screen_y)):
+                # Fallback sur cercle si sprite manquant
                 pygame.draw.circle(self.screen, BLUE, 
-                                 (int(player_screen_x + TILE_SIZE // 2), 
-                                  int(player_screen_y + TILE_SIZE // 2)), 
+                                 (int(self.player.x - self.camera.x + TILE_SIZE // 2), 
+                                  int(self.player.y - self.camera.y + TILE_SIZE // 2)), 
                                  TILE_SIZE // 3)
             
-            # Dessiner les ennemis avec sprites
+            # Dessiner les ennemis avec sprites plus gros
             for enemy in self.enemies:
-                enemy_screen_x = enemy.x - self.camera.x
-                enemy_screen_y = enemy.y - self.camera.y
+                enemy_screen_x = enemy.x - self.camera.x - 8  # Décaler pour centrer le sprite 48x48
+                enemy_screen_y = enemy.y - self.camera.y - 8
                 
                 # Ne dessiner que les ennemis visibles
                 if (-TILE_SIZE <= enemy_screen_x <= WINDOW_WIDTH and 
@@ -347,8 +349,8 @@ class Game:
                     # Essayer d'utiliser le sprite, sinon fallback sur cercle
                     if not self.sprite_manager.draw_entity(self.screen, "enemy", int(enemy_screen_x), int(enemy_screen_y)):
                         pygame.draw.circle(self.screen, RED,
-                                         (int(enemy_screen_x + TILE_SIZE // 2),
-                                          int(enemy_screen_y + TILE_SIZE // 2)),
+                                         (int(enemy.x - self.camera.x + TILE_SIZE // 2),
+                                          int(enemy.y - self.camera.y + TILE_SIZE // 2)),
                                          TILE_SIZE // 4)
             
             # Dessiner le HUD

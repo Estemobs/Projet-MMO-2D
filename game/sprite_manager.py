@@ -10,6 +10,7 @@ class SpriteManager:
         self.sprites = {}
         self.sprite_size = 32
         self.item_size = 24
+        self.entity_size = 48  # Nouvelle taille pour les entités
         self.load_all_sprites()
     
     def load_all_sprites(self):

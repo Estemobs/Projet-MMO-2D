@@ -15,12 +15,20 @@ class Enemy:
         self.last_attack_time = 0
         self.attack_cooldown = 1.0  # 1 seconde entre les attaques
         self.detection_range = 3  # tiles de portée de détection
+        
+        # Animation
+        self.is_moving = False
+        self.animation_time = 0
+        self.animation_speed = 0.5  # Plus lent que le joueur
     
     def move_towards_player(self, player_x, player_y, dt, world_map):
         # Calculer la direction vers le joueur
         dx = player_x - self.x
         dy = player_y - self.y
         distance = math.sqrt(dx**2 + dy**2)
+        
+        self.is_moving = True
+        self.animation_time += dt
         
         if distance > 0:
             # Normaliser la direction
