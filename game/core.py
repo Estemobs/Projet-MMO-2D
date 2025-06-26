@@ -18,6 +18,7 @@ from .player import Player
 from .enemy import Enemy
 from .world import WorldGenerator
 from .camera import Camera
+from .sprite_manager import get_sprite_manager
 from .hud import HUD
 from .factions import Faction
 from .building import Building
@@ -35,6 +36,9 @@ class Game:
         pygame.display.set_caption("MMO 2D - Jeu de survie")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 24)
+        
+        # Sprite manager
+        self.sprite_manager = get_sprite_manager()
         
         # Menu
         self.menu = Menu(self.screen, self.font)
@@ -320,16 +324,18 @@ class Game:
                     # Ajouter des bordures pour mieux voir les tiles
                     pygame.draw.rect(self.screen, BLACK, (screen_x, screen_y, TILE_SIZE, TILE_SIZE), 1)
             
-            # Dessiner le joueur
+            # Dessiner le joueur avec sprite
             player_screen_x = self.player.x - self.camera.x
             player_screen_y = self.player.y - self.camera.y
             
-            pygame.draw.circle(self.screen, BLUE, 
-                             (int(player_screen_x + TILE_SIZE // 2), 
-                              int(player_screen_y + TILE_SIZE // 2)), 
-                             TILE_SIZE // 3)
+            # Essayer d'utiliser le sprite, sinon fallback sur cercle
+            if not self.sprite_manager.draw_entity(self.screen, "player", int(player_screen_x), int(player_screen_y)):
+                pygame.draw.circle(self.screen, BLUE, 
+                                 (int(player_screen_x + TILE_SIZE // 2), 
+                                  int(player_screen_y + TILE_SIZE // 2)), 
+                                 TILE_SIZE // 3)
             
-            # Dessiner les ennemis
+            # Dessiner les ennemis avec sprites
             for enemy in self.enemies:
                 enemy_screen_x = enemy.x - self.camera.x
                 enemy_screen_y = enemy.y - self.camera.y
@@ -337,10 +343,13 @@ class Game:
                 # Ne dessiner que les ennemis visibles
                 if (-TILE_SIZE <= enemy_screen_x <= WINDOW_WIDTH and 
                     -TILE_SIZE <= enemy_screen_y <= WINDOW_HEIGHT):
-                    pygame.draw.circle(self.screen, RED,
-                                     (int(enemy_screen_x + TILE_SIZE // 2),
-                                      int(enemy_screen_y + TILE_SIZE // 2)),
-                                     TILE_SIZE // 4)
+                    
+                    # Essayer d'utiliser le sprite, sinon fallback sur cercle
+                    if not self.sprite_manager.draw_entity(self.screen, "enemy", int(enemy_screen_x), int(enemy_screen_y)):
+                        pygame.draw.circle(self.screen, RED,
+                                         (int(enemy_screen_x + TILE_SIZE // 2),
+                                          int(enemy_screen_y + TILE_SIZE // 2)),
+                                         TILE_SIZE // 4)
             
             # Dessiner le HUD
             self.hud.draw(self.screen, self.player, self)
