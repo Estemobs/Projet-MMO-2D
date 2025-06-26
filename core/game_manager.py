@@ -127,7 +127,7 @@ class GameManager:
 
     def save_game(self, slot_number=0):
         """Sauvegarde la partie"""
-        if self.state != "playing":
+        if self.player is None:
             return False
             
         return self.save_system.save_game(
@@ -203,6 +203,13 @@ class GameManager:
                 print(f"✅ Partie chargée depuis le slot {slot_number}")
             else:
                 print(f"❌ Impossible de charger le slot {slot_number}")
+        elif action and action.startswith("save_slot_"):
+            slot_number = int(action.split("_")[-1])
+            if self.save_game(slot_number):
+                print(f"✅ Partie sauvegardée dans le slot {slot_number}")
+                self.menu.refresh_save_slots()  # Actualiser l'affichage
+            else:
+                print(f"❌ Impossible de sauvegarder dans le slot {slot_number}")
 
     def _handle_game_events(self, event):
         """Gère les événements en jeu"""

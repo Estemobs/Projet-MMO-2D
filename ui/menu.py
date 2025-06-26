@@ -188,7 +188,7 @@ class Menu:
         import datetime
         
         for i in range(3):
-            save_file = f"save_slot_{i+1}.json"
+            save_file = os.path.join("saves", f"save_slot_{i}.json")
             if os.path.exists(save_file):
                 try:
                     with open(save_file, "r") as f:
@@ -398,9 +398,9 @@ class Menu:
                     if menu_type == "load":
                         if (self.save_slots[self.selected_save_slot] and 
                             self.save_slots[self.selected_save_slot]["exists"]):
-                            return f"load_slot_{self.selected_save_slot + 1}"
+                            return f"load_slot_{self.selected_save_slot}"
                     else:  # save
-                        return f"save_slot_{self.selected_save_slot + 1}"
+                        return f"save_slot_{self.selected_save_slot}"
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
@@ -419,9 +419,9 @@ class Menu:
                     self.selected_save_slot = i
                     if menu_type == "load":
                         if (self.save_slots[i] and self.save_slots[i]["exists"]):
-                            return f"load_slot_{i + 1}"
+                            return f"load_slot_{i}"
                     else:  # save
-                        return f"save_slot_{i + 1}"
+                        return f"save_slot_{i}"
             
             # Vérifier le clic sur le bouton retour
             button_y = start_y + 3 * spacing + 20
@@ -459,6 +459,6 @@ class Menu:
     
     def get_save_slot_info(self, slot_number):
         """Retourne les informations d'un slot de sauvegarde"""
-        if 1 <= slot_number <= 3:
-            return self.save_slots[slot_number - 1]
+        if 0 <= slot_number <= 2:
+            return self.save_slots[slot_number]
         return None
