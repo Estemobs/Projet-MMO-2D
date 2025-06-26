@@ -7,7 +7,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
-from inventory import Inventory
+from ui.inventory import Inventory
 from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE
 from .tiletype import TileType
 
@@ -116,3 +116,25 @@ class Player:
             self.hunger = min(self.max_hunger, self.hunger + heal_amount // 2)
             return True
         return False
+
+    def update(self, keys, dt):
+        """Met à jour l'état du joueur"""
+        # Diminuer la faim au fil du temps
+        self.hunger = max(0, self.hunger - 5 * dt)
+        
+        # Si le joueur a faim, perdre de la santé
+        if self.hunger <= 0:
+            self.health = max(0, self.health - 10 * dt)
+        
+        # Régénération naturelle si le joueur n'a pas faim
+        elif self.hunger > 50 and self.health < self.max_health:
+            self.health = min(self.max_health, self.health + 2 * dt)
+
+    def handle_mouse_click(self, mouse_pos, world_map, camera_x, camera_y, items):
+        """Gère les clics de souris du joueur"""
+        if self.build_mode:
+            # Mode construction
+            return self.build_structure(world_map, mouse_pos, camera_x, camera_y)
+        else:
+            # Mode récolte
+            self.harvest_resource(world_map, mouse_pos, camera_x, camera_y, items)

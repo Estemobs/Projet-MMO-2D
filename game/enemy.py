@@ -46,3 +46,22 @@ class Enemy:
             self.last_attack_time = current_time
             return True
         return False
+
+    def update(self, player, world_map, dt):
+        """Met à jour l'état de l'ennemi"""
+        import time
+        current_time = time.time()
+        
+        # Calculer la distance au joueur
+        dx = player.x - self.x
+        dy = player.y - self.y
+        distance = math.sqrt(dx**2 + dy**2)
+        
+        # Si le joueur est dans la portée de détection
+        if distance <= self.detection_range * TILE_SIZE:
+            # Si assez proche pour attaquer (1 tile)
+            if distance <= TILE_SIZE:
+                self.attack_player(player, current_time)
+            else:
+                # Se déplacer vers le joueur
+                self.move_towards_player(player.x, player.y, dt, world_map)

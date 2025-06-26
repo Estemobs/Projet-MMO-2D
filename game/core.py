@@ -10,8 +10,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
-from inventory import Item, ItemStack, Inventory, CraftingRecipe, InventoryUI
-from menu import Menu
+from ui.inventory import Item, ItemStack, Inventory, CraftingRecipe, InventoryUI
+from ui.menu import Menu
 from .constants import *
 from .tiletype import TileType
 from .player import Player

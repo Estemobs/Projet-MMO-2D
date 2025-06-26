@@ -13,3 +13,7 @@ class Camera:
         # Limiter la caméra aux bordures de la carte
         self.x = max(0, min(self.x, MAP_WIDTH * TILE_SIZE - WINDOW_WIDTH))
         self.y = max(0, min(self.y, MAP_HEIGHT * TILE_SIZE - WINDOW_HEIGHT))
+
+    def follow_player(self, player):
+        """Fait suivre la caméra au joueur"""
+        self.update(player.x, player.y)
