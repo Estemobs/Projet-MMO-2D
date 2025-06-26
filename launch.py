@@ -178,15 +178,14 @@ def launch_game():
     """Lance le jeu principal"""
     print_header("🚀 LANCEMENT DU JEU")
     
-    game = None
     try:
         print_colored("📥 Importation des modules...", Colors.BLUE)
-        from game.core import Game
+        from core import GameManager
         
         print_colored("✅ Modules chargés avec succès", Colors.GREEN)
         print_colored("🎯 Initialisation du jeu...", Colors.BLUE)
         
-        game = Game()
+        game_manager = GameManager()
         print_colored("✅ Jeu initialisé", Colors.GREEN)
         
         show_controls()
@@ -194,7 +193,7 @@ def launch_game():
         print_colored("\n🎯 Que la partie commence !", Colors.BOLD + Colors.GREEN)
         print_colored("=" * 40, Colors.GREEN)
         
-        game.run()
+        game_manager.run()
         
     except ImportError as e:
         print_colored(f"❌ Erreur d'importation: {e}", Colors.RED)
@@ -204,10 +203,6 @@ def launch_game():
     except Exception as e:
         print_colored(f"❌ Erreur lors du lancement: {e}", Colors.RED)
         print_colored(f"💡 Détails de l'erreur: {type(e).__name__}", Colors.YELLOW)
-        if game is not None:
-            print_colored("🔧 Le jeu était initialisé, problème lors de l'exécution", Colors.YELLOW)
-        else:
-            print_colored("🔧 Le jeu n'a pas pu être initialisé", Colors.YELLOW)
         return False
     
     return True

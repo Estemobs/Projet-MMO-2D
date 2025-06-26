@@ -1,0 +1,351 @@
+"""
+Gestionnaire principal du jeu MMO 2D
+"""
+
+import pygame
+import random
+import math
+import time
+import os
+import sys
+
+# Ajouter le répertoire parent au path pour les imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+
+from ui.inventory import InventoryUI
+from ui.menu import Menu
+from game.constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, ENEMY_COUNT, COLORS, TARGET_FPS
+from game.tiletype import TileType
+from game.player import Player
+from game.enemy import Enemy
+from game.world import WorldGenerator
+from game.camera import Camera
+from game.hud import HUD
+from core.items import create_items, create_recipes
+from systems.save_system import SaveSystem
+
+# Initialisation de Pygame
+pygame.init()
+
+class GameManager:
+    """Gestionnaire principal du jeu"""
+    
+    def __init__(self):
+        # État du jeu
+        self.state = "menu"  # "menu", "playing", "paused"
+        
+        # Initialisation basique
+        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        pygame.display.set_caption("MMO 2D - Jeu de survie")
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.Font(None, 24)
+        
+        # Système de contenu
+        self.items = create_items()
+        self.recipes = create_recipes(self.items)
+        
+        # Interfaces
+        self.menu = Menu(self.screen, self.font)
+        self.inventory_ui = InventoryUI(self.screen, self.font)
+        
+        # Composants du jeu (initialisés quand on commence une partie)
+        self.world_map = None
+        self.player = None
+        self.camera = None
+        self.hud = None
+        self.enemies = []
+        
+        # Système de temps
+        self.game_start_time = None
+        self.total_playtime = 0
+        
+        # Système de sauvegarde
+        self.save_system = SaveSystem()
+        
+        self.running = True
+
+    def init_game(self):
+        """Initialise une nouvelle partie"""
+        self.world_map = WorldGenerator.generate_map()
+        self.player = Player(MAP_WIDTH * TILE_SIZE // 2, MAP_HEIGHT * TILE_SIZE // 2)
+        self.camera = Camera()
+        self.hud = HUD(self.font)
+        
+        # Initialiser le temps de jeu
+        self.game_start_time = time.time()
+        self.total_playtime = 0
+        
+        # Générer quelques ennemis
+        self._spawn_enemies()
+        
+        # Donner quelques items de départ au joueur
+        self._give_starting_items()
+        
+        self.state = "playing"
+
+    def _spawn_enemies(self):
+        """Génère les ennemis dans le monde"""
+        self.enemies = []
+        for _ in range(ENEMY_COUNT):
+            while True:
+                enemy_x = random.randint(0, MAP_WIDTH - 1) * TILE_SIZE
+                enemy_y = random.randint(0, MAP_HEIGHT - 1) * TILE_SIZE
+                
+                tile_x = int(enemy_x // TILE_SIZE)
+                tile_y = int(enemy_y // TILE_SIZE)
+                distance_from_player = math.sqrt((enemy_x - self.player.x)**2 + (enemy_y - self.player.y)**2)
+                
+                if (self.world_map[tile_y][tile_x] == TileType.GRASS and 
+                    distance_from_player > 200):
+                    self.enemies.append(Enemy(enemy_x, enemy_y))
+                    break
+
+    def _give_starting_items(self):
+        """Donne les items de départ au joueur"""
+        self.player.inventory.add_item(self.items["wood"], 10)
+        self.player.inventory.add_item(self.items["stone"], 5)
+        self.player.inventory.add_item(self.items["apple"], 3)
+
+    def get_tile_color(self, tile_type):
+        """Retourne la couleur d'un type de tile"""
+        color_map = {
+            TileType.GRASS: COLORS["GREEN"],
+            TileType.TREE: COLORS["BROWN"],
+            TileType.STONE: COLORS["GRAY"],
+            TileType.IRON_ORE: COLORS["DARK_GRAY"],
+            TileType.WALL: (255, 165, 0),  # Orange
+            TileType.FOUNDATION: (255, 255, 0),  # Jaune
+            TileType.GOLD_ORE: (255, 215, 0),  # Or
+            TileType.DIAMOND_ORE: (185, 242, 255),  # Diamant
+            TileType.COAL_ORE: (36, 36, 36),  # Charbon
+            TileType.APPLE_TREE: (34, 139, 34),  # Vert pomme
+            TileType.BERRY_BUSH: (128, 0, 128)  # Violet baies
+        }
+        return color_map.get(tile_type, COLORS["BLACK"])
+
+    def save_game(self, slot_number=0):
+        """Sauvegarde la partie"""
+        if self.state != "playing":
+            return False
+            
+        return self.save_system.save_game(
+            slot_number, 
+            self.player, 
+            self.world_map, 
+            self.enemies, 
+            self.total_playtime
+        )
+
+    def load_game(self, slot_number=0):
+        """Charge une partie"""
+        game_data = self.save_system.load_game(slot_number)
+        
+        if not game_data:
+            return False
+            
+        # Restaurer l'état du jeu
+        self.world_map = game_data["world_map"]
+        self.player = Player(game_data["player"]["x"], game_data["player"]["y"])
+        self.player.health = game_data["player"]["health"]
+        self.player.inventory = game_data["player"]["inventory"]
+        self.total_playtime = game_data["playtime"]
+        
+        # Réinitialiser les composants
+        self.camera = Camera()
+        self.hud = HUD(self.font)
+        
+        # Restaurer les ennemis
+        self.enemies = []
+        for enemy_data in game_data["enemies"]:
+            enemy = Enemy(enemy_data["x"], enemy_data["y"])
+            enemy.health = enemy_data["health"]
+            self.enemies.append(enemy)
+        
+        self.game_start_time = time.time()
+        self.state = "playing"
+        return True
+
+    def handle_events(self):
+        """Gère tous les événements du jeu"""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            
+            if self.state == "menu":
+                self._handle_menu_events(event)
+            elif self.state == "playing":
+                self._handle_game_events(event)
+
+    def _handle_menu_events(self, event):
+        """Gère les événements du menu"""
+        action = self.menu.handle_event(event)
+        if action == "new_game":
+            self.init_game()
+        elif action == "load_menu":
+            self.menu.current_menu = "load_menu"
+            self.menu.selected_save_slot = 0
+            self.menu.refresh_save_slots()
+        elif action == "save_menu":
+            if self.state == "playing":
+                self.menu.current_menu = "save_menu"
+                self.menu.selected_save_slot = 0
+                self.menu.refresh_save_slots()
+        elif action == "options":
+            self.menu.current_menu = "options"
+            self.menu.selected_button = 0
+        elif action == "quit":
+            self.running = False
+        elif action and action.startswith("load_slot_"):
+            slot_number = int(action.split("_")[-1])
+            if self.load_game(slot_number):
+                print(f"✅ Partie chargée depuis le slot {slot_number}")
+            else:
+                print(f"❌ Impossible de charger le slot {slot_number}")
+
+    def _handle_game_events(self, event):
+        """Gère les événements en jeu"""
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.state = "menu"
+                self.menu.current_menu = "main"
+                self.menu.selected_button = 0
+            elif event.key == pygame.K_F5:
+                if self.save_game():
+                    print("✅ Partie sauvegardée!")
+                else:
+                    print("❌ Erreur lors de la sauvegarde")
+            elif event.key == pygame.K_i:
+                self.inventory_ui.toggle()
+        
+        # Passer les événements aux composants du jeu
+        if hasattr(self.player, 'handle_event'):
+            self.player.handle_event(event)
+        
+        if self.inventory_ui.visible:
+            self.inventory_ui.handle_event(event, self.player.inventory, self.recipes)
+
+    def update(self, dt):
+        """Met à jour l'état du jeu"""
+        if self.state == "playing":
+            # Mettre à jour le joueur
+            keys = pygame.key.get_pressed()
+            mouse_buttons = pygame.mouse.get_pressed()
+            mouse_pos = pygame.mouse.get_pos()
+            
+            # Mise à jour du joueur
+            self.player.update(keys, dt)
+            
+            # Gestion des clics de souris
+            if mouse_buttons[0]:  # Clic gauche
+                self.player.handle_mouse_click(mouse_pos, self.world_map, 
+                                             self.camera.x, self.camera.y, self.items)
+            
+            # Mise à jour des ennemis
+            for enemy in self.enemies:
+                enemy.update(self.player, self.world_map, dt)
+            
+            # Mise à jour de la caméra
+            self.camera.follow_player(self.player)
+
+    def draw(self):
+        """Dessine tout le contenu du jeu"""
+        self.screen.fill(COLORS["BLACK"])
+        
+        if self.state == "menu":
+            self.menu.draw()
+        elif self.state == "playing":
+            self._draw_game()
+        
+        pygame.display.flip()
+
+    def _draw_game(self):
+        """Dessine le contenu du jeu"""
+        # Calculer les tiles visibles
+        start_x = max(0, int(self.camera.x // TILE_SIZE))
+        end_x = min(MAP_WIDTH, int((self.camera.x + WINDOW_WIDTH) // TILE_SIZE) + 1)
+        start_y = max(0, int(self.camera.y // TILE_SIZE))
+        end_y = min(MAP_HEIGHT, int((self.camera.y + WINDOW_HEIGHT) // TILE_SIZE) + 1)
+        
+        # Dessiner les tiles visibles
+        for y in range(start_y, end_y):
+            for x in range(start_x, end_x):
+                tile_type = self.world_map[y][x]
+                color = self.get_tile_color(tile_type)
+                
+                screen_x = x * TILE_SIZE - self.camera.x
+                screen_y = y * TILE_SIZE - self.camera.y
+                
+                pygame.draw.rect(self.screen, color, (screen_x, screen_y, TILE_SIZE, TILE_SIZE))
+                pygame.draw.rect(self.screen, COLORS["BLACK"], (screen_x, screen_y, TILE_SIZE, TILE_SIZE), 1)
+        
+        # Dessiner le joueur
+        player_screen_x = self.player.x - self.camera.x
+        player_screen_y = self.player.y - self.camera.y
+        
+        pygame.draw.circle(self.screen, COLORS["BLUE"], 
+                         (int(player_screen_x + TILE_SIZE // 2), 
+                          int(player_screen_y + TILE_SIZE // 2)), 
+                         TILE_SIZE // 3)
+        
+        # Dessiner les ennemis
+        for enemy in self.enemies:
+            enemy_screen_x = enemy.x - self.camera.x
+            enemy_screen_y = enemy.y - self.camera.y
+            
+            if (-TILE_SIZE <= enemy_screen_x <= WINDOW_WIDTH and 
+                -TILE_SIZE <= enemy_screen_y <= WINDOW_HEIGHT):
+                pygame.draw.circle(self.screen, COLORS["RED"],
+                                 (int(enemy_screen_x + TILE_SIZE // 2),
+                                  int(enemy_screen_y + TILE_SIZE // 2)),
+                                 TILE_SIZE // 4)
+        
+        # Dessiner le HUD
+        self.hud.draw(self.screen, self.player, self)
+        
+        # Dessiner l'interface d'inventaire
+        self.inventory_ui.draw(self.player.inventory, self.recipes)
+        
+        # Instructions
+        if not self.inventory_ui.visible:
+            self._draw_instructions()
+
+    def _draw_instructions(self):
+        """Dessine les instructions à l'écran"""
+        instructions = [
+            "WASD ou flèches: Se déplacer",
+            "Clic gauche: Récolter les ressources ou construire", 
+            "B: Activer/désactiver le mode construction",
+            "1: Sélectionner fondation, 2: Sélectionner mur",
+            "I: Ouvrir inventaire, H: Manger nourriture",
+            "F5: Sauvegarder, Échap: Menu principal"
+        ]
+        
+        for i, instruction in enumerate(instructions):
+            text = self.font.render(instruction, True, COLORS["WHITE"])
+            self.screen.blit(text, (10, WINDOW_HEIGHT - 120 + i * 20))
+
+    def run(self):
+        """Boucle principale du jeu"""
+        while self.running:
+            dt = self.clock.tick(TARGET_FPS) / 1000.0  # Delta time en secondes
+            
+            self.handle_events()
+            self.update(dt)
+            self.draw()
+        
+        pygame.quit()
+
+    def get_playtime(self):
+        """Retourne le temps de jeu actuel"""
+        if self.game_start_time and self.state == "playing":
+            current_session = time.time() - self.game_start_time
+            total_time = self.total_playtime + current_session
+        else:
+            total_time = self.total_playtime
+        
+        hours = int(total_time // 3600)
+        minutes = int((total_time % 3600) // 60)
+        seconds = int(total_time % 60)
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
