@@ -26,25 +26,39 @@ class RenderManager:
             TileType.BERRY_BUSH: (128, 0, 128),
             TileType.FOUNDATION: (160, 160, 160),
             TileType.WALL: COLORS["BROWN"],
+            TileType.DIRT: (139, 117, 78),  # Couleur terre
+            TileType.WATER: (64, 164, 223),  # Couleur eau
         }
         return tile_colors.get(tile_type, COLORS["GREEN"])
     
     def get_tile_sprite_name(self, tile_type):
-        """Retourne le nom du sprite pour une tile"""
-        tile_names = {
-            TileType.GRASS: "grass",
-            TileType.TREE: "tree",
-            TileType.STONE: "stone",
-            TileType.IRON_ORE: "iron_ore",
-            TileType.GOLD_ORE: "gold_ore",
-            TileType.DIAMOND_ORE: "diamond_ore",
-            TileType.COAL_ORE: "coal_ore",
-            TileType.APPLE_TREE: "apple_tree",
-            TileType.BERRY_BUSH: "berry_bush",
-            TileType.FOUNDATION: "foundation",
-            TileType.WALL: "wall",
-        }
-        return tile_names.get(tile_type, "grass")
+        """Retourne le nom du sprite pour une tile avec variantes naturelles"""
+        import random
+        
+        # Pour les types avec variantes, choisir aléatoirement
+        if tile_type == TileType.GRASS:
+            return f"grass_{random.randint(1, 4)}"
+        elif tile_type == TileType.DIRT:
+            return f"dirt_{random.randint(1, 3)}"
+        elif tile_type == TileType.WATER:
+            return f"water_{random.randint(1, 3)}"
+        elif tile_type == TileType.TREE:
+            return random.choice(["tree_oak", "tree_birch", "tree_pine"])
+        elif tile_type == TileType.STONE:
+            return f"stones_{random.randint(1, 3)}"
+        else:
+            # Types de base
+            tile_names = {
+                TileType.IRON_ORE: "iron_ore",
+                TileType.GOLD_ORE: "gold_ore",
+                TileType.DIAMOND_ORE: "diamond_ore",
+                TileType.COAL_ORE: "coal_ore",
+                TileType.APPLE_TREE: "apple_tree",
+                TileType.BERRY_BUSH: "berry_bush",
+                TileType.FOUNDATION: "foundation",
+                TileType.WALL: "wall",
+            }
+            return tile_names.get(tile_type, "grass_1")
     
     def draw_world(self, world_map, camera):
         """Dessine le monde avec sprites ou couleurs"""

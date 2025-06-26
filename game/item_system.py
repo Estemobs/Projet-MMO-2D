@@ -15,17 +15,17 @@ class DroppedItem:
         self.item = item
         self.quantity = quantity
         
-        # Physique de dispersion
+        # Physique de dispersion (plus forte pour ressembler à Surviv.io)
         angle = random.uniform(0, 2 * math.pi)
-        speed = random.uniform(80, 150)  # Vitesse initiale
+        speed = random.uniform(150, 300)  # Vitesse beaucoup plus élevée
         self.velocity_x = math.cos(angle) * speed
         self.velocity_y = math.sin(angle) * speed
         
         # Propriétés physiques
-        self.friction = 0.92  # Friction pour ralentir
-        self.bounce_factor = 0.6  # Facteur de rebond
+        self.friction = 0.85  # Friction plus faible pour aller plus loin
+        self.bounce_factor = 0.8  # Rebond plus énergique
         self.lifetime = 300.0  # 5 minutes avant disparition
-        self.pickup_radius = 24  # Rayon pour pickup
+        self.pickup_radius = 32  # Rayon plus grand pour pickup
         
         # Animation
         self.spawn_time = time.time()

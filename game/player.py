@@ -92,10 +92,15 @@ class Player:
                 elif tile_type == TileType.BERRY_BUSH:
                     drops.append((items["berry"], random.randint(3, 6)))
                 
-                # Dropper les items avec le nouveau système
+                # Dropper les items avec le nouveau système (style Surviv.io)
                 if drops and item_manager:
+                    # Disperser chaque item individuellement pour plus d'effet
                     for item, quantity in drops:
-                        item_manager.drop_item(drop_x, drop_y, item, quantity)
+                        for _ in range(quantity):
+                            # Varier légèrement la position de drop
+                            offset_x = random.randint(-16, 16)
+                            offset_y = random.randint(-16, 16)
+                            item_manager.drop_item(drop_x + offset_x, drop_y + offset_y, item, 1)
                     
                     world_map[tile_y][tile_x] = TileType.GRASS
                     return True

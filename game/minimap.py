@@ -95,8 +95,8 @@ class MiniMap:
     def update_position(self, screen_width, screen_height):
         """Met à jour la position de la minimap selon la taille d'écran"""
         self.screen_width = screen_width
-        self.x = screen_width - self.width  # Complètement collé à droite
-        self.y = 0
+        self.x = screen_width - self.width - 10  # Petite marge à droite
+        self.y = 10  # Petite marge en haut
     
     def draw(self, screen, player, enemies=None, camera=None, death_markers=None):
         """Dessine la minimap"""

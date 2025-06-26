@@ -1,33 +1,15 @@
 from .tiletype import TileType
 from .constants import MAP_WIDTH, MAP_HEIGHT
+from .natural_world import NaturalWorldGenerator
 import random
 import math
 
 class WorldGenerator:
     @staticmethod
     def generate_map():
-        # Créer une carte remplie d'herbe
-        world_map = [[TileType.GRASS for _ in range(MAP_WIDTH)] for _ in range(MAP_HEIGHT)]
-        
-        # Génération par clusters plus organique (comme Surviv.io)
-        
-        # Forêts en clusters (5% au lieu de 15%)
-        WorldGenerator._generate_clusters(world_map, TileType.TREE, 8, 3, 7)
-        
-        # Zones rocheuses en clusters (3% au lieu de 8%)
-        WorldGenerator._generate_clusters(world_map, TileType.STONE, 5, 2, 5)
-        
-        # Minerais en petits clusters
-        WorldGenerator._generate_clusters(world_map, TileType.IRON_ORE, 3, 1, 3)
-        WorldGenerator._generate_clusters(world_map, TileType.GOLD_ORE, 2, 1, 2)
-        WorldGenerator._generate_clusters(world_map, TileType.DIAMOND_ORE, 1, 1, 2)
-        WorldGenerator._generate_clusters(world_map, TileType.COAL_ORE, 2, 1, 3)
-        
-        # Arbres fruitiers dispersés
-        WorldGenerator._generate_scattered(world_map, TileType.APPLE_TREE, 15)
-        WorldGenerator._generate_scattered(world_map, TileType.BERRY_BUSH, 10)
-        
-        return world_map
+        """Génère une carte naturelle style Stardew Valley/Pokémon"""
+        print("🌍 Génération d'un monde naturel...")
+        return NaturalWorldGenerator.generate_natural_map()
     
     @staticmethod
     def _generate_clusters(world_map, tile_type, num_clusters, min_size, max_size):
