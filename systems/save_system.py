@@ -117,18 +117,58 @@ class SaveSystem:
     
     def _serialize_inventory(self, inventory):
         """Sérialise un inventaire"""
-        # Implémentation simplifiée - à adapter selon votre classe Inventory
-        return {"slots": [], "equipment": {}}
+        serialized_slots = []
+        for slot in inventory.slots:
+            if slot:
+                serialized_slots.append({
+                    "item_name": slot.item.name,
+                    "quantity": slot.quantity
+                })
+            else:
+                serialized_slots.append(None)
+        
+        serialized_equipment = {}
+        for slot_name, equipment in inventory.equipment.items():
+            if equipment:
+                serialized_equipment[slot_name] = {
+                    "item_name": equipment.item.name,
+                    "quantity": equipment.quantity
+                }
+            else:
+                serialized_equipment[slot_name] = None
+        
+        return {
+            "slots": serialized_slots,
+            "equipment": serialized_equipment
+        }
     
     def _deserialize_inventory(self, inventory_data):
         """Désérialise un inventaire"""
-        # Implémentation simplifiée - à adapter selon votre classe Inventory
-        from ui.inventory import Inventory
-        return Inventory()
+        from ui.inventory import Inventory, ItemStack
+        from core.items import ItemDatabase
+        
+        inventory = Inventory()
+        item_db = ItemDatabase()
+        
+        # Restaurer les slots
+        for i, slot_data in enumerate(inventory_data.get("slots", [])):
+            if slot_data and i < len(inventory.slots):
+                item = item_db.get_item(slot_data["item_name"])
+                if item:
+                    inventory.slots[i] = ItemStack(item, slot_data["quantity"])
+        
+        # Restaurer l'équipement
+        for slot_name, equipment_data in inventory_data.get("equipment", {}).items():
+            if equipment_data and slot_name in inventory.equipment:
+                item = item_db.get_item(equipment_data["item_name"])
+                if item:
+                    inventory.equipment[slot_name] = ItemStack(item, equipment_data["quantity"])
+        
+        return inventory
     
     def _serialize_world_map(self, world_map):
         """Sérialise la carte du monde"""
-        return [[int(tile) for tile in row] for row in world_map]
+        return [[tile.value if hasattr(tile, 'value') else int(tile) for tile in row] for row in world_map]
     
     def _deserialize_world_map(self, world_map_data):
         """Désérialise la carte du monde"""

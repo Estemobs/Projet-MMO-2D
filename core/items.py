@@ -5,6 +5,32 @@ Système d'items et de crafting pour le jeu MMO 2D
 from ui.inventory import Item, CraftingRecipe
 from game.constants import COLORS
 
+class ItemDatabase:
+    """Base de données des items du jeu"""
+    
+    def __init__(self):
+        self.items = create_items()
+        self.recipes = create_recipes(self.items)
+    
+    def get_item(self, name):
+        """Récupère un item par son nom"""
+        return self.items.get(name)
+    
+    def get_recipe(self, item_name):
+        """Récupère une recette par le nom de l'item produit"""
+        for recipe in self.recipes:
+            if recipe.output.name == item_name:
+                return recipe
+        return None
+    
+    def get_all_items(self):
+        """Retourne tous les items"""
+        return self.items
+    
+    def get_all_recipes(self):
+        """Retourne toutes les recettes"""
+        return self.recipes
+
 def create_items():
     """Crée tous les items du jeu"""
     items = {
