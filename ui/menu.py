@@ -349,12 +349,26 @@ class Menu:
                 health_surf = self.small_font.render(f"Santé: {save_info['player_health']}/100", True, self.GREEN)
                 self.screen.blit(health_surf, (x + 400, y + 40))
                 
+                # Actions
                 if menu_type == "load":
-                    action_text = "Appuyez sur Entrée pour charger"
+                    action_text = "Entrée: Charger"
+                    action_surf = self.small_font.render(action_text, True, self.YELLOW)
+                    self.screen.blit(action_surf, (x + 400, y + 65))
+                    
+                    delete_text = "Suppr: Effacer"
+                    delete_surf = self.small_font.render(delete_text, True, self.RED)
+                    self.screen.blit(delete_surf, (x + 400, y + 85))
                 else:
-                    action_text = "Appuyez sur Entrée pour écraser"
-                action_surf = self.small_font.render(action_text, True, self.YELLOW)
-                self.screen.blit(action_surf, (x + 400, y + 80))
+                    action_text = "Entrée: Écraser"
+                    action_surf = self.small_font.render(action_text, True, self.YELLOW)
+                    self.screen.blit(action_surf, (x + 400, y + 80))
+                
+                # Bouton de suppression (seulement en mode load)
+                if menu_type == "load":
+                    delete_button_x = x + slot_width - 100
+                    delete_button_y = y + 10
+                    delete_selected = selected and hasattr(self, 'delete_mode') and self.delete_mode
+                    self.draw_button("Supprimer", delete_button_x, delete_button_y, 80, 30, delete_selected)
                 
             else:
                 # Slot vide
@@ -362,7 +376,7 @@ class Menu:
                 self.screen.blit(empty_text, (x + 20, y + 50))
                 
                 if menu_type == "save":
-                    create_text = self.small_font.render("Appuyez sur Entrée pour créer une nouvelle sauvegarde", True, self.YELLOW)
+                    create_text = self.small_font.render("Entrée: Créer nouvelle sauvegarde", True, self.YELLOW)
                     self.screen.blit(create_text, (x + 200, y + 80))
                 elif menu_type == "load":
                     unavailable_text = self.small_font.render("Aucune sauvegarde disponible", True, self.RED)
@@ -374,7 +388,10 @@ class Menu:
                         self.selected_save_slot == 3)
         
         # Instructions de navigation
-        nav_text = "Haut/Bas: Naviguer • Entrée: Sélectionner • Échap: Retour"
+        if menu_type == "load":
+            nav_text = "↑↓: Naviguer • Entrée: Charger • Suppr: Effacer • Échap: Retour"
+        else:
+            nav_text = "↑↓: Naviguer • Entrée: Sauvegarder • Échap: Retour"
         nav_surf = self.small_font.render(nav_text, True, self.GRAY)
         nav_rect = nav_surf.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - 30))
         self.screen.blit(nav_surf, nav_rect)
@@ -544,6 +561,12 @@ class Menu:
                 self.selected_save_slot = max(0, self.selected_save_slot - 1)
             elif event.key == pygame.K_DOWN:
                 self.selected_save_slot = min(3, self.selected_save_slot + 1)
+            elif event.key == pygame.K_DELETE and menu_type == "load":
+                # Supprimer une sauvegarde
+                if (self.selected_save_slot < 3 and 
+                    self.save_slots[self.selected_save_slot] and 
+                    self.save_slots[self.selected_save_slot]["exists"]):
+                    return f"delete_slot_{self.selected_save_slot}"
             elif event.key == pygame.K_RETURN:
                 if self.selected_save_slot == 3:  # Bouton retour
                     self.current_menu = "main"
@@ -572,6 +595,17 @@ class Menu:
                 
                 if slot_rect.collidepoint(mouse_pos):
                     self.selected_save_slot = i
+                    
+                    # Vérifier si c'est un clic sur le bouton supprimer
+                    if menu_type == "load" and self.save_slots[i] and self.save_slots[i]["exists"]:
+                        delete_button_x = x + slot_width - 100
+                        delete_button_y = y + 10
+                        delete_rect = pygame.Rect(delete_button_x, delete_button_y, 80, 30)
+                        
+                        if delete_rect.collidepoint(mouse_pos):
+                            return f"delete_slot_{i}"
+                    
+                    # Sinon, charger/sauvegarder normalement
                     if menu_type == "load":
                         if (self.save_slots[i] and self.save_slots[i]["exists"]):
                             return f"load_slot_{i}"
@@ -586,6 +620,23 @@ class Menu:
                 self.selected_save_slot = 0
         
         return None
+    
+    def delete_save_slot(self, slot_number):
+        """Supprime une sauvegarde"""
+        import os
+        try:
+            save_file = os.path.join("saves", f"save_slot_{slot_number}.json")
+            if os.path.exists(save_file):
+                os.remove(save_file)
+                self.save_slots[slot_number] = None
+                print(f"✅ Sauvegarde du slot {slot_number + 1} supprimée")
+                return True
+            else:
+                print(f"❌ Aucune sauvegarde trouvée dans le slot {slot_number + 1}")
+                return False
+        except Exception as e:
+            print(f"❌ Erreur lors de la suppression : {e}")
+            return False
     
     def draw(self):
         """Dessine le menu actuel"""

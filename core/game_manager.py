@@ -242,6 +242,10 @@ class GameManager:
                 self.save_message_timer = 3.0  # Afficher pendant 3 secondes
             else:
                 print(f"❌ Impossible de sauvegarder dans le slot {slot_number}")
+        elif action and action.startswith("delete_slot_"):
+            slot_number = int(action.split("_")[-1])
+            if self.menu.delete_save_slot(slot_number):
+                self.menu.refresh_save_slots()  # Actualiser l'affichage
 
     def _handle_game_events(self, event):
         """Gère les événements en jeu"""
@@ -324,11 +328,15 @@ class GameManager:
 
     def _draw_game(self):
         """Dessine le contenu du jeu"""
+        # Utiliser la taille actuelle de l'écran
+        screen_width = self.screen.get_width()
+        screen_height = self.screen.get_height()
+        
         # Calculer les tiles visibles
         start_x = max(0, int(self.camera.x // TILE_SIZE))
-        end_x = min(MAP_WIDTH, int((self.camera.x + WINDOW_WIDTH) // TILE_SIZE) + 1)
+        end_x = min(MAP_WIDTH, int((self.camera.x + screen_width) // TILE_SIZE) + 1)
         start_y = max(0, int(self.camera.y // TILE_SIZE))
-        end_y = min(MAP_HEIGHT, int((self.camera.y + WINDOW_HEIGHT) // TILE_SIZE) + 1)
+        end_y = min(MAP_HEIGHT, int((self.camera.y + screen_height) // TILE_SIZE) + 1)
         
         # Dessiner les tiles visibles
         for y in range(start_y, end_y):
@@ -356,8 +364,8 @@ class GameManager:
             enemy_screen_x = enemy.x - self.camera.x
             enemy_screen_y = enemy.y - self.camera.y
             
-            if (-TILE_SIZE <= enemy_screen_x <= WINDOW_WIDTH and 
-                -TILE_SIZE <= enemy_screen_y <= WINDOW_HEIGHT):
+            if (-TILE_SIZE <= enemy_screen_x <= screen_width and 
+                -TILE_SIZE <= enemy_screen_y <= screen_height):
                 pygame.draw.circle(self.screen, COLORS["RED"],
                                  (int(enemy_screen_x + TILE_SIZE // 2),
                                   int(enemy_screen_y + TILE_SIZE // 2)),
