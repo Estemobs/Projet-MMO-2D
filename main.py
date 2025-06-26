@@ -5,6 +5,8 @@ from enum import Enum
 import math
 import json
 import os
+import time
+from datetime import datetime
 from menu import Menu
 from inventory import Item, ItemStack, Inventory, CraftingRecipe, InventoryUI
 
@@ -259,7 +261,7 @@ class HUD:
     def __init__(self, font):
         self.font = font
     
-    def draw(self, screen, player):
+    def draw(self, screen, player, game_instance=None):
         # Fond semi-transparent pour le HUD
         hud_surface = pygame.Surface((WINDOW_WIDTH, 100))
         hud_surface.set_alpha(180)
@@ -297,6 +299,11 @@ class HUD:
         if player.build_mode:
             mode_text = self.font.render(f"MODE CONSTRUCTION: {player.selected_building}", True, YELLOW)
             screen.blit(mode_text, (400, 10))
+        
+        # Temps de jeu
+        if game_instance:
+            playtime_text = self.font.render(f"Temps de jeu: {game_instance.get_playtime()}", True, WHITE)
+            screen.blit(playtime_text, (800, 10))
 
 class Building:
     def __init__(self, x, y, building_type, resources_needed):
@@ -385,6 +392,10 @@ class Game:
         self.recipes = self.create_recipes()
         self.inventory_ui = InventoryUI(self.screen, self.font)
         
+        # Système de temps de jeu
+        self.game_start_time = None
+        self.total_playtime = 0  # en secondes
+        
         self.running = True
     
     def create_items(self):
@@ -456,6 +467,10 @@ class Game:
         self.player = Player(MAP_WIDTH * TILE_SIZE // 2, MAP_HEIGHT * TILE_SIZE // 2)
         self.camera = Camera()
         self.hud = HUD(self.font)
+        
+        # Initialiser le temps de jeu
+        self.game_start_time = time.time()
+        self.total_playtime = 0
         
         # Générer quelques ennemis
         self.enemies = []
@@ -599,6 +614,9 @@ class Game:
                 else:
                     # Se déplacer vers le joueur
                     enemy.move_towards_player(self.player.x, self.player.y, dt, self.world_map)
+        
+        # Mettre à jour le temps de jeu
+        self.update_playtime()
     
     def draw(self):
         if self.state == "menu":
@@ -649,7 +667,7 @@ class Game:
                                      TILE_SIZE // 4)
             
             # Dessiner le HUD
-            self.hud.draw(self.screen, self.player)
+            self.hud.draw(self.screen, self.player, self)
             
             # Dessiner l'interface d'inventaire
             self.inventory_ui.draw(self.player.inventory, self.recipes)
@@ -768,7 +786,23 @@ class Game:
             print("✅ Partie sauvegardée!")
         except Exception as e:
             print(f"❌ Erreur lors de la sauvegarde: {e}")
-
-if __name__ == "__main__":
-    game = Game()
-    game.run()
+    
+    def get_playtime(self):
+        """Retourne le temps de jeu actuel"""
+        if self.game_start_time and self.state == "playing":
+            current_session = time.time() - self.game_start_time
+            total_time = self.total_playtime + current_session
+        else:
+            total_time = self.total_playtime
+        
+        hours = int(total_time // 3600)
+        minutes = int((total_time % 3600) // 60)
+        seconds = int(total_time % 60)
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    
+    def update_playtime(self):
+        """Met à jour le temps de jeu total"""
+        if self.game_start_time and self.state == "playing":
+            current_session = time.time() - self.game_start_time
+            self.total_playtime += current_session
+            self.game_start_time = time.time()

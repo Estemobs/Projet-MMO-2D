@@ -26,10 +26,16 @@ class Menu:
         # Boutons du menu principal
         self.main_buttons = [
             {"text": "Nouvelle Partie", "action": "new_game"},
-            {"text": "Charger Partie", "action": "load_game"},
+            {"text": "Charger Partie", "action": "load_menu"},
+            {"text": "Sauvegarder", "action": "save_menu"},
             {"text": "Options", "action": "options"},
             {"text": "Quitter", "action": "quit"}
         ]
+        
+        # Système de sauvegarde
+        self.save_slots = [None, None, None]  # 3 slots de sauvegarde
+        self.selected_save_slot = 0
+        self.load_save_slots_info()
         
         # Options
         self.resolutions = [
@@ -177,12 +183,148 @@ class Menu:
         self.draw_button("Retour", 50, self.screen.get_height() - 80, 100, 50, 
                         self.selected_button == len(self.control_names) + 2)
     
+    def load_save_slots_info(self):
+        """Charge les informations des slots de sauvegarde"""
+        import datetime
+        
+        for i in range(3):
+            save_file = f"save_slot_{i+1}.json"
+            if os.path.exists(save_file):
+                try:
+                    with open(save_file, "r") as f:
+                        save_data = json.load(f)
+                    
+                    # Récupérer les informations de la sauvegarde
+                    timestamp = save_data.get("timestamp", "Date inconnue")
+                    playtime = save_data.get("playtime", "00:00:00")
+                    level_name = save_data.get("level_name", "Monde généré")
+                    player_health = save_data.get("player", {}).get("health", 100)
+                    
+                    self.save_slots[i] = {
+                        "timestamp": timestamp,
+                        "playtime": playtime,
+                        "level_name": level_name,
+                        "player_health": player_health,
+                        "exists": True
+                    }
+                except:
+                    self.save_slots[i] = None
+            else:
+                self.save_slots[i] = None
+    
+    def format_date(self, timestamp_str):
+        """Formate une date pour l'affichage"""
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(timestamp_str)
+            return dt.strftime("%d/%m/%Y %H:%M")
+        except:
+            return timestamp_str
+    
+    def draw_save_load_menu(self, menu_type):
+        """Dessine le menu de sauvegarde ou de chargement"""
+        self.screen.fill(self.BLACK)
+        
+        # Titre
+        title_text = "Charger une partie" if menu_type == "load" else "Sauvegarder la partie"
+        title = self.big_font.render(title_text, True, self.WHITE)
+        title_rect = title.get_rect(center=(self.screen.get_width()//2, 50))
+        self.screen.blit(title, title_rect)
+        
+        # Instructions
+        instruction = "Sélectionnez un slot de sauvegarde" if menu_type == "save" else "Sélectionnez une sauvegarde à charger"
+        instr_surf = self.font.render(instruction, True, self.GRAY)
+        instr_rect = instr_surf.get_rect(center=(self.screen.get_width()//2, 100))
+        self.screen.blit(instr_surf, instr_rect)
+        
+        # Dessiner les slots de sauvegarde
+        slot_width = 700
+        slot_height = 120
+        start_y = 150
+        spacing = 140
+        
+        for i in range(3):
+            x = self.screen.get_width()//2 - slot_width//2
+            y = start_y + i * spacing
+            selected = (i == self.selected_save_slot)
+            
+            # Couleur du slot
+            if selected:
+                slot_color = self.BLUE
+                border_color = self.WHITE
+            else:
+                slot_color = self.DARK_GRAY
+                border_color = self.GRAY
+            
+            # Dessiner le slot
+            pygame.draw.rect(self.screen, slot_color, (x, y, slot_width, slot_height))
+            pygame.draw.rect(self.screen, border_color, (x, y, slot_width, slot_height), 3)
+            
+            # Titre du slot
+            slot_title = self.button_font.render(f"Slot {i+1}", True, self.WHITE)
+            self.screen.blit(slot_title, (x + 20, y + 10))
+            
+            if self.save_slots[i] and self.save_slots[i]["exists"]:
+                # Slot avec sauvegarde
+                save_info = self.save_slots[i]
+                
+                # Date et heure
+                date_text = self.format_date(save_info["timestamp"])
+                date_surf = self.small_font.render(f"Sauvegardé le: {date_text}", True, self.WHITE)
+                self.screen.blit(date_surf, (x + 20, y + 40))
+                
+                # Temps de jeu
+                playtime_surf = self.small_font.render(f"Temps de jeu: {save_info['playtime']}", True, self.WHITE)
+                self.screen.blit(playtime_surf, (x + 20, y + 60))
+                
+                # Monde
+                world_surf = self.small_font.render(f"Monde: {save_info['level_name']}", True, self.WHITE)
+                self.screen.blit(world_surf, (x + 20, y + 80))
+                
+                # Santé du joueur
+                health_surf = self.small_font.render(f"Santé: {save_info['player_health']}/100", True, self.GREEN)
+                self.screen.blit(health_surf, (x + 400, y + 40))
+                
+                if menu_type == "load":
+                    action_text = "Appuyez sur Entrée pour charger"
+                else:
+                    action_text = "Appuyez sur Entrée pour écraser"
+                action_surf = self.small_font.render(action_text, True, self.YELLOW)
+                self.screen.blit(action_surf, (x + 400, y + 80))
+                
+            else:
+                # Slot vide
+                empty_text = self.font.render("Slot vide", True, self.GRAY)
+                self.screen.blit(empty_text, (x + 20, y + 50))
+                
+                if menu_type == "save":
+                    create_text = self.small_font.render("Appuyez sur Entrée pour créer une nouvelle sauvegarde", True, self.YELLOW)
+                    self.screen.blit(create_text, (x + 200, y + 80))
+                elif menu_type == "load":
+                    unavailable_text = self.small_font.render("Aucune sauvegarde disponible", True, self.RED)
+                    self.screen.blit(unavailable_text, (x + 200, y + 80))
+        
+        # Bouton retour
+        button_y = start_y + 3 * spacing + 20
+        self.draw_button("Retour", 50, button_y, 120, 50, 
+                        self.selected_save_slot == 3)
+        
+        # Instructions de navigation
+        nav_text = "Haut/Bas: Naviguer • Entrée: Sélectionner • Échap: Retour"
+        nav_surf = self.small_font.render(nav_text, True, self.GRAY)
+        nav_rect = nav_surf.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - 30))
+        self.screen.blit(nav_surf, nav_rect)
+    
     def handle_event(self, event):
         """Gère les événements du menu"""
         if self.current_menu == "main":
             return self.handle_main_menu_event(event)
         elif self.current_menu == "options":
             return self.handle_options_event(event)
+        elif self.current_menu == "load_menu":
+            return self.handle_save_load_event(event, "load")
+        elif self.current_menu == "save_menu":
+            return self.handle_save_load_event(event, "save")
         return None
     
     def handle_main_menu_event(self, event):
@@ -237,12 +379,69 @@ class Menu:
         
         return None
     
+    def handle_save_load_event(self, event, menu_type):
+        """Gère les événements du menu de sauvegarde/chargement"""
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.current_menu = "main"
+                self.selected_save_slot = 0
+            elif event.key == pygame.K_UP:
+                self.selected_save_slot = max(0, self.selected_save_slot - 1)
+            elif event.key == pygame.K_DOWN:
+                self.selected_save_slot = min(3, self.selected_save_slot + 1)
+            elif event.key == pygame.K_RETURN:
+                if self.selected_save_slot == 3:  # Bouton retour
+                    self.current_menu = "main"
+                    self.selected_save_slot = 0
+                else:
+                    # Sauvegarder ou charger
+                    if menu_type == "load":
+                        if (self.save_slots[self.selected_save_slot] and 
+                            self.save_slots[self.selected_save_slot]["exists"]):
+                            return f"load_slot_{self.selected_save_slot + 1}"
+                    else:  # save
+                        return f"save_slot_{self.selected_save_slot + 1}"
+        
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            slot_width = 700
+            slot_height = 120
+            start_y = 150
+            spacing = 140
+            
+            # Vérifier les clics sur les slots
+            for i in range(3):
+                x = self.screen.get_width()//2 - slot_width//2
+                y = start_y + i * spacing
+                slot_rect = pygame.Rect(x, y, slot_width, slot_height)
+                
+                if slot_rect.collidepoint(mouse_pos):
+                    self.selected_save_slot = i
+                    if menu_type == "load":
+                        if (self.save_slots[i] and self.save_slots[i]["exists"]):
+                            return f"load_slot_{i + 1}"
+                    else:  # save
+                        return f"save_slot_{i + 1}"
+            
+            # Vérifier le clic sur le bouton retour
+            button_y = start_y + 3 * spacing + 20
+            retour_rect = pygame.Rect(50, button_y, 120, 50)
+            if retour_rect.collidepoint(mouse_pos):
+                self.current_menu = "main"
+                self.selected_save_slot = 0
+        
+        return None
+    
     def draw(self):
         """Dessine le menu actuel"""
         if self.current_menu == "main":
             self.draw_main_menu()
         elif self.current_menu == "options":
             self.draw_options_menu()
+        elif self.current_menu == "load_menu":
+            self.draw_save_load_menu("load")
+        elif self.current_menu == "save_menu":
+            self.draw_save_load_menu("save")
         
         pygame.display.flip()
     
@@ -253,3 +452,13 @@ class Menu:
     def is_fullscreen(self):
         """Retourne si le mode plein écran est activé"""
         return self.fullscreen
+    
+    def refresh_save_slots(self):
+        """Rafraîchit les informations des slots de sauvegarde"""
+        self.load_save_slots_info()
+    
+    def get_save_slot_info(self, slot_number):
+        """Retourne les informations d'un slot de sauvegarde"""
+        if 1 <= slot_number <= 3:
+            return self.save_slots[slot_number - 1]
+        return None

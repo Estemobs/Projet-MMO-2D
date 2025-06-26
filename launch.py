@@ -177,6 +177,7 @@ def launch_game():
     """Lance le jeu principal"""
     print_header("🚀 LANCEMENT DU JEU")
     
+    game = None
     try:
         print_colored("📥 Importation des modules...", Colors.BLUE)
         from main import Game
@@ -201,6 +202,11 @@ def launch_game():
         
     except Exception as e:
         print_colored(f"❌ Erreur lors du lancement: {e}", Colors.RED)
+        print_colored(f"💡 Détails de l'erreur: {type(e).__name__}", Colors.YELLOW)
+        if game is not None:
+            print_colored("🔧 Le jeu était initialisé, problème lors de l'exécution", Colors.YELLOW)
+        else:
+            print_colored("🔧 Le jeu n'a pas pu être initialisé", Colors.YELLOW)
         return False
     
     return True
