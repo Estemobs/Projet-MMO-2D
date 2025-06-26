@@ -41,6 +41,7 @@ class GameManager:
         pygame.display.set_caption("MMO 2D - Jeu de survie")
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 24)
+        self.small_font = pygame.font.Font(None, 20)
         
         # Système de contenu
         self.items = create_items()
