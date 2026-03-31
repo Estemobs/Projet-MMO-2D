@@ -237,9 +237,8 @@ class GameManager:
             elif event.key == pygame.K_F5:
                 if self.save_game():
                     print("✅ Partie sauvegardée!")
-                    # Afficher le message à l'écran aussi
                     self.show_save_message = True
-                    self.save_message_timer = 3.0  # Afficher pendant 3 secondes
+                    self.save_message_timer = 3.0
                 else:
                     print("❌ Erreur lors de la sauvegarde")
             elif event.key == self.menu.controls["inventory"]:
@@ -253,6 +252,13 @@ class GameManager:
             elif event.key == self.menu.controls["wall"]:
                 self.player.selected_building = "wall"
                 print("🏠 Sélectionné: Mur")
+            elif event.key == pygame.K_h:
+                result = self.player.eat_best_food()
+                if result:
+                    food_name, heal = result
+                    print(f"🍎 {food_name} consommé! +{heal} PV")
+                else:
+                    print("❌ Pas de nourriture dans l'inventaire")
         
         # Passer les événements aux composants du jeu
         if hasattr(self.player, 'handle_event'):
@@ -276,11 +282,12 @@ class GameManager:
             self.player = self.gameplay_manager.player
             self.enemies = self.gameplay_manager.enemies
             self.dropped_inventories = self.gameplay_manager.death_markers
-            
-            # Gestion du timer du message de sauvegarde
-            if hasattr(self.gameplay_manager, 'show_save_message') and self.gameplay_manager.show_save_message:
-                if hasattr(self.gameplay_manager, 'save_message_timer') and self.gameplay_manager.save_message_timer <= 0:
-                    self.gameplay_manager.show_save_message = False
+
+            # Gestion du timer du message de sauvegarde (sur self)
+            if self.show_save_message:
+                self.save_message_timer -= dt
+                if self.save_message_timer <= 0:
+                    self.show_save_message = False
 
     def draw(self):
         """Dessine tout le contenu du jeu"""
@@ -304,49 +311,77 @@ class GameManager:
             self.gameplay_manager.item_manager
         )
         
-        # Dessiner la minimap en haut à gauche
+        # Dessiner la minimap en haut à droite
         self.minimap.draw(self.screen, self.player, self.enemies, self.camera, self.dropped_inventories)
         
         # Dessiner le HUD
         self.hud.draw(self.screen, self.player, self)
+
+        # Feedback d'attaque du joueur (dégâts infligés)
+        if self.player.attack_feedback:
+            self._draw_attack_feedback()
+
+        # Message mort
+        if self.gameplay_manager.show_death_message:
+            self._draw_death_message()
         
         # Afficher le message de sauvegarde si nécessaire
-        if hasattr(self, 'show_save_message') and self.show_save_message:
+        if self.show_save_message:
             self._draw_save_confirmation()
         
-        # Dessiner l'interface d'inventaire
-        if self.inventory_ui.visible:
-            self.inventory_ui.draw(self.player.inventory, self.recipes)
+        # Dessiner l'interface d'inventaire (une seule fois)
         self.inventory_ui.draw(self.player.inventory, self.recipes)
         
-        # Instructions
+        # Instructions (uniquement quand l'inventaire est fermé)
         if not self.inventory_ui.visible:
             self._draw_instructions()
 
+    def _draw_attack_feedback(self):
+        """Affiche le montant de dégâts infligés sur l'écran."""
+        text, _ = self.player.attack_feedback
+        big_font = pygame.font.Font(None, 40)
+        surf = big_font.render(text, True, COLORS["RED"])
+        x = self.screen.get_width() // 2 - surf.get_width() // 2
+        y = self.screen.get_height() // 2 - 60
+        self.screen.blit(surf, (x, y))
+
+    def _draw_death_message(self):
+        """Affiche le message de mort du joueur."""
+        big_font = pygame.font.Font(None, 48)
+        lines = [
+            "Vous êtes mort !",
+            "Votre inventaire est au point de mort.",
+            "Retournez le récupérer.",
+        ]
+        for i, line in enumerate(lines):
+            surf = big_font.render(line, True, COLORS["RED"])
+            x = self.screen.get_width() // 2 - surf.get_width() // 2
+            y = self.screen.get_height() // 3 + i * 50
+            self.screen.blit(surf, (x, y))
+
+
     def _draw_instructions(self):
         """Dessine les instructions à l'écran avec les contrôles personnalisés"""
-        # Récupérer les noms des touches configurées
         move_up = pygame.key.name(self.menu.controls["move_up"]).upper()
-        move_down = pygame.key.name(self.menu.controls["move_down"]).upper()
         move_left = pygame.key.name(self.menu.controls["move_left"]).upper()
+        move_down = pygame.key.name(self.menu.controls["move_down"]).upper()
         move_right = pygame.key.name(self.menu.controls["move_right"]).upper()
         build_mode = pygame.key.name(self.menu.controls["build_mode"]).upper()
-        inventory = pygame.key.name(self.menu.controls["inventory"]).upper()
+        inventory_key = pygame.key.name(self.menu.controls["inventory"]).upper()
         foundation = pygame.key.name(self.menu.controls["foundation"]).upper()
         wall = pygame.key.name(self.menu.controls["wall"]).upper()
         
         instructions = [
-            f"{move_up}{move_left}{move_down}{move_right}: Se déplacer",
-            "Clic gauche: Récolter les ressources ou construire", 
-            f"{build_mode}: Activer/désactiver le mode construction",
-            f"{foundation}: Sélectionner fondation, {wall}: Sélectionner mur",
-            f"{inventory}: Ouvrir inventaire",
-            "F5: Sauvegarder, Échap: Menu principal"
+            f"{move_up}/{move_left}/{move_down}/{move_right}: Se déplacer",
+            "Clic gauche: Attaquer ennemi / Récolter / Construire",
+            f"{build_mode}: Mode construction | {foundation}: Fondation | {wall}: Mur",
+            f"{inventory_key}: Inventaire | H: Manger | F5: Sauvegarder | Échap: Menu",
         ]
         
+        y_start = self.screen.get_height() - len(instructions) * 20 - 5
         for i, instruction in enumerate(instructions):
             text = self.font.render(instruction, True, COLORS["WHITE"])
-            self.screen.blit(text, (10, self.screen.get_height() - 120 + i * 20))
+            self.screen.blit(text, (10, y_start + i * 20))
 
     def _draw_save_confirmation(self):
         """Dessine le message de confirmation de sauvegarde"""

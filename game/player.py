@@ -20,6 +20,19 @@ class DroppedInventory:
         self.size = TILE_SIZE
 
 class Player:
+    # Damage values per weapon type
+    WEAPON_DAMAGE = {
+        "Épée en bois": 10,
+        "Épée en fer": 20,
+        "Épée en or": 25,
+        "Épée en diamant": 40,
+        "Pioche en bois": 7,
+        "Pioche en fer": 12,
+    }
+    BARE_HANDS_DAMAGE = 5
+    ATTACK_RANGE = TILE_SIZE * 1.5  # pixels
+    ATTACK_COOLDOWN = 0.5  # seconds
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -37,6 +50,12 @@ class Player:
         self.inventory = Inventory(36)
         self.hunger = 100
         self.max_hunger = 100
+
+        # Combat
+        self.last_attack_time = 0
+        self.attack_feedback = None   # (text, timer) for HUD
+        self.xp = 0
+        self.level = 1
 
     def move(self, dx, dy, dt, world_map):
         # Déterminer si le joueur bouge
@@ -187,6 +206,54 @@ class Player:
                             return True
         return False
 
+    def get_attack_damage(self):
+        """Returns damage based on equipped weapon or held item."""
+        for slot in self.inventory.slots:
+            if slot and slot.item.item_type in ("weapon", "tool"):
+                return self.WEAPON_DAMAGE.get(slot.item.name, self.BARE_HANDS_DAMAGE)
+        return self.BARE_HANDS_DAMAGE
+
+    def attack_enemies(self, enemies, mouse_pos, camera_x, camera_y, current_time):
+        """
+        Attempts to attack the closest enemy near the mouse click.
+        Returns (damaged_enemy_or_None, damage_dealt).
+        """
+        world_x = mouse_pos[0] + camera_x
+        world_y = mouse_pos[1] + camera_y
+
+        if current_time - self.last_attack_time < self.ATTACK_COOLDOWN:
+            return None, 0  # Still on cooldown
+
+        closest_enemy = None
+        closest_dist = self.ATTACK_RANGE
+
+        for enemy in enemies:
+            dist = ((enemy.x - world_x) ** 2 + (enemy.y - world_y) ** 2) ** 0.5
+            if dist <= closest_dist:
+                closest_dist = dist
+                closest_enemy = enemy
+
+        if closest_enemy is not None:
+            damage = self.get_attack_damage()
+            closest_enemy.health -= damage
+            self.last_attack_time = current_time
+            self.xp += max(1, damage // 2)
+            self._check_level_up()
+            self.attack_feedback = (f"-{damage}", 1.0)
+            return closest_enemy, damage
+
+        return None, 0
+
+    def _check_level_up(self):
+        """Simple XP-based level-up."""
+        xp_needed = self.level * 100
+        if self.xp >= xp_needed:
+            self.xp -= xp_needed
+            self.level += 1
+            self.max_health = min(200, self.max_health + 10)
+            self.health = self.max_health
+            print(f"🎉 Niveau {self.level} atteint! Santé max: {self.max_health}")
+
     def eat_food(self, food_item, heal_amount):
         if self.inventory.has_item(food_item, 1):
             self.inventory.remove_item(food_item, 1)
@@ -194,6 +261,19 @@ class Player:
             self.hunger = min(self.max_hunger, self.hunger + heal_amount // 2)
             return True
         return False
+
+    def eat_best_food(self):
+        """Eats the best available food item. Returns (item_name, heal) or None."""
+        food_priority = [
+            ("bread", 20),
+            ("meat", 15),
+            ("apple", 10),
+            ("berry", 5),
+        ]
+        for food_name, heal in food_priority:
+            if self.eat_food(food_name, heal):
+                return food_name, heal
+        return None
 
     def update(self, keys, dt, controls=None):
         """Met à jour l'état du joueur"""
@@ -207,6 +287,15 @@ class Player:
         # Régénération naturelle si le joueur n'a pas faim
         elif self.hunger > 30 and self.health < self.max_health:
             self.health = min(self.max_health, self.health + 3 * dt)  # Un peu plus de régénération
+
+        # Décrémenter le feedback d'attaque
+        if self.attack_feedback:
+            text, timer = self.attack_feedback
+            timer -= dt
+            if timer <= 0:
+                self.attack_feedback = None
+            else:
+                self.attack_feedback = (text, timer)
         
         # Gestion du déplacement avec les contrôles configurés
         if controls is None:

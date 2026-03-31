@@ -130,13 +130,24 @@ class GameplayManager:
         if self.player.health <= 0:
             self.handle_player_death()
         
-        # Gestion des clics de souris
-        if mouse_buttons[0]:  # Clic gauche
+        # Gestion des clics de souris (un seul appel par clic)
+        if mouse_buttons[0]:
             self.handle_mouse_click(mouse_pos, items)
         
-        # Mise à jour des ennemis
+        # Mise à jour des ennemis et suppression des morts
+        dead_enemies = []
         for enemy in self.enemies:
-            enemy.update(self.player, self.world_map, dt)
+            if enemy.is_dead():
+                dead_enemies.append(enemy)
+            else:
+                enemy.update(self.player, self.world_map, dt)
+        
+        for enemy in dead_enemies:
+            self._handle_enemy_death(enemy, items)
+            self.enemies.remove(enemy)
+        
+        # Respawn des ennemis si le nombre tombe trop bas
+        self._respawn_enemies_if_needed()
         
         # Mise à jour de la caméra
         self.camera.follow_player(self.player)
@@ -152,6 +163,36 @@ class GameplayManager:
             if self.death_message_timer <= 0:
                 self.show_death_message = False
     
+    def _handle_enemy_death(self, enemy, items):
+        """Handles loot drops and XP when an enemy dies."""
+        drops = enemy.get_loot(items)
+        for item, qty in drops:
+            for _ in range(qty):
+                import random as _rng
+                ox = _rng.randint(-16, 16)
+                oy = _rng.randint(-16, 16)
+                self.item_manager.drop_item(enemy.x + ox, enemy.y + oy, item, 1)
+        self.player.xp += enemy.XP_REWARD
+        self.player._check_level_up()
+        print(f"☠️ Ennemi éliminé ! +{enemy.XP_REWARD} XP")
+
+    def _respawn_enemies_if_needed(self):
+        """Spawns new enemies when the count is below the minimum."""
+        import random as _rng
+        min_enemies = max(3, ENEMY_COUNT // 2)
+        while len(self.enemies) < min_enemies:
+            for _ in range(100):  # max attempts
+                x = _rng.randint(0, MAP_WIDTH - 1) * TILE_SIZE
+                y = _rng.randint(0, MAP_HEIGHT - 1) * TILE_SIZE
+                dist_to_player = ((x - self.player.x) ** 2 + (y - self.player.y) ** 2) ** 0.5
+                tile_x = int(x // TILE_SIZE)
+                tile_y = int(y // TILE_SIZE)
+                from .tiletype import TileType
+                if (dist_to_player > TILE_SIZE * 15 and
+                        self.world_map[tile_y][tile_x] == TileType.GRASS):
+                    self.enemies.append(Enemy(x, y))
+                    break
+
     def handle_player_death(self):
         """Gère la mort du joueur"""
         if self.player.health > 0:
@@ -179,32 +220,40 @@ class GameplayManager:
         print("🏃 Vous avez respawné au centre de la carte.")
     
     def handle_mouse_click(self, mouse_pos, items):
-        """Gère les clics de souris"""
-        # Vérifier les clics sur les marqueurs de mort
+        """Gère les clics de souris (priorité: marqueurs de mort > attaque > construction/récolte)"""
+        import time as _time
+        current_time = _time.time()
+
+        # 1. Vérifier les clics sur les marqueurs de mort
         for i, marker in enumerate(self.death_markers):
             if marker.can_pickup(self.player.x, self.player.y):
                 world_x = mouse_pos[0] + self.camera.x
                 world_y = mouse_pos[1] + self.camera.y
                 
-                # Vérifier si le clic est sur le marqueur
                 marker_distance = ((world_x - marker.x)**2 + (world_y - marker.y)**2) ** 0.5
                 if marker_distance <= TILE_SIZE:
-                    # Récupérer l'inventaire
                     self.player.inventory = marker.inventory
                     self.death_markers.pop(i)
                     print("✅ Inventaire récupéré!")
                     return
-        
-        # Actions normales du joueur
+
+        # 2. Mode construction
         if self.player.build_mode:
-            # Mode construction
             self.player.build_structure(self.world_map, mouse_pos, self.camera.x, self.camera.y)
-        else:
-            # Mode récolte avec nouveau système d'items
-            self.player.harvest_resource(
-                self.world_map, mouse_pos, self.camera.x, self.camera.y, 
-                items, self.item_manager
-            )
+            return
+
+        # 3. Attaque d'ennemi (priorité sur la récolte)
+        hit_enemy, damage = self.player.attack_enemies(
+            self.enemies, mouse_pos, self.camera.x, self.camera.y, current_time
+        )
+        if hit_enemy is not None:
+            return  # attack was performed, don't harvest
+
+        # 4. Récolte de ressources
+        self.player.harvest_resource(
+            self.world_map, mouse_pos, self.camera.x, self.camera.y,
+            items, self.item_manager
+        )
     
     def get_playtime(self):
         """Retourne le temps de jeu actuel formaté"""

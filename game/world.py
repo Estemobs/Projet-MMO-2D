@@ -43,12 +43,5 @@ class WorldGenerator:
             y = random.randint(0, MAP_HEIGHT - 1)
             if world_map[y][x] == TileType.GRASS:  # Ne remplace que l'herbe
                 world_map[y][x] = tile_type
-            world_map[y][x] = TileType.APPLE_TREE
-        
-        # Ajouter des buissons de baies (0.5% de la carte)
-        for _ in range(int(MAP_WIDTH * MAP_HEIGHT * 0.005)):
-            x = random.randint(0, MAP_WIDTH - 1)
-            y = random.randint(0, MAP_HEIGHT - 1)
-            world_map[y][x] = TileType.BERRY_BUSH
         
         return world_map
