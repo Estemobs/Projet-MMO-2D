@@ -34,6 +34,9 @@ class SaveSystem:
                     "x": player.x,
                     "y": player.y,
                     "health": player.health,
+                    "hunger": player.hunger,
+                    "level": player.level,
+                    "xp": player.xp,
                     "inventory": self._serialize_inventory(player.inventory)
                 },
                 "world_map": self._serialize_world_map(world_map),

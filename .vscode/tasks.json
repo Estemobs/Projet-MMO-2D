@@ -4,9 +4,9 @@
 		{
 			"label": "Lancer le jeu MMO 2D",
 			"type": "shell",
-			"command": "/home/estemobs/Documents/Projet MMO 2D/.venv/bin/python",
+			"command": "${workspaceFolder}/.venv/bin/python",
 			"args": [
-				"scripts/launch.py"
+				"launch.py"
 			],
 			"group": "build",
 			"isBackground": false,
@@ -15,9 +15,9 @@
 		{
 			"label": "Vérifier l'intégrité et lancer",
 			"type": "shell",
-			"command": "/home/estemobs/Documents/Projet MMO 2D/.venv/bin/python",
+			"command": "${workspaceFolder}/.venv/bin/python",
 			"args": [
-				"scripts/launch.py",
+				"launch.py",
 				"--check"
 			],
 			"group": "build",
@@ -27,10 +27,9 @@
 		{
 			"label": "Vérifier l'intégrité seulement",
 			"type": "shell",
-			"command": "/home/estemobs/Documents/Projet MMO 2D/.venv/bin/python",
+			"command": "${workspaceFolder}/.venv/bin/python",
 			"args": [
-				"scripts/launch.py",
-				"--check-only"
+				"check.py"
 			],
 			"group": "test",
 			"isBackground": false,
@@ -39,7 +38,7 @@
 		{
 			"label": "Tester les performances",
 			"type": "shell",
-			"command": "/home/estemobs/Documents/Projet MMO 2D/.venv/bin/python",
+			"command": "${workspaceFolder}/.venv/bin/python",
 			"args": [
 				"scripts/test_performance.py"
 			],
