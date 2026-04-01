@@ -5,9 +5,7 @@ Ce script vérifie l'intégrité de l'installation et lance le jeu proprement.
 """
 
 import sys
-import os
-import subprocess
-import importlib.util
+import importlib
 import argparse
 from pathlib import Path
 
@@ -93,7 +91,7 @@ def check_dependencies():
 
 def check_game_files():
     """Vérifie que tous les fichiers du jeu sont présents"""
-    print_header("� Vérification des fichiers du jeu")
+    print_header("📁 Vérification des fichiers du jeu")
     
     # Ajuster les chemins relatifs au répertoire parent
     project_root = Path(__file__).parent.parent
@@ -221,9 +219,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Exemples d'utilisation:
-  python launch.py              # Lance le jeu directement
-  python launch.py --check      # Vérifie l'intégrité avant le lancement
-  python launch.py --check-only # Effectue seulement les vérifications
+    python launch.py                  # Lance le jeu depuis la racine
+    python launch.py --check          # Vérifie puis lance
+    python launch.py --check-only     # Vérifie seulement
+    python scripts/launch.py --check  # Lance directement le script interne
         """
     )
     

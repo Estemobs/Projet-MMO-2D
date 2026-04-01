@@ -1,90 +1,84 @@
-# 🎮 MMO 2D - Jeu de Survie
+# MMO 2D - Jeu de Survie
 
-Un jeu 2D de survie et construction en vue de dessus, développé avec Python et Pygame.
+Jeu 2D de survie/construction en vue de dessus, developpe avec Python et Pygame.
 
-## 🚀 Installation et Lancement
+## Demarrage rapide
 
-### Prérequis
-- Python 3.8 ou plus récent
-- pip (gestionnaire de paquets Python)
+### 1. Prerequis
+- Python 3.8+
+- `pip`
 
-### Installation rapide
+### 2. Installer l'environnement virtuel
+
 ```bash
-# Cloner ou télécharger le projet
-# Installer les dépendances
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
 pip install -r requirements.txt
-
-# Lancer le jeu
-python launch.py
 ```
 
-## 🎮 Contrôles
+### 3. Lancer le projet
+
+```bash
+# Lancement recommande (verification + jeu)
+python launch.py --check
+
+# Lancement direct
+python main.py
+```
+
+## Fichiers de lancement a la racine
+
+- `main.py`: lance le jeu directement.
+- `launch.py`: lance le gestionnaire complet (options `--check`, `--check-only`).
+- `check.py`: execute uniquement les verifications d'integrite.
+
+## Commandes utiles
+
+```bash
+# Verifier l'installation
+python check.py
+
+# Verifier puis lancer
+python launch.py --check
+
+# Test performance
+python scripts/test_performance.py
+```
+
+## Controles en jeu
 
 | Action | Touches |
 |--------|---------|
-| **Déplacement** | WASD ou flèches directionnelles |
-| **Récolter/Construire** | Clic gauche |
-| **Mode construction** | B |
-| **Sélectionner fondation** | 1 |
-| **Sélectionner mur** | 2 |
-| **Inventaire** | I |
-| **Manger** | H |
-| **Sauvegarder** | F5 |
-| **Menu principal** | Échap |
+| Deplacement | WASD ou fleches |
+| Interagir / Construire | Clic gauche |
+| Mode construction | B |
+| Fondation | 1 |
+| Mur | 2 |
+| Inventaire | I |
+| Manger | H |
+| Sauvegarder | F5 |
+| Pause / Menu | Echap |
 
-## 🌍 Éléments du Jeu
+## Structure du projet
 
-- 🟢 **Herbe** : Terrain traversable
-- 🟤 **Arbres** : Source de bois
-- ⚫ **Pierres** : Source de pierre
-- ⚫ **Minerai de fer** : Source de fer
-- 🟡 **Fondations** : Base de construction (2 bois + 1 pierre)
-- 🟠 **Murs** : Structures défensives (1 bois + 2 pierres)
-- 🔴 **Ennemis** : 50 PV, 10 dégâts, détection à 3 cases
-
-## 📁 Structure du Projet
-
-```
-MMO 2D/
-├── core/                   # Logique principale
-│   ├── game_manager.py     # Gestionnaire principal
-│   └── items.py           # Système d'objets
-├── systems/               # Systèmes annexes
-│   └── save_system.py     # Sauvegarde/chargement
-├── ui/                    # Interface utilisateur
-│   ├── menu.py           # Menus
-│   └── inventory.py       # Inventaire et crafting
-├── game/                  # Composants de jeu
-│   ├── core.py           # Ancienne classe principale
-│   ├── player.py         # Logique du joueur
-│   ├── enemy.py          # IA des ennemis
-│   ├── world.py          # Génération du monde
-│   └── ...
-├── launch.py             # Script de lancement avec vérifications
-├── main.py               # Point d'entrée simplifié
-└── config.py             # Configuration du jeu
+```text
+.
+├── main.py
+├── launch.py
+├── check.py
+├── requirements.txt
+├── core/          # Orchestration principale (GameManager, items)
+├── game/          # Gameplay, monde, rendu, entites
+├── ui/            # Inventaire, menus, pause
+├── systems/       # Sauvegarde / chargement
+├── data/          # Config et donnees de sauvegarde
+├── assets/        # Sprites et ressources
+├── scripts/       # Outils de maintenance, generation et tests
+└── docs/          # Documentation technique
 ```
 
-## 🛠️ Développement
+## Notes de maintenance
 
-### Scripts disponibles
-- `python launch.py` - Lance avec vérifications d'intégrité
-- `python launch.py --check` - Vérifie avant de lancer
-- `python launch.py --check-only` - Vérifications seulement
-- `python main.py` - Lancement direct
-- `python test_performance.py` - Test de performance
-
-### Extensions possibles
-- Multijoueur en réseau
-- Plus de biomes
-- Système de quêtes
-- Commerce entre joueurs
-- Magie et sorts
-
-## 📊 Performance
-
-Le jeu vise 60 FPS. Utilisez `test_performance.py` pour tester votre système.
-
-## 📝 License
-
-Projet éducatif open source.
+- Les scripts de `scripts/` ne sont pas tous requis pour jouer: ils servent au debug, aux tests et a la generation d'assets.
+- En cas de probleme de dependances, reactiver le venv puis relancer `pip install -r requirements.txt`.

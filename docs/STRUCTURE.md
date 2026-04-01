@@ -1,39 +1,60 @@
-# 📁 Structure du Projet
+# Structure du projet
 
-## Organisation des dossiers
+## Vue globale
 
+```text
+Projet-MMO-2D/
+├── main.py                # Lancement direct du jeu
+├── launch.py              # Lancement avec options (--check, --check-only)
+├── check.py               # Verification integrite uniquement
+├── README.md
+├── requirements.txt
+├── settings.json
+├── assets/
+│   └── sprites/
+├── core/
+│   ├── game_manager.py
+│   └── items.py
+├── game/
+│   ├── core.py
+│   ├── gameplay_manager.py
+│   ├── render_manager.py
+│   └── ...
+├── ui/
+│   ├── menu.py
+│   ├── inventory.py
+│   └── pause_menu.py
+├── systems/
+│   └── save_system.py
+├── data/
+│   ├── config.py
+│   └── savegame.json
+├── scripts/
+│   ├── launch.py
+│   ├── test_performance.py
+│   └── ...
+└── docs/
+	└── STRUCTURE.md
 ```
-📁 Projet MMO 2D/
-├── 📁 core/           # Modules principaux du moteur de jeu
-├── 📁 game/           # Logique spécifique du jeu
-├── 📁 ui/             # Interface utilisateur
-├── 📁 systems/        # Systèmes transversaux
-├── 📁 scripts/        # Scripts utilitaires et de lancement
-├── 📁 data/           # Configuration et sauvegardes
-├── 📁 docs/           # Documentation (vide pour l'instant)
-├── 📄 main.py         # Point d'entrée principal
-├── 📄 README.md       # Documentation principale
-└── 📄 requirements.txt # Dépendances Python
+
+## Points d'entree recommandes
+
+```bash
+python launch.py --check
 ```
 
-## Point d'entrée
+Alternative rapide:
 
-Lancez le jeu avec :
 ```bash
 python main.py
 ```
 
-Ou directement avec le script complet :
-```bash
-python scripts/launch.py
-```
+## Role des repertoires
 
-## Scripts disponibles
-
-- `scripts/launch.py` : Script de lancement avec vérifications
-- `scripts/test_performance.py` : Tests de performance
-
-## Configuration et données
-
-- `data/config.py` : Configuration du jeu
-- `data/savegame.json` : Fichier de sauvegarde
+- `core/`: orchestration centrale de l'application.
+- `game/`: logique de gameplay, carte, camera, rendu, entites.
+- `ui/`: menus, inventaire, interface de pause.
+- `systems/`: services techniques transverses (sauvegarde).
+- `scripts/`: outils utilitaires, generation assets, tests manuels.
+- `assets/`: ressources graphiques.
+- `data/`: configuration locale et donnees de session.
