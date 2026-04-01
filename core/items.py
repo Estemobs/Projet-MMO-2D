@@ -72,25 +72,25 @@ def create_recipes(items):
     """Crée toutes les recettes de crafting"""
     recipes = [
         # Raffinement
-        CraftingRecipe("Lingot de fer", {"iron_ore": 2, "coal": 1}, items["iron_ingot"], 1),
-        CraftingRecipe("Lingot d'or", {"gold_ore": 2, "coal": 1}, items["gold_ingot"], 1),
-        CraftingRecipe("Diamant", {"diamond_ore": 1}, items["diamond"], 1),
+        CraftingRecipe("Lingot de fer", {"Minerai de fer": 2, "Charbon": 1}, items["iron_ingot"], 1),
+        CraftingRecipe("Lingot d'or", {"Minerai d'or": 2, "Charbon": 1}, items["gold_ingot"], 1),
+        CraftingRecipe("Diamant", {"Minerai de diamant": 1}, items["diamond"], 1),
         
         # Nourriture
-        CraftingRecipe("Pain", {"wood": 2}, items["bread"], 1),  # Simplifié
+        CraftingRecipe("Pain", {"Bois": 2}, items["bread"], 1),
         
         # Armes
-        CraftingRecipe("Épée en bois", {"wood": 3, "stone": 1}, items["wooden_sword"], 1),
-        CraftingRecipe("Épée en fer", {"iron_ingot": 2, "wood": 1}, items["iron_sword"], 1),
-        CraftingRecipe("Épée en or", {"gold_ingot": 2, "wood": 1}, items["gold_sword"], 1),
-        CraftingRecipe("Épée en diamant", {"diamond": 2, "wood": 1}, items["diamond_sword"], 1),
+        CraftingRecipe("Épée en bois", {"Bois": 3, "Pierre": 1}, items["wooden_sword"], 1),
+        CraftingRecipe("Épée en fer", {"Lingot de fer": 2, "Bois": 1}, items["iron_sword"], 1),
+        CraftingRecipe("Épée en or", {"Lingot d'or": 2, "Bois": 1}, items["gold_sword"], 1),
+        CraftingRecipe("Épée en diamant", {"Diamant": 2, "Bois": 1}, items["diamond_sword"], 1),
         
         # Outils
-        CraftingRecipe("Pioche en bois", {"wood": 3, "stone": 2}, items["wooden_pickaxe"], 1),
-        CraftingRecipe("Pioche en fer", {"iron_ingot": 3, "wood": 2}, items["iron_pickaxe"], 1),
+        CraftingRecipe("Pioche en bois", {"Bois": 3, "Pierre": 2}, items["wooden_pickaxe"], 1),
+        CraftingRecipe("Pioche en fer", {"Lingot de fer": 3, "Bois": 2}, items["iron_pickaxe"], 1),
         
         # Armures
-        CraftingRecipe("Armure en cuir", {"wood": 8}, items["leather_armor"], 1),  # Simplifié
-        CraftingRecipe("Armure en fer", {"iron_ingot": 8}, items["iron_armor"], 1),
+        CraftingRecipe("Armure en cuir", {"Bois": 8}, items["leather_armor"], 1),
+        CraftingRecipe("Armure en fer", {"Lingot de fer": 8}, items["iron_armor"], 1),
     ]
     return recipes

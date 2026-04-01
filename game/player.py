@@ -209,7 +209,7 @@ class Player:
     def get_attack_damage(self):
         """Returns damage based on equipped weapon or held item."""
         for slot in self.inventory.slots:
-            if slot and slot.item.item_type in ("weapon", "tool"):
+            if slot and slot.item.type in ("weapon", "tool"):
                 return self.WEAPON_DAMAGE.get(slot.item.name, self.BARE_HANDS_DAMAGE)
         return self.BARE_HANDS_DAMAGE
 
@@ -244,13 +244,18 @@ class Player:
 
         return None, 0
 
+    @staticmethod
+    def max_health_for_level(level):
+        """Returns the maximum health for a given level."""
+        return min(200, 100 + (level - 1) * 10)
+
     def _check_level_up(self):
         """Simple XP-based level-up."""
         xp_needed = self.level * 100
         if self.xp >= xp_needed:
             self.xp -= xp_needed
             self.level += 1
-            self.max_health = min(200, self.max_health + 10)
+            self.max_health = self.max_health_for_level(self.level)
             self.health = self.max_health
             print(f"🎉 Niveau {self.level} atteint! Santé max: {self.max_health}")
 
@@ -264,11 +269,12 @@ class Player:
 
     def eat_best_food(self):
         """Eats the best available food item. Returns (item_name, heal) or None."""
+        # Uses French display names since inventory.has_item checks by item.name
         food_priority = [
-            ("bread", 20),
-            ("meat", 15),
-            ("apple", 10),
-            ("berry", 5),
+            ("Pain", 20),
+            ("Viande", 15),
+            ("Pomme", 10),
+            ("Baie", 5),
         ]
         for food_name, heal in food_priority:
             if self.eat_food(food_name, heal):

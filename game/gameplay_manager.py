@@ -76,7 +76,10 @@ class GameplayManager:
         # Restaurer le joueur
         self.player = Player(game_data["player"]["x"], game_data["player"]["y"])
         self.player.health = game_data["player"]["health"]
-        self.player.hunger = game_data["player"].get("hunger", 100)  # Rétrocompatibilité
+        self.player.hunger = game_data["player"].get("hunger", 100)
+        self.player.level = game_data["player"].get("level", 1)
+        self.player.xp = game_data["player"].get("xp", 0)
+        self.player.max_health = Player.max_health_for_level(self.player.level)
         self.player.inventory = game_data["player"]["inventory"]
         
         # Restaurer la caméra
