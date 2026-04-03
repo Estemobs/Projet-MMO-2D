@@ -10,7 +10,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir)
 
-from ui.inventory import Item, ItemStack, Inventory, CraftingRecipe, InventoryUI
+from ui.inventory import Item, CraftingRecipe, InventoryUI
 from ui.menu import Menu
 from ui.pause_menu import PauseMenu
 from .constants import *
@@ -21,8 +21,6 @@ from .world import WorldGenerator
 from .camera import Camera
 from .sprite_manager import get_sprite_manager
 from .hud import HUD
-from .factions import Faction
-from .building import Building
 
 # Initialisation de Pygame
 pygame.init()

@@ -5,7 +5,6 @@ Test intégration complète du menu avec le GameManager
 
 import sys
 import os
-from pathlib import Path
 
 # Ajouter le répertoire parent au path pour les imports
 current_dir = os.path.dirname(os.path.abspath(__file__))

@@ -4,9 +4,7 @@ Système de sauvegarde pour le jeu MMO 2D
 
 import json
 import os
-import time
 from datetime import datetime
-from game.save import GameSave
 
 class SaveSystem:
     """Gestionnaire des sauvegardes"""

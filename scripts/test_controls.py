@@ -6,7 +6,6 @@ Script de test pour vérifier les fonctionnalités du jeu
 import pygame
 import sys
 import os
-import time
 
 # Ajouter le répertoire principal au path
 current_dir = os.path.dirname(os.path.abspath(__file__))

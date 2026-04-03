@@ -1,6 +1,5 @@
 # Package game - Système de jeu modulaire
 
-from .constants import *
 from .tiletype import TileType
 from .player import Player
 from .enemy import Enemy

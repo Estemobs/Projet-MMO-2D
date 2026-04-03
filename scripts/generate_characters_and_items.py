@@ -6,7 +6,6 @@ Générateur de sprites de personnages style Stardew Valley/Pokémon
 import pygame
 import os
 from PIL import Image, ImageDraw
-import math
 
 def create_player_sprite():
     """Crée un sprite de joueur style Stardew Valley"""
@@ -314,7 +313,7 @@ def main():
     tiles_dir = os.path.join(base_dir, "tiles")
     save_sprites_to_pygame(trees, tiles_dir)
     
-    print(f"🎉 Tous les sprites ont été créés avec succès!")
+    print("🎉 Tous les sprites ont été créés avec succès!")
 
 if __name__ == "__main__":
     main()

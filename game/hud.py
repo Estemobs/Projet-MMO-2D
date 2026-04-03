@@ -1,5 +1,5 @@
 import pygame
-from .constants import WHITE, RED, GREEN, YELLOW, BLACK
+from .constants import WHITE, RED, GREEN, YELLOW
 
 class HUD:
     def __init__(self, font):
