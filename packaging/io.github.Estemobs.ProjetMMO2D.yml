@@ -1,0 +1,42 @@
+app-id: io.github.Estemobs.ProjetMMO2D
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: run.sh
+
+finish-args:
+  # Graphiques (X11 + Wayland)
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  # Accélération GPU
+  - --device=dri
+  # Audio
+  - --socket=pulseaudio
+
+modules:
+  # Installation des dépendances Python via pip
+  - name: python-deps
+    buildsystem: simple
+    build-options:
+      build-args:
+        - --share=network
+    build-commands:
+      - pip3 install --prefix=/app --no-cache-dir
+          "pygame>=2.5.0"
+          "numpy>=1.21.0"
+          "psutil>=5.8.0"
+    sources: []
+
+  # Copie des fichiers du jeu
+  - name: projet-mmo-2d
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/game /app/bin
+      - cp -r core data game systems ui assets settings.json main.py /app/game/
+      - install -Dm755 run.sh /app/bin/run.sh
+    sources:
+      - type: dir
+        path: ..
+      - type: file
+        path: run.sh
