@@ -224,7 +224,7 @@ def main():
     enemy_sprites = create_large_enemy_sprites()
     save_sprites_to_pygame(enemy_sprites, entities_dir)
     
-    print(f"🎉 Sprites de personnages plus gros créés avec succès!")
+    print("🎉 Sprites de personnages plus gros créés avec succès!")
 
 if __name__ == "__main__":
     main()

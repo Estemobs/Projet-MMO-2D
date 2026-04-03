@@ -5,10 +5,8 @@ Générateur de sprites naturels pour un monde type Stardew Valley/Pokémon
 
 import pygame
 import os
-import numpy as np
 import random
 from PIL import Image, ImageDraw, ImageFilter
-import math
 
 def create_natural_grass_variants():
     """Crée plusieurs variantes d'herbe naturelle"""

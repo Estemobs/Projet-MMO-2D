@@ -1,0 +1,23 @@
+[flake8]
+max-line-length = 120
+# Ignore purely stylistic issues that are widespread in the current codebase
+extend-ignore =
+    # Whitespace
+    W291,W293,W391,
+    # Blank lines
+    E302,E303,E305,
+    # Indentation style
+    E126,E128,E129,
+    # Misc style
+    E226,E241,E261,E501,W504,
+    # Module-level imports not at top (needed for pygame/path setup)
+    E402,
+    # Star imports (used intentionally in game package)
+    F403,F405
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    build,
+    dist

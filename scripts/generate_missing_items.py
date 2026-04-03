@@ -6,7 +6,6 @@ Générateur de sprites d'items supplémentaires pour l'inventaire
 import pygame
 import os
 from PIL import Image, ImageDraw
-import math
 
 def create_missing_items():
     """Crée les sprites d'items manquants"""
@@ -254,7 +253,7 @@ def main():
     tiles_dir = os.path.join(base_dir, "tiles")
     save_sprites_to_pygame(ores, tiles_dir)
     
-    print(f"🎉 Tous les sprites manquants ont été créés!")
+    print("🎉 Tous les sprites manquants ont été créés!")
 
 if __name__ == "__main__":
     main()

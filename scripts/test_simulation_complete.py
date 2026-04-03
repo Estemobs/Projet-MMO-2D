@@ -6,7 +6,6 @@ Test complet simulation d'utilisation en jeu
 import sys
 import os
 import pygame
-from pathlib import Path
 
 # Ajouter le répertoire parent au path pour les imports
 current_dir = os.path.dirname(os.path.abspath(__file__))

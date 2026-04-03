@@ -1,4 +1,3 @@
-import pygame
 import math
 import random
 from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE

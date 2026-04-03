@@ -3,8 +3,6 @@ Gestionnaire principal du jeu MMO 2D
 """
 
 import pygame
-import random
-import math
 import time
 import os
 import sys
@@ -16,12 +14,7 @@ sys.path.insert(0, parent_dir)
 
 from ui.inventory import InventoryUI
 from ui.menu import Menu
-from game.constants import WINDOW_WIDTH, WINDOW_HEIGHT, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, ENEMY_COUNT, COLORS, TARGET_FPS
-from game.tiletype import TileType
-from game.player import Player
-from game.enemy import Enemy
-from game.world import WorldGenerator
-from game.camera import Camera
+from game.constants import COLORS, TARGET_FPS
 from game.hud import HUD
 from game.render_manager import RenderManager
 from game.gameplay_manager import GameplayManager
@@ -449,10 +442,6 @@ class GameManager:
         """Lance le processus de remapping d'une touche"""
         print(f"📝 Appuyez sur une nouvelle touche pour '{self.menu.control_names[control_key]}'...")
         print("   (Appuyez sur Échap pour annuler)")
-        
-        # Sauvegarder l'état actuel du menu
-        previous_menu = self.menu.current_menu
-        previous_selected = self.menu.controls_menu_selected
         
         # Attendre l'input de l'utilisateur
         waiting_for_key = True

@@ -4,7 +4,6 @@ Gestionnaire de gameplay pour le jeu MMO 2D
 
 import time
 import random
-import pygame
 from .player import Player
 from .enemy import Enemy
 from .world import WorldGenerator

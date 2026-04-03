@@ -88,7 +88,7 @@ class Menu:
                     self.current_resolution = settings.get("resolution", 1)
                     self.fullscreen = settings.get("fullscreen", False)
                     self.controls.update(settings.get("controls", {}))
-        except:
+        except Exception:
             pass
     
     def save_settings(self):
@@ -101,7 +101,7 @@ class Menu:
         try:
             with open("settings.json", "w") as f:
                 json.dump(settings, f, indent=4)
-        except:
+        except Exception:
             pass
     
     def draw_button(self, text, x, y, width, height, selected=False):
@@ -249,8 +249,6 @@ class Menu:
     
     def load_save_slots_info(self):
         """Charge les informations des slots de sauvegarde"""
-        import datetime
-        
         for i in range(3):
             save_file = os.path.join("saves", f"save_slot_{i}.json")
             if os.path.exists(save_file):
@@ -271,7 +269,7 @@ class Menu:
                         "player_health": player_health,
                         "exists": True
                     }
-                except:
+                except Exception:
                     self.save_slots[i] = None
             else:
                 self.save_slots[i] = None
@@ -282,7 +280,7 @@ class Menu:
             from datetime import datetime
             dt = datetime.fromisoformat(timestamp_str)
             return dt.strftime("%d/%m/%Y %H:%M")
-        except:
+        except Exception:
             return timestamp_str
     
     def draw_save_load_menu(self, menu_type):
