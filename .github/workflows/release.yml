@@ -39,6 +39,15 @@ jobs:
           --add-data "settings.json;."
           main.py
 
+      - name: Verify EXE exists
+        run: |
+          if [ ! -f "dist/ProjetMMO2D.exe" ]; then
+            echo "❌ EXE not found!"
+            exit 1
+          fi
+          echo "✅ EXE built successfully"
+          ls -lh dist/ProjetMMO2D.exe
+
       - name: Upload EXE artifact
         uses: actions/upload-artifact@v4
         with:
@@ -64,6 +73,15 @@ jobs:
           bundle: ProjetMMO2D.flatpak
           manifest-path: packaging/io.github.Estemobs.ProjetMMO2D.yml
           cache-key: flatpak-builder-${{ github.sha }}
+
+      - name: Verify Flatpak exists
+        run: |
+          if [ ! -f "ProjetMMO2D.flatpak" ]; then
+            echo "❌ Flatpak not found!"
+            exit 1
+          fi
+          echo "✅ Flatpak built successfully"
+          ls -lh ProjetMMO2D.flatpak
 
       - name: Upload Flatpak artifact
         uses: actions/upload-artifact@v4
