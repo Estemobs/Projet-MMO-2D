@@ -46,6 +46,36 @@ python launch.py --check
 python scripts/test_performance.py
 ```
 
+## Release automatique (.exe + .flatpak)
+
+Le workflow GitHub Actions `.github/workflows/release.yml` construit automatiquement:
+- `ProjetMMO2D.exe` (Windows, autonome)
+- `ProjetMMO2D.flatpak` (Linux, autonome)
+
+### Comment ça marche
+
+1. Le workflow se lance automatiquement quand un tag `vX.Y.Z` est push (ex: `v1.2.0`).
+2. Deux builds sont exécutés:
+   - Windows: build PyInstaller du `.exe`
+   - Linux: build Flatpak du bundle `.flatpak`
+3. Les deux fichiers sont publiés automatiquement dans la GitHub Release du tag.
+
+### Générer une release
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+Ensuite, GitHub Actions:
+- compile les binaires
+- crée/alimente la release
+- attache les artefacts `.exe` et `.flatpak`
+
+### Build manuel (sans publier de release)
+
+Le workflow peut aussi être lancé à la main via l'onglet **Actions** (`workflow_dispatch`) pour générer les artefacts de build, sans étape de publication.
+
 ## Controles en jeu
 
 | Action | Touches |
