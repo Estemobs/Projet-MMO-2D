@@ -11,14 +11,26 @@ class Menu:
         self.small_font = pygame.font.Font(None, 20)
         
         # Couleurs
-        self.WHITE = (255, 255, 255)
-        self.BLACK = (0, 0, 0)
-        self.GRAY = (128, 128, 128)
-        self.DARK_GRAY = (64, 64, 64)
-        self.GREEN = (0, 255, 0)
-        self.RED = (255, 0, 0)
-        self.BLUE = (0, 100, 255)
-        self.YELLOW = (255, 255, 0)
+        self.WHITE = (245, 247, 255)
+        self.BLACK = (8, 12, 24)
+        self.GRAY = (132, 144, 170)
+        self.DARK_GRAY = (36, 44, 68)
+        self.GREEN = (84, 214, 125)
+        self.RED = (245, 98, 98)
+        self.BLUE = (88, 138, 255)
+        self.YELLOW = (255, 221, 129)
+        self.PANEL = (16, 22, 40)
+        self.BUTTON_DEFAULT = (62, 88, 148)
+        self.BUTTON_SELECTED = (112, 165, 255)
+        self.BUTTON_BORDER = (189, 214, 255)
+        self.SHADOW = (0, 0, 0, 110)
+        self._background_stars = self._generate_decorative_stars()
+        
+        try:
+            from systems.version import get_current_version
+            self.version_label = f"v{get_current_version()}"
+        except Exception:
+            self.version_label = ""
         
         # État du menu
         self.current_menu = "main"
@@ -106,26 +118,81 @@ class Menu:
     
     def draw_button(self, text, x, y, width, height, selected=False):
         """Dessine un bouton"""
-        color = self.BLUE if selected else self.GRAY
-        border_color = self.WHITE if selected else self.DARK_GRAY
-        
-        pygame.draw.rect(self.screen, color, (x, y, width, height))
-        pygame.draw.rect(self.screen, border_color, (x, y, width, height), 2)
-        
-        text_surf = self.button_font.render(text, True, self.WHITE)
+        rect = pygame.Rect(x, y, width, height)
+        shadow_rect = rect.move(0, 4)
+        shadow_surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surface, self.SHADOW, shadow_surface.get_rect(), border_radius=12)
+        self.screen.blit(shadow_surface, shadow_rect.topleft)
+
+        color = self.BUTTON_SELECTED if selected else self.BUTTON_DEFAULT
+        border_color = self.BUTTON_BORDER if selected else self.DARK_GRAY
+
+        pygame.draw.rect(self.screen, color, rect, border_radius=12)
+        pygame.draw.rect(self.screen, border_color, rect, 2, border_radius=12)
+        pygame.draw.line(self.screen, (240, 248, 255), (x + 12, y + 10), (x + width - 12, y + 10), 2)
+
+        text_surf = self.button_font.render(text, True, self.WHITE if selected else (233, 238, 252))
         text_rect = text_surf.get_rect(center=(x + width//2, y + height//2))
         self.screen.blit(text_surf, text_rect)
         
-        return pygame.Rect(x, y, width, height)
+        return rect
+
+    def _generate_decorative_stars(self):
+        """Génère une liste déterministe de points lumineux décoratifs."""
+        stars = []
+        for i in range(90):
+            x_ratio = ((i * 37) % 1000) / 1000.0
+            y_ratio = ((i * 91 + 13) % 1000) / 1000.0
+            radius = 1 + (i % 3)
+            shade = 165 + (i % 70)
+            stars.append((x_ratio, y_ratio, radius, shade))
+        return stars
+
+    def _draw_gradient_background(self):
+        """Dessine un fond dégradé avec une légère ambiance spatiale."""
+        width, height = self.screen.get_size()
+        top_color = (8, 15, 38)
+        bottom_color = (22, 41, 82)
+
+        for y in range(height):
+            t = y / max(1, height - 1)
+            r = int(top_color[0] * (1 - t) + bottom_color[0] * t)
+            g = int(top_color[1] * (1 - t) + bottom_color[1] * t)
+            b = int(top_color[2] * (1 - t) + bottom_color[2] * t)
+            pygame.draw.line(self.screen, (r, g, b), (0, y), (width, y))
+
+        for x_ratio, y_ratio, radius, shade in self._background_stars:
+            x = int(x_ratio * width)
+            y = int(y_ratio * height)
+            pygame.draw.circle(self.screen, (shade, shade, shade), (x, y), radius)
+
+    def _draw_title_block(self, title_text):
+        """Dessine un panneau de titre moderne."""
+        title_width = min(900, self.screen.get_width() - 80)
+        title_x = self.screen.get_width() // 2 - title_width // 2
+        title_rect = pygame.Rect(title_x, 30, title_width, 110)
+
+        panel_surface = pygame.Surface((title_rect.width, title_rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(panel_surface, (11, 18, 36, 205), panel_surface.get_rect(), border_radius=18)
+        pygame.draw.rect(panel_surface, (117, 171, 255, 230), panel_surface.get_rect(), 2, border_radius=18)
+        self.screen.blit(panel_surface, title_rect.topleft)
+
+        title = self.big_font.render(title_text, True, self.WHITE)
+        title_rect = title.get_rect(center=(self.screen.get_width() // 2, 72))
+        self.screen.blit(title, title_rect)
+
+        subtitle = self.font.render("Survie • Exploration • Construction", True, (199, 214, 248))
+        subtitle_rect = subtitle.get_rect(center=(self.screen.get_width() // 2, 104))
+        self.screen.blit(subtitle, subtitle_rect)
+
+        if self.version_label:
+            version_text = self.small_font.render(self.version_label, True, (180, 201, 244))
+            self.screen.blit(version_text, (title_x + title_width - 55, 38))
     
     def draw_main_menu(self):
         """Dessine le menu principal"""
-        self.screen.fill(self.BLACK)
-        
-        # Titre
-        title = self.big_font.render("MMO 2D - Jeu de Survie", True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, 100))
-        self.screen.blit(title, title_rect)
+        self._draw_gradient_background()
+        self._draw_title_block("MMO 2D - Jeu de Survie")
         
         # Boutons
         button_width = 300
@@ -141,7 +208,7 @@ class Menu:
     
     def draw_options_menu(self):
         """Dessine le menu des options"""
-        self.screen.fill(self.BLACK)
+        self._draw_gradient_background()
         
         # Titre
         title = self.big_font.render("Options", True, self.WHITE)
@@ -187,7 +254,7 @@ class Menu:
     
     def draw_controls_menu(self):
         """Dessine le menu dédié aux contrôles"""
-        self.screen.fill(self.BLACK)
+        self._draw_gradient_background()
         
         # Titre
         title = self.big_font.render("Configuration des Contrôles", True, self.WHITE)
@@ -285,7 +352,7 @@ class Menu:
     
     def draw_save_load_menu(self, menu_type):
         """Dessine le menu de sauvegarde ou de chargement"""
-        self.screen.fill(self.BLACK)
+        self._draw_gradient_background()
         
         # Titre
         title_text = "Charger une partie" if menu_type == "load" else "Sauvegarder la partie"
