@@ -232,12 +232,18 @@ def show_controls():
 
 def launch_game():
     """Lance le jeu principal"""
-    print_header("🚀 LANCEMENT DU JEU")
-    
     try:
         # Ajouter le répertoire parent au path pour les imports
         project_root = Path(__file__).parent.parent
         sys.path.insert(0, str(project_root))
+
+        from systems.startup_updater import check_and_prompt_for_update
+
+        if not check_and_prompt_for_update():
+            print_colored("⏹️  Lancement interrompu après installation de la mise à jour", Colors.YELLOW)
+            return
+
+        print_header("🚀 LANCEMENT DU JEU")
         
         print_colored("📥 Importation des modules...", Colors.BLUE)
         from core import GameManager
