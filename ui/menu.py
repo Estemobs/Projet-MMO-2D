@@ -14,6 +14,8 @@ class Menu:
     STAR_SHADE_VARIATION = 70
     VERSION_OFFSET_X = 55
     VERSION_OFFSET_Y = 38
+    BUTTON_HIGHLIGHT = (240, 248, 255)
+    DECORATIVE_STARS = None
 
     def __init__(self, screen, font):
         self.screen = screen
@@ -36,7 +38,11 @@ class Menu:
         self.BUTTON_SELECTED = (112, 165, 255)
         self.BUTTON_BORDER = (189, 214, 255)
         self.SHADOW = (0, 0, 0, 110)
-        self._background_stars = self._generate_decorative_stars()
+        if Menu.DECORATIVE_STARS is None:
+            Menu.DECORATIVE_STARS = self._generate_decorative_stars()
+        self._background_stars = Menu.DECORATIVE_STARS
+        self._background_cache = None
+        self._background_cache_size = None
         
         try:
             from systems.version import get_current_version
@@ -141,7 +147,7 @@ class Menu:
 
         pygame.draw.rect(self.screen, color, rect, border_radius=12)
         pygame.draw.rect(self.screen, border_color, rect, 2, border_radius=12)
-        pygame.draw.line(self.screen, (240, 248, 255), (x + 12, y + 10), (x + width - 12, y + 10), 2)
+        pygame.draw.line(self.screen, self.BUTTON_HIGHLIGHT, (x + 12, y + 10), (x + width - 12, y + 10), 2)
 
         text_surf = self.button_font.render(text, True, self.WHITE if selected else (233, 238, 252))
         text_rect = text_surf.get_rect(center=(x + width//2, y + height//2))
@@ -163,20 +169,26 @@ class Menu:
     def _draw_gradient_background(self):
         """Dessine un fond dégradé avec une légère ambiance spatiale."""
         width, height = self.screen.get_size()
-        top_color = (8, 15, 38)
-        bottom_color = (22, 41, 82)
+        if self._background_cache_size != (width, height) or self._background_cache is None:
+            top_color = (8, 15, 38)
+            bottom_color = (22, 41, 82)
+            self._background_cache = pygame.Surface((width, height))
 
-        for y in range(height):
-            t = y / max(1, height - 1)
-            r = int(top_color[0] * (1 - t) + bottom_color[0] * t)
-            g = int(top_color[1] * (1 - t) + bottom_color[1] * t)
-            b = int(top_color[2] * (1 - t) + bottom_color[2] * t)
-            pygame.draw.line(self.screen, (r, g, b), (0, y), (width, y))
+            for y in range(height):
+                t = y / max(1, height - 1)
+                r = int(top_color[0] * (1 - t) + bottom_color[0] * t)
+                g = int(top_color[1] * (1 - t) + bottom_color[1] * t)
+                b = int(top_color[2] * (1 - t) + bottom_color[2] * t)
+                pygame.draw.line(self._background_cache, (r, g, b), (0, y), (width, y))
 
-        for x_ratio, y_ratio, radius, shade in self._background_stars:
-            x = int(x_ratio * width)
-            y = int(y_ratio * height)
-            pygame.draw.circle(self.screen, (shade, shade, shade), (x, y), radius)
+            for x_ratio, y_ratio, radius, shade in self._background_stars:
+                x = int(x_ratio * width)
+                y = int(y_ratio * height)
+                pygame.draw.circle(self._background_cache, (shade, shade, shade), (x, y), radius)
+
+            self._background_cache_size = (width, height)
+
+        self.screen.blit(self._background_cache, (0, 0))
 
     def _draw_title_block(self, title_text):
         """Dessine un panneau de titre moderne."""
