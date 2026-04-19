@@ -89,8 +89,60 @@ class GameManager:
         # Variables pour le message de sauvegarde
         self.show_save_message = False
         self.save_message_timer = 0.0
+
+        # Audio menu
+        self._audio_ready = False
+        self._menu_music_playing = False
+        self.menu_music_path = os.path.join(parent_dir, "assets", "music", "menu_theme.mp3")
+        self._init_audio_system()
         
         self.running = True
+
+    def _init_audio_system(self):
+        """Initialise le système audio et charge la musique de menu."""
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+
+            if os.path.exists(self.menu_music_path):
+                pygame.mixer.music.load(self.menu_music_path)
+                self._audio_ready = True
+                self.menu.apply_audio_settings()
+                self._play_menu_music()
+            else:
+                print(f"⚠️ Musique de menu introuvable: {self.menu_music_path}")
+        except Exception as e:
+            print(f"⚠️ Audio non disponible: {e}")
+            self._audio_ready = False
+
+    def _play_menu_music(self):
+        """Lance la musique de menu en boucle si possible."""
+        if not self._audio_ready:
+            return
+
+        try:
+            if not pygame.mixer.music.get_busy():
+                pygame.mixer.music.play(-1, fade_ms=550)
+            self.menu.apply_audio_settings()
+            self._menu_music_playing = True
+        except Exception as e:
+            print(f"⚠️ Lecture musique impossible: {e}")
+
+    def _stop_menu_music(self):
+        """Arrête la musique de menu avec fondu."""
+        if not self._audio_ready:
+            return
+
+        if self._menu_music_playing:
+            pygame.mixer.music.fadeout(450)
+            self._menu_music_playing = False
+
+    def _sync_audio_with_state(self):
+        """Maintient la musique active uniquement dans les écrans menu."""
+        if self.state == "menu":
+            self._play_menu_music()
+        else:
+            self._stop_menu_music()
 
     def init_game(self):
         """Initialise une nouvelle partie"""
@@ -262,6 +314,8 @@ class GameManager:
 
     def update(self, dt):
         """Met à jour l'état du jeu"""
+        self._sync_audio_with_state()
+
         if self.state == "playing":
             # Mettre à jour avec le GameplayManager
             keys = pygame.key.get_pressed()

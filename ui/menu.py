@@ -1,8 +1,11 @@
 import pygame
 import json
 import os
+from systems.save_system import SaveSystem
 
 class Menu:
+    BASE_WIDTH = 1280
+    BASE_HEIGHT = 720
     STAR_COUNT = 90
     STAR_X_MULTIPLIER = 37
     STAR_Y_MULTIPLIER = 91
@@ -20,6 +23,8 @@ class Menu:
     def __init__(self, screen, font):
         self.screen = screen
         self.font = font
+        self.ui_scale = 1.0
+        self._font_cache_size = None
         self.big_font = pygame.font.Font(None, 48)
         self.button_font = pygame.font.Font(None, 32)
         self.small_font = pygame.font.Font(None, 20)
@@ -65,6 +70,7 @@ class Menu:
         ]
         
         # Système de sauvegarde
+        self.save_system = SaveSystem()
         self.save_slots = [None, None, None]  # 3 slots de sauvegarde
         self.selected_save_slot = 0
         self.load_save_slots_info()
@@ -79,6 +85,9 @@ class Menu:
         ]
         self.current_resolution = 4  # 1920x1080 par défaut
         self.fullscreen = True  # Plein écran par défaut
+        self.music_volume = 0.45
+        self.sfx_volume = 0.70
+        self.audio_muted = False
         
         # Contrôles
         self.controls = {
@@ -108,6 +117,18 @@ class Menu:
         }
         
         self.load_settings()
+
+    def _refresh_ui_scale(self):
+        """Met à jour l'échelle UI et les polices selon la résolution actuelle."""
+        width, height = self.screen.get_size()
+        self.ui_scale = max(0.85, min(1.5, min(width / self.BASE_WIDTH, height / self.BASE_HEIGHT)))
+
+        if self._font_cache_size != (width, height):
+            self.font = pygame.font.Font(None, max(24, int(26 * self.ui_scale)))
+            self.big_font = pygame.font.Font(None, max(44, int(56 * self.ui_scale)))
+            self.button_font = pygame.font.Font(None, max(30, int(38 * self.ui_scale)))
+            self.small_font = pygame.font.Font(None, max(18, int(22 * self.ui_scale)))
+            self._font_cache_size = (width, height)
     
     def load_settings(self):
         """Charge les paramètres depuis un fichier"""
@@ -115,17 +136,25 @@ class Menu:
             if os.path.exists("settings.json"):
                 with open("settings.json", "r") as f:
                     settings = json.load(f)
-                    self.current_resolution = settings.get("resolution", 1)
-                    self.fullscreen = settings.get("fullscreen", False)
+                    self.current_resolution = settings.get("resolution", 4)
+                    self.fullscreen = settings.get("fullscreen", True)
+                    self.music_volume = max(0.0, min(1.0, float(settings.get("music_volume", 0.45))))
+                    self.sfx_volume = max(0.0, min(1.0, float(settings.get("sfx_volume", 0.70))))
+                    self.audio_muted = bool(settings.get("audio_muted", False))
                     self.controls.update(settings.get("controls", {}))
         except Exception:
             pass
+
+        self.apply_audio_settings()
     
     def save_settings(self):
         """Sauvegarde les paramètres dans un fichier"""
         settings = {
             "resolution": self.current_resolution,
             "fullscreen": self.fullscreen,
+            "music_volume": self.music_volume,
+            "sfx_volume": self.sfx_volume,
+            "audio_muted": self.audio_muted,
             "controls": self.controls
         }
         try:
@@ -133,6 +162,17 @@ class Menu:
                 json.dump(settings, f, indent=4)
         except Exception:
             pass
+
+    def apply_audio_settings(self):
+        """Applique les volumes audio actuels au mixer pygame."""
+        if not pygame.mixer.get_init():
+            return
+
+        if self.audio_muted:
+            pygame.mixer.music.set_volume(0.0)
+            return
+
+        pygame.mixer.music.set_volume(self.music_volume)
     
     def draw_button(self, text, x, y, width, height, selected=False):
         """Dessine un bouton"""
@@ -215,66 +255,138 @@ class Menu:
     
     def draw_main_menu(self):
         """Dessine le menu principal"""
+        self._refresh_ui_scale()
         self._draw_gradient_background()
         self._draw_title_block("MMO 2D - Jeu de Survie")
         
         # Boutons
-        button_width = 300
-        button_height = 60
-        start_y = 200
-        spacing = 80
+        button_width = int(min(self.screen.get_width() * 0.35, 420 * self.ui_scale))
+        button_height = int(56 * self.ui_scale)
+        spacing = int(74 * self.ui_scale)
+        total_height = len(self.main_buttons) * button_height + (len(self.main_buttons) - 1) * (spacing - button_height)
+        start_y = int((self.screen.get_height() - total_height) * 0.52)
         
         for i, button in enumerate(self.main_buttons):
             x = self.screen.get_width()//2 - button_width//2
             y = start_y + i * spacing
             selected = (i == self.selected_button)
             self.draw_button(button["text"], x, y, button_width, button_height, selected)
+
+    def _get_options_layout(self):
+        """Retourne les positions et rectangles de l'écran options."""
+        self._refresh_ui_scale()
+
+        sw, sh = self.screen.get_size()
+        panel_w = int(min(sw * 0.9, 980 * self.ui_scale))
+        panel_h = int(min(sh * 0.84, 680 * self.ui_scale))
+        panel_x = (sw - panel_w) // 2
+        panel_y = int(sh * 0.12)
+
+        label_x = panel_x + int(40 * self.ui_scale)
+        controls_x = panel_x + panel_w - int(270 * self.ui_scale)
+        y = panel_y + int(90 * self.ui_scale)
+        row_h = int(62 * self.ui_scale)
+        small_button_w = int(52 * self.ui_scale)
+        action_button_w = int(180 * self.ui_scale)
+        action_button_h = int(40 * self.ui_scale)
+
+        layout = {
+            "panel_rect": pygame.Rect(panel_x, panel_y, panel_w, panel_h),
+            "title_y": panel_y + int(42 * self.ui_scale),
+            "label_x": label_x,
+            "rows": [],
+            "resolution_prev_rect": pygame.Rect(controls_x, y, small_button_w, action_button_h),
+            "resolution_next_rect": pygame.Rect(controls_x + small_button_w + int(10 * self.ui_scale), y, small_button_w, action_button_h),
+        }
+
+        layout["rows"].append(y)
+        y += row_h
+        layout["fullscreen_rect"] = pygame.Rect(controls_x, y, action_button_w, action_button_h)
+        layout["rows"].append(y)
+        y += row_h
+        layout["music_down_rect"] = pygame.Rect(controls_x, y, small_button_w, action_button_h)
+        layout["music_up_rect"] = pygame.Rect(controls_x + small_button_w + int(10 * self.ui_scale), y, small_button_w, action_button_h)
+        layout["rows"].append(y)
+        y += row_h
+        layout["sfx_down_rect"] = pygame.Rect(controls_x, y, small_button_w, action_button_h)
+        layout["sfx_up_rect"] = pygame.Rect(controls_x + small_button_w + int(10 * self.ui_scale), y, small_button_w, action_button_h)
+        layout["rows"].append(y)
+        y += row_h
+        layout["mute_rect"] = pygame.Rect(controls_x, y, action_button_w, action_button_h)
+        layout["rows"].append(y)
+        y += row_h
+        layout["controls_rect"] = pygame.Rect(controls_x, y, action_button_w, action_button_h)
+        layout["rows"].append(y)
+
+        layout["back_rect"] = pygame.Rect(panel_x + int(36 * self.ui_scale), panel_y + panel_h - int(72 * self.ui_scale), int(160 * self.ui_scale), int(44 * self.ui_scale))
+        layout["hint_y"] = panel_y + panel_h - int(110 * self.ui_scale)
+        return layout
+
+    def _get_save_load_layout(self):
+        """Retourne les dimensions adaptatives du menu de sauvegarde/chargement."""
+        self._refresh_ui_scale()
+        sw, sh = self.screen.get_size()
+        slot_width = int(min(sw * 0.86, 940 * self.ui_scale))
+        slot_height = int(118 * self.ui_scale)
+        start_y = int(145 * self.ui_scale)
+        spacing = int(136 * self.ui_scale)
+        back_y = start_y + 3 * spacing + int(18 * self.ui_scale)
+        return {
+            "slot_width": slot_width,
+            "slot_height": slot_height,
+            "start_y": start_y,
+            "spacing": spacing,
+            "back_rect": pygame.Rect(int(40 * self.ui_scale), back_y, int(140 * self.ui_scale), int(50 * self.ui_scale))
+        }
     
     def draw_options_menu(self):
         """Dessine le menu des options"""
         self._draw_gradient_background()
-        
-        # Titre
+        layout = self._get_options_layout()
+
+        panel_surface = pygame.Surface(layout["panel_rect"].size, pygame.SRCALPHA)
+        pygame.draw.rect(panel_surface, (9, 14, 28, 210), panel_surface.get_rect(), border_radius=int(18 * self.ui_scale))
+        pygame.draw.rect(panel_surface, (123, 177, 255, 230), panel_surface.get_rect(), 2, border_radius=int(18 * self.ui_scale))
+        self.screen.blit(panel_surface, layout["panel_rect"].topleft)
+
         title = self.big_font.render("Options", True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, 50))
+        title_rect = title.get_rect(center=(self.screen.get_width() // 2, layout["title_y"]))
         self.screen.blit(title, title_rect)
-        
-        y = 120
-        
-        # Résolution
-        res_text = f"Résolution: {self.resolutions[self.current_resolution][0]}x{self.resolutions[self.current_resolution][1]}"
-        res_surf = self.font.render(res_text, True, self.WHITE)
-        self.screen.blit(res_surf, (50, y))
-        
-        # Boutons résolution
-        self.draw_button("<", 400, y-5, 40, 30, self.selected_button == 0)
-        self.draw_button(">", 450, y-5, 40, 30, self.selected_button == 1)
-        y += 50
-        
-        # Mode plein écran
-        fs_text = f"Plein écran: {'Oui' if self.fullscreen else 'Non'}"
-        fs_surf = self.font.render(fs_text, True, self.WHITE)
-        self.screen.blit(fs_surf, (50, y))
-        self.draw_button("Basculer", 400, y-5, 100, 30, self.selected_button == 2)
-        y += 50
-        
-        # Contrôles - Bouton pour accéder au menu des contrôles
-        controls_text = "Contrôles"
-        controls_surf = self.font.render(controls_text, True, self.WHITE)
-        self.screen.blit(controls_surf, (50, y))
-        self.draw_button("Modifier", 400, y-5, 100, 30, self.selected_button == 3)
-        y += 80
-        
-        # Instructions
-        instr1 = self.small_font.render("Utilisez ↑↓ pour naviguer, ←→ pour changer la résolution", True, self.GRAY)
-        self.screen.blit(instr1, (50, y))
-        y += 20
-        instr2 = self.small_font.render("Entrée pour sélectionner", True, self.GRAY)
-        self.screen.blit(instr2, (50, y))
-        
-        # Bouton retour
-        self.draw_button("Retour", 50, self.screen.get_height() - 80, 100, 50, 
-                        self.selected_button == 4)
+
+        label_x = layout["label_x"]
+        row_res, row_fs, row_music, row_sfx, row_mute, row_controls = layout["rows"]
+
+        res_text = f"Resolution: {self.resolutions[self.current_resolution][0]}x{self.resolutions[self.current_resolution][1]}"
+        self.screen.blit(self.font.render(res_text, True, self.WHITE), (label_x, row_res + int(5 * self.ui_scale)))
+        self.draw_button("<", *layout["resolution_prev_rect"], self.selected_button == 0)
+        self.draw_button(">", *layout["resolution_next_rect"], self.selected_button == 1)
+
+        fs_text = f"Plein ecran: {'Oui' if self.fullscreen else 'Non'}"
+        self.screen.blit(self.font.render(fs_text, True, self.WHITE), (label_x, row_fs + int(5 * self.ui_scale)))
+        self.draw_button("Basculer", *layout["fullscreen_rect"], self.selected_button == 2)
+
+        music_pct = int(self.music_volume * 100)
+        self.screen.blit(self.font.render(f"Musique: {music_pct}%", True, self.WHITE), (label_x, row_music + int(5 * self.ui_scale)))
+        self.draw_button("-", *layout["music_down_rect"], self.selected_button == 3)
+        self.draw_button("+", *layout["music_up_rect"], self.selected_button == 4)
+
+        sfx_pct = int(self.sfx_volume * 100)
+        self.screen.blit(self.font.render(f"Effets sonores: {sfx_pct}%", True, self.WHITE), (label_x, row_sfx + int(5 * self.ui_scale)))
+        self.draw_button("-", *layout["sfx_down_rect"], self.selected_button == 5)
+        self.draw_button("+", *layout["sfx_up_rect"], self.selected_button == 6)
+
+        mute_text = f"Audio: {'Coupe' if self.audio_muted else 'Actif'}"
+        self.screen.blit(self.font.render(mute_text, True, self.WHITE), (label_x, row_mute + int(5 * self.ui_scale)))
+        self.draw_button("Mute On/Off", *layout["mute_rect"], self.selected_button == 7)
+
+        self.screen.blit(self.font.render("Controles", True, self.WHITE), (label_x, row_controls + int(5 * self.ui_scale)))
+        self.draw_button("Modifier", *layout["controls_rect"], self.selected_button == 8)
+
+        hint_text = "Naviguer: ↑↓ | Ajuster: ←→ | Selectionner: Entree"
+        hint_surf = self.small_font.render(hint_text, True, self.GRAY)
+        self.screen.blit(hint_surf, (label_x, layout["hint_y"]))
+
+        self.draw_button("Retour", *layout["back_rect"], self.selected_button == 9)
     
     def draw_controls_menu(self):
         """Dessine le menu dédié aux contrôles"""
@@ -341,10 +453,10 @@ class Menu:
     def load_save_slots_info(self):
         """Charge les informations des slots de sauvegarde"""
         for i in range(3):
-            save_file = os.path.join("saves", f"save_slot_{i}.json")
+            save_file = self.save_system.get_save_path(i)
             if os.path.exists(save_file):
                 try:
-                    with open(save_file, "r") as f:
+                    with open(save_file, "r", encoding="utf-8") as f:
                         save_data = json.load(f)
                     
                     # Récupérer les informations de la sauvegarde
@@ -377,24 +489,25 @@ class Menu:
     def draw_save_load_menu(self, menu_type):
         """Dessine le menu de sauvegarde ou de chargement"""
         self._draw_gradient_background()
+        layout = self._get_save_load_layout()
         
         # Titre
         title_text = "Charger une partie" if menu_type == "load" else "Sauvegarder la partie"
         title = self.big_font.render(title_text, True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, 50))
+        title_rect = title.get_rect(center=(self.screen.get_width()//2, int(50 * self.ui_scale)))
         self.screen.blit(title, title_rect)
         
         # Instructions
         instruction = "Sélectionnez un slot de sauvegarde" if menu_type == "save" else "Sélectionnez une sauvegarde à charger"
         instr_surf = self.font.render(instruction, True, self.GRAY)
-        instr_rect = instr_surf.get_rect(center=(self.screen.get_width()//2, 100))
+        instr_rect = instr_surf.get_rect(center=(self.screen.get_width()//2, int(96 * self.ui_scale)))
         self.screen.blit(instr_surf, instr_rect)
         
         # Dessiner les slots de sauvegarde
-        slot_width = 700
-        slot_height = 120
-        start_y = 150
-        spacing = 140
+        slot_width = layout["slot_width"]
+        slot_height = layout["slot_height"]
+        start_y = layout["start_y"]
+        spacing = layout["spacing"]
         
         for i in range(3):
             x = self.screen.get_width()//2 - slot_width//2
@@ -415,7 +528,7 @@ class Menu:
             
             # Titre du slot
             slot_title = self.button_font.render(f"Slot {i+1}", True, self.WHITE)
-            self.screen.blit(slot_title, (x + 20, y + 10))
+            self.screen.blit(slot_title, (x + int(18 * self.ui_scale), y + int(10 * self.ui_scale)))
             
             if self.save_slots[i] and self.save_slots[i]["exists"]:
                 # Slot avec sauvegarde
@@ -424,57 +537,55 @@ class Menu:
                 # Date et heure
                 date_text = self.format_date(save_info["timestamp"])
                 date_surf = self.small_font.render(f"Sauvegardé le: {date_text}", True, self.WHITE)
-                self.screen.blit(date_surf, (x + 20, y + 40))
+                self.screen.blit(date_surf, (x + int(18 * self.ui_scale), y + int(40 * self.ui_scale)))
                 
                 # Temps de jeu
                 playtime_surf = self.small_font.render(f"Temps de jeu: {save_info['playtime']}", True, self.WHITE)
-                self.screen.blit(playtime_surf, (x + 20, y + 60))
+                self.screen.blit(playtime_surf, (x + int(18 * self.ui_scale), y + int(60 * self.ui_scale)))
                 
                 # Monde
                 world_surf = self.small_font.render(f"Monde: {save_info['level_name']}", True, self.WHITE)
-                self.screen.blit(world_surf, (x + 20, y + 80))
+                self.screen.blit(world_surf, (x + int(18 * self.ui_scale), y + int(80 * self.ui_scale)))
                 
                 # Santé du joueur
                 health_surf = self.small_font.render(f"Santé: {save_info['player_health']}/100", True, self.GREEN)
-                self.screen.blit(health_surf, (x + 400, y + 40))
+                self.screen.blit(health_surf, (x + int(slot_width * 0.56), y + int(40 * self.ui_scale)))
                 
                 # Actions
                 if menu_type == "load":
                     action_text = "Entrée: Charger"
                     action_surf = self.small_font.render(action_text, True, self.YELLOW)
-                    self.screen.blit(action_surf, (x + 400, y + 65))
+                    self.screen.blit(action_surf, (x + int(slot_width * 0.56), y + int(66 * self.ui_scale)))
                     
                     delete_text = "Suppr: Effacer"
                     delete_surf = self.small_font.render(delete_text, True, self.RED)
-                    self.screen.blit(delete_surf, (x + 400, y + 85))
+                    self.screen.blit(delete_surf, (x + int(slot_width * 0.56), y + int(86 * self.ui_scale)))
                 else:
                     action_text = "Entrée: Écraser"
                     action_surf = self.small_font.render(action_text, True, self.YELLOW)
-                    self.screen.blit(action_surf, (x + 400, y + 80))
+                    self.screen.blit(action_surf, (x + int(slot_width * 0.56), y + int(82 * self.ui_scale)))
                 
                 # Bouton de suppression (seulement en mode load)
                 if menu_type == "load":
-                    delete_button_x = x + slot_width - 100
-                    delete_button_y = y + 10
+                    delete_button_x = x + slot_width - int(110 * self.ui_scale)
+                    delete_button_y = y + int(10 * self.ui_scale)
                     delete_selected = selected and hasattr(self, 'delete_mode') and self.delete_mode
-                    self.draw_button("Supprimer", delete_button_x, delete_button_y, 80, 30, delete_selected)
+                    self.draw_button("Supprimer", delete_button_x, delete_button_y, int(95 * self.ui_scale), int(32 * self.ui_scale), delete_selected)
                 
             else:
                 # Slot vide
                 empty_text = self.font.render("Slot vide", True, self.GRAY)
-                self.screen.blit(empty_text, (x + 20, y + 50))
+                self.screen.blit(empty_text, (x + int(18 * self.ui_scale), y + int(50 * self.ui_scale)))
                 
                 if menu_type == "save":
                     create_text = self.small_font.render("Entrée: Créer nouvelle sauvegarde", True, self.YELLOW)
-                    self.screen.blit(create_text, (x + 200, y + 80))
+                    self.screen.blit(create_text, (x + int(slot_width * 0.28), y + int(80 * self.ui_scale)))
                 elif menu_type == "load":
                     unavailable_text = self.small_font.render("Aucune sauvegarde disponible", True, self.RED)
-                    self.screen.blit(unavailable_text, (x + 200, y + 80))
+                    self.screen.blit(unavailable_text, (x + int(slot_width * 0.28), y + int(80 * self.ui_scale)))
         
         # Bouton retour
-        button_y = start_y + 3 * spacing + 20
-        self.draw_button("Retour", 50, button_y, 120, 50, 
-                        self.selected_save_slot == 3)
+        self.draw_button("Retour", *layout["back_rect"], self.selected_save_slot == 3)
         
         # Instructions de navigation
         if menu_type == "load":
@@ -482,7 +593,7 @@ class Menu:
         else:
             nav_text = "↑↓: Naviguer • Entrée: Sauvegarder • Échap: Retour"
         nav_surf = self.small_font.render(nav_text, True, self.GRAY)
-        nav_rect = nav_surf.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - 30))
+        nav_rect = nav_surf.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - int(26 * self.ui_scale)))
         self.screen.blit(nav_surf, nav_rect)
     
     def handle_event(self, event):
@@ -510,11 +621,13 @@ class Menu:
                 return self.main_buttons[self.selected_button]["action"]
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
+            self._refresh_ui_scale()
             mouse_pos = pygame.mouse.get_pos()
-            button_width = 300
-            button_height = 60
-            start_y = 200
-            spacing = 80
+            button_width = int(min(self.screen.get_width() * 0.35, 420 * self.ui_scale))
+            button_height = int(56 * self.ui_scale)
+            spacing = int(74 * self.ui_scale)
+            total_height = len(self.main_buttons) * button_height + (len(self.main_buttons) - 1) * (spacing - button_height)
+            start_y = int((self.screen.get_height() - total_height) * 0.52)
             
             for i, button in enumerate(self.main_buttons):
                 x = self.screen.get_width()//2 - button_width//2
@@ -528,6 +641,17 @@ class Menu:
     
     def handle_options_event(self, event):
         """Gère les événements du menu des options"""
+        layout = self._get_options_layout()
+
+        def adjust_music(delta):
+            self.music_volume = max(0.0, min(1.0, self.music_volume + delta))
+            self.apply_audio_settings()
+            self.save_settings()
+
+        def adjust_sfx(delta):
+            self.sfx_volume = max(0.0, min(1.0, self.sfx_volume + delta))
+            self.save_settings()
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.current_menu = "main"
@@ -536,15 +660,31 @@ class Menu:
             elif event.key == pygame.K_UP:
                 self.selected_button = max(0, self.selected_button - 1)
             elif event.key == pygame.K_DOWN:
-                self.selected_button = min(4, self.selected_button + 1)  # 0-4: résolution(</>), fullscreen, contrôles, retour
+                self.selected_button = min(9, self.selected_button + 1)
             elif event.key == pygame.K_LEFT:
-                if self.selected_button == 0 or self.selected_button == 1:  # Résolution
+                if self.selected_button in (0, 1):
                     self.current_resolution = (self.current_resolution - 1) % len(self.resolutions)
                     self.save_settings()
+                elif self.selected_button == 3:
+                    adjust_music(-0.05)
+                elif self.selected_button == 4:
+                    adjust_music(-0.05)
+                elif self.selected_button == 5:
+                    adjust_sfx(-0.05)
+                elif self.selected_button == 6:
+                    adjust_sfx(-0.05)
             elif event.key == pygame.K_RIGHT:
-                if self.selected_button == 0 or self.selected_button == 1:  # Résolution
+                if self.selected_button in (0, 1):
                     self.current_resolution = (self.current_resolution + 1) % len(self.resolutions)
                     self.save_settings()
+                elif self.selected_button == 3:
+                    adjust_music(0.05)
+                elif self.selected_button == 4:
+                    adjust_music(0.05)
+                elif self.selected_button == 5:
+                    adjust_sfx(0.05)
+                elif self.selected_button == 6:
+                    adjust_sfx(0.05)
             elif event.key == pygame.K_RETURN:
                 if self.selected_button == 0:  # Résolution précédente
                     self.current_resolution = (self.current_resolution - 1) % len(self.resolutions)
@@ -556,35 +696,64 @@ class Menu:
                     self.fullscreen = not self.fullscreen
                     self.save_settings()
                     return "toggle_fullscreen"
-                elif self.selected_button == 3:  # Menu contrôles
+                elif self.selected_button == 3:
+                    adjust_music(-0.05)
+                elif self.selected_button == 4:
+                    adjust_music(0.05)
+                elif self.selected_button == 5:
+                    adjust_sfx(-0.05)
+                elif self.selected_button == 6:
+                    adjust_sfx(0.05)
+                elif self.selected_button == 7:
+                    self.audio_muted = not self.audio_muted
+                    self.apply_audio_settings()
+                    self.save_settings()
+                elif self.selected_button == 8:  # Menu contrôles
                     self.current_menu = "controls"
                     self.controls_menu_selected = 0
-                elif self.selected_button == 4:  # Retour
+                elif self.selected_button == 9:  # Retour
                     self.current_menu = "main"
                     self.selected_button = 0
                     self.save_settings()
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            
-            # Clic sur les boutons de résolution
-            if pygame.Rect(400, 115, 40, 30).collidepoint(mouse_pos):  # Bouton <
+
+            if layout["resolution_prev_rect"].collidepoint(mouse_pos):
                 self.current_resolution = (self.current_resolution - 1) % len(self.resolutions)
+                self.selected_button = 0
                 self.save_settings()
-            elif pygame.Rect(450, 115, 40, 30).collidepoint(mouse_pos):  # Bouton >
+            elif layout["resolution_next_rect"].collidepoint(mouse_pos):
                 self.current_resolution = (self.current_resolution + 1) % len(self.resolutions)
+                self.selected_button = 1
                 self.save_settings()
-            # Clic sur le bouton fullscreen
-            elif pygame.Rect(400, 165, 100, 30).collidepoint(mouse_pos):
+            elif layout["fullscreen_rect"].collidepoint(mouse_pos):
                 self.fullscreen = not self.fullscreen
+                self.selected_button = 2
                 self.save_settings()
                 return "toggle_fullscreen"
-            # Clic sur le bouton contrôles
-            elif pygame.Rect(400, 215, 100, 30).collidepoint(mouse_pos):
+            elif layout["music_down_rect"].collidepoint(mouse_pos):
+                adjust_music(-0.05)
+                self.selected_button = 3
+            elif layout["music_up_rect"].collidepoint(mouse_pos):
+                adjust_music(0.05)
+                self.selected_button = 4
+            elif layout["sfx_down_rect"].collidepoint(mouse_pos):
+                adjust_sfx(-0.05)
+                self.selected_button = 5
+            elif layout["sfx_up_rect"].collidepoint(mouse_pos):
+                adjust_sfx(0.05)
+                self.selected_button = 6
+            elif layout["mute_rect"].collidepoint(mouse_pos):
+                self.audio_muted = not self.audio_muted
+                self.selected_button = 7
+                self.apply_audio_settings()
+                self.save_settings()
+            elif layout["controls_rect"].collidepoint(mouse_pos):
                 self.current_menu = "controls"
                 self.controls_menu_selected = 0
-            # Clic sur le bouton retour
-            elif pygame.Rect(50, self.screen.get_height() - 80, 100, 50).collidepoint(mouse_pos):
+                self.selected_button = 8
+            elif layout["back_rect"].collidepoint(mouse_pos):
                 self.current_menu = "main"
                 self.selected_button = 0
                 self.save_settings()
@@ -642,6 +811,7 @@ class Menu:
     
     def handle_save_load_event(self, event, menu_type):
         """Gère les événements du menu de sauvegarde/chargement"""
+        layout = self._get_save_load_layout()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.current_menu = "main"
@@ -671,10 +841,10 @@ class Menu:
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            slot_width = 700
-            slot_height = 120
-            start_y = 150
-            spacing = 140
+            slot_width = layout["slot_width"]
+            slot_height = layout["slot_height"]
+            start_y = layout["start_y"]
+            spacing = layout["spacing"]
             
             # Vérifier les clics sur les slots
             for i in range(3):
@@ -687,9 +857,9 @@ class Menu:
                     
                     # Vérifier si c'est un clic sur le bouton supprimer
                     if menu_type == "load" and self.save_slots[i] and self.save_slots[i]["exists"]:
-                        delete_button_x = x + slot_width - 100
-                        delete_button_y = y + 10
-                        delete_rect = pygame.Rect(delete_button_x, delete_button_y, 80, 30)
+                        delete_button_x = x + slot_width - int(110 * self.ui_scale)
+                        delete_button_y = y + int(10 * self.ui_scale)
+                        delete_rect = pygame.Rect(delete_button_x, delete_button_y, int(95 * self.ui_scale), int(32 * self.ui_scale))
                         
                         if delete_rect.collidepoint(mouse_pos):
                             return f"delete_slot_{i}"
@@ -702,8 +872,7 @@ class Menu:
                         return f"save_slot_{i}"
             
             # Vérifier le clic sur le bouton retour
-            button_y = start_y + 3 * spacing + 20
-            retour_rect = pygame.Rect(50, button_y, 120, 50)
+            retour_rect = layout["back_rect"]
             if retour_rect.collidepoint(mouse_pos):
                 self.current_menu = "main"
                 self.selected_save_slot = 0
@@ -712,11 +881,8 @@ class Menu:
     
     def delete_save_slot(self, slot_number):
         """Supprime une sauvegarde"""
-        import os
         try:
-            save_file = os.path.join("saves", f"save_slot_{slot_number}.json")
-            if os.path.exists(save_file):
-                os.remove(save_file)
+            if self.save_system.delete_save(slot_number):
                 self.save_slots[slot_number] = None
                 print(f"✅ Sauvegarde du slot {slot_number + 1} supprimée")
                 return True
