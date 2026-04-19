@@ -76,6 +76,38 @@ Ensuite, GitHub Actions:
 
 Le workflow peut aussi être lancé à la main via l'onglet **Actions** (`workflow_dispatch`) pour générer les artefacts de build, sans étape de publication.
 
+## Utiliser les builds distribués
+
+### Windows (.exe)
+
+1. Téléchargez `ProjetMMO2D.exe` depuis la [release page](../../releases)
+2. Double-cliquez sur le fichier `.exe` pour lancer le jeu
+3. C'est autonome - pas besoin d'installer Python ou les dépendances
+
+### Linux (Flatpak)
+
+1. Téléchargez `ProjetMMO2D.flatpak` depuis la [release page](../../releases)
+2. Installez Flatpak si ce n'est pas déjà fait:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt install flatpak
+
+   # Arch
+   sudo pacman -S flatpak
+
+   # Fedora
+   sudo dnf install flatpak
+   ```
+3. Installez le bundle:
+   ```bash
+   flatpak install ProjetMMO2D.flatpak
+   ```
+4. Lancez le jeu:
+   ```bash
+   flatpak run io.github.Estemobs.ProjetMMO2D
+   ```
+   Ou via le menu d'applications (cherchez "MMO 2D")
+
 ## Controles en jeu
 
 | Action | Touches |
