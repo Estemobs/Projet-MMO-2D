@@ -1,3 +1,7 @@
+# Dossiers de version alternative
+MMO 2D Godot/
+MMO 2D Python/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -32,9 +36,6 @@ env/
 # VS Code
 .vscode/
 *.code-workspace
-
-# Pygame
-*.pyc
 
 # Fichiers de sauvegarde
 *.bak

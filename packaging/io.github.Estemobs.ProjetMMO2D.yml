@@ -13,6 +13,10 @@ finish-args:
   - --device=dri
   # Audio
   - --socket=pulseaudio
+  # Réseau (pour les mises à jour)
+  - --share=network
+  # Accès aux données persistantes (sauvegardes)
+  - --persist=.var/app/io.github.Estemobs.ProjetMMO2D/data
 
 modules:
   # Installation des dépendances Python via pip
@@ -35,6 +39,14 @@ modules:
       - mkdir -p /app/game /app/bin
       - cp -r core data game systems ui assets settings.json main.py /app/game/
       - install -Dm755 run.sh /app/bin/run.sh
+      # Installer le fichier .desktop
+      - install -Dm644 packaging/io.github.Estemobs.ProjetMMO2D.desktop /app/share/applications/io.github.Estemobs.ProjetMMO2D.desktop
+      # Installer les icônes
+      - install -Dm644 packaging/icons/hicolor/256x256/apps/io.github.Estemobs.ProjetMMO2D.png /app/share/icons/hicolor/256x256/apps/io.github.Estemobs.ProjetMMO2D.png
+      - install -Dm644 packaging/icons/hicolor/128x128/apps/io.github.Estemobs.ProjetMMO2D.png /app/share/icons/hicolor/128x128/apps/io.github.Estemobs.ProjetMMO2D.png
+      - install -Dm644 packaging/icons/hicolor/64x64/apps/io.github.Estemobs.ProjetMMO2D.png /app/share/icons/hicolor/64x64/apps/io.github.Estemobs.ProjetMMO2D.png
+      - install -Dm644 packaging/icons/hicolor/32x32/apps/io.github.Estemobs.ProjetMMO2D.png /app/share/icons/hicolor/32x32/apps/io.github.Estemobs.ProjetMMO2D.png
+      - install -Dm644 packaging/icons/hicolor/16x16/apps/io.github.Estemobs.ProjetMMO2D.png /app/share/icons/hicolor/16x16/apps/io.github.Estemobs.ProjetMMO2D.png
     sources:
       - type: dir
         path: ..

@@ -8,9 +8,18 @@ from datetime import datetime
 
 class SaveSystem:
     """Gestionnaire des sauvegardes"""
-    
+
     def __init__(self):
-        self.save_directory = "saves"
+        # Déterminer le répertoire de sauvegarde
+        # En Flatpak: ~/.var/app/io.github.Estemobs.ProjetMMO2D/data
+        # Localement: saved_games/ dans le home
+        if os.getenv('FLATPAK_ID') == 'io.github.Estemobs.ProjetMMO2D':
+            # Chemin standard Flatpak pour les données persistantes
+            self.save_directory = os.path.expanduser('~/.var/app/io.github.Estemobs.ProjetMMO2D/data/saves')
+        else:
+            # Chemin local (dans le home, pas dans le répertoire du jeu)
+            self.save_directory = os.path.expanduser('~/ProjetMMO2D_saves')
+
         self.ensure_save_directory()
     
     def ensure_save_directory(self):

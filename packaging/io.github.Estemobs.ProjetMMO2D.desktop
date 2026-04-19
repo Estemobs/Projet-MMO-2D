@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=MMO 2D
+Comment=Jeu de survie 2D
+Exec=/app/bin/run.sh
+Icon=io.github.Estemobs.ProjetMMO2D
+Categories=Game;
+Terminal=false
+StartupNotify=true
