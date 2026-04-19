@@ -3,6 +3,18 @@ import json
 import os
 
 class Menu:
+    STAR_COUNT = 90
+    STAR_X_MULTIPLIER = 37
+    STAR_Y_MULTIPLIER = 91
+    STAR_Y_OFFSET = 13
+    STAR_GRID_SIZE = 1000
+    STAR_RADIUS_BASE = 1
+    STAR_RADIUS_VARIATION = 3
+    STAR_SHADE_BASE = 165
+    STAR_SHADE_VARIATION = 70
+    VERSION_OFFSET_X = 55
+    VERSION_OFFSET_Y = 38
+
     def __init__(self, screen, font):
         self.screen = screen
         self.font = font
@@ -140,11 +152,11 @@ class Menu:
     def _generate_decorative_stars(self):
         """Génère une liste déterministe de points lumineux décoratifs."""
         stars = []
-        for i in range(90):
-            x_ratio = ((i * 37) % 1000) / 1000.0
-            y_ratio = ((i * 91 + 13) % 1000) / 1000.0
-            radius = 1 + (i % 3)
-            shade = 165 + (i % 70)
+        for i in range(self.STAR_COUNT):
+            x_ratio = ((i * self.STAR_X_MULTIPLIER) % self.STAR_GRID_SIZE) / self.STAR_GRID_SIZE
+            y_ratio = ((i * self.STAR_Y_MULTIPLIER + self.STAR_Y_OFFSET) % self.STAR_GRID_SIZE) / self.STAR_GRID_SIZE
+            radius = self.STAR_RADIUS_BASE + (i % self.STAR_RADIUS_VARIATION)
+            shade = self.STAR_SHADE_BASE + (i % self.STAR_SHADE_VARIATION)
             stars.append((x_ratio, y_ratio, radius, shade))
         return stars
 
@@ -187,7 +199,7 @@ class Menu:
 
         if self.version_label:
             version_text = self.small_font.render(self.version_label, True, (180, 201, 244))
-            self.screen.blit(version_text, (title_x + title_width - 55, 38))
+            self.screen.blit(version_text, (title_x + title_width - self.VERSION_OFFSET_X, self.VERSION_OFFSET_Y))
     
     def draw_main_menu(self):
         """Dessine le menu principal"""
