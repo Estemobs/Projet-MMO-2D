@@ -40,13 +40,14 @@ jobs:
           main.py
 
       - name: Verify EXE exists
+        shell: powershell
         run: |
-          if [ ! -f "dist/ProjetMMO2D.exe" ]; then
-            echo "❌ EXE not found!"
+          if (!(Test-Path "dist/ProjetMMO2D.exe")) {
+            Write-Host "❌ EXE not found!"
             exit 1
-          fi
-          echo "✅ EXE built successfully"
-          ls -lh dist/ProjetMMO2D.exe
+          }
+          Write-Host "✅ EXE built successfully"
+          Get-Item "dist/ProjetMMO2D.exe" | Format-List Length
 
       - name: Upload EXE artifact
         uses: actions/upload-artifact@v4
