@@ -3,7 +3,6 @@ Update checker for MMO 2D - Fetches latest release from GitHub
 """
 
 import requests
-import json
 from packaging import version
 from systems.version import get_current_version
 
@@ -60,7 +59,7 @@ class UpdateChecker:
         """Compare versions using semantic versioning"""
         try:
             return version.parse(latest) > version.parse(current)
-        except:
+        except (ValueError, TypeError):
             return False
 
     def get_latest_version(self):

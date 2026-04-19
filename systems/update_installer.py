@@ -3,7 +3,6 @@ Update installer for MMO 2D - Downloads and installs updates
 """
 
 import os
-import sys
 import requests
 import shutil
 import subprocess
@@ -126,7 +125,7 @@ class UpdateInstaller:
         try:
             if self.temp_dir.exists():
                 shutil.rmtree(self.temp_dir)
-        except:
+        except (OSError, PermissionError):
             pass
 
 

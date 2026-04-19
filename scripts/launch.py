@@ -174,6 +174,8 @@ def check_for_updates():
     except Exception as e:
         print_colored(f"⚠️  Erreur lors de la vérification: {e}", Colors.YELLOW)
         return True  # Non-blocking
+
+def run_integrity_check():
     """Exécute toutes les vérifications d'intégrité"""
     print_colored("🔍 VÉRIFICATION DE L'INTÉGRITÉ DU PROJET", Colors.BOLD + Colors.PURPLE)
     print_colored("=" * 50, Colors.PURPLE)
