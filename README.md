@@ -54,7 +54,7 @@ Le workflow GitHub Actions `.github/workflows/release.yml` construit automatique
 
 ### Comment ça marche
 
-1. Le workflow se lance automatiquement quand un tag `vX.Y.Z` est push (ex: `v1.2.0`).
+1. Le workflow se lance automatiquement quand un tag `vX.Y.Z` est push (ex: `v4.0`).
 2. Deux builds sont exécutés:
    - Windows: build PyInstaller du `.exe`
    - Linux: build Flatpak du bundle `.flatpak`
@@ -63,8 +63,8 @@ Le workflow GitHub Actions `.github/workflows/release.yml` construit automatique
 ### Générer une release
 
 ```bash
-git tag v1.2.0
-git push origin v1.2.0
+git tag v4.0
+git push origin v4.0
 ```
 
 Ensuite, GitHub Actions:
