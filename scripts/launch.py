@@ -121,7 +121,59 @@ def check_game_files():
     print_colored("\n✅ Tous les fichiers requis sont présents", Colors.GREEN)
     return True
 
-def run_integrity_check():
+def check_for_updates():
+    """Vérifie s'il y a une mise à jour disponible"""
+    print_header("⚙️  Vérification des mises à jour")
+
+    try:
+        # Import du module de vérification des updates
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        from systems.update_checker import check_for_updates_sync
+        from systems.update_installer import prompt_for_update, UpdateInstaller
+
+        print_colored("🔍 Vérification sur GitHub...", Colors.CYAN)
+        checker = check_for_updates_sync()
+
+        if checker.error:
+            print_colored(f"⚠️  {checker.error}", Colors.YELLOW)
+            return True  # Non-blocking: continue même si erreur
+
+        if checker.has_update:
+            latest = checker.get_latest_version()
+            current = checker.current_version
+            print_colored(f"✨ Mise à jour disponible: {current} → {latest}", Colors.YELLOW)
+
+            if prompt_for_update(checker):
+                print_colored("📥 Téléchargement de la mise à jour...", Colors.BLUE)
+                installer = UpdateInstaller(checker)
+                success, filepath = installer.download_update()
+
+                if success:
+                    success, message = installer.install_update(filepath)
+                    installer.cleanup()
+
+                    if success:
+                        print_colored("✅ Mise à jour complète, redémarrage...", Colors.GREEN)
+                        sys.exit(0)
+                    else:
+                        print_colored(f"❌ Erreur d'installation: {message}", Colors.RED)
+                        return True  # Continue anyway
+                else:
+                    print_colored(f"❌ Erreur de téléchargement: {filepath}", Colors.RED)
+                    return True  # Continue anyway
+            else:
+                print_colored("⏭️  Mise à jour ignorée", Colors.YELLOW)
+                return True
+        else:
+            print_colored(f"✅ Vous avez la dernière version ({checker.current_version})", Colors.GREEN)
+            return True
+
+    except ImportError:
+        print_colored("⚠️  Modules de mise à jour non disponibles", Colors.YELLOW)
+        return True  # Non-blocking
+    except Exception as e:
+        print_colored(f"⚠️  Erreur lors de la vérification: {e}", Colors.YELLOW)
+        return True  # Non-blocking
     """Exécute toutes les vérifications d'intégrité"""
     print_colored("🔍 VÉRIFICATION DE L'INTÉGRITÉ DU PROJET", Colors.BOLD + Colors.PURPLE)
     print_colored("=" * 50, Colors.PURPLE)
@@ -131,6 +183,7 @@ def run_integrity_check():
         ("Environnement virtuel", check_virtual_env),
         ("Dépendances", check_dependencies),
         ("Fichiers du jeu", check_game_files),
+        ("Mises à jour", check_for_updates),
     ]
     
     results = []

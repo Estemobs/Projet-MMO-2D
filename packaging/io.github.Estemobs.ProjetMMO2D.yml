@@ -13,6 +13,8 @@ finish-args:
   - --device=dri
   # Audio
   - --socket=pulseaudio
+  # Réseau (pour les mises à jour)
+  - --socket=network
   # Accès aux données persistantes (sauvegardes)
   - --persist=.var/app/io.github.Estemobs.ProjetMMO2D/data
 
