@@ -203,38 +203,38 @@ class InventoryUI:
     def draw_crafting_tab(self, recipes, inventory):
         """Dessine l'onglet crafting."""
         start_x = 50
-        start_y = 100
-        
-        # Stocker les positions des recettes pour les clics
+        start_y = 110
         self.crafting_rects = []
-        
-        # Liste des recettes
-        for i, recipe in enumerate(recipes[:10]):  # Limiter à 10 recettes visibles
-            y = start_y + i * 60
-            
-            # Fond de la recette
+
+        for i, recipe in enumerate(recipes[:10]):
+            y = start_y + i * 65
             can_craft = recipe.can_craft(inventory)
-            color = self.GREEN if can_craft else self.DARK_GRAY
-            recipe_rect = pygame.Rect(start_x, y, 400, 50)
-            
-            # Stocker le rectangle pour les clics
+            recipe_rect = pygame.Rect(start_x, y, 450, 55)
+
             self.crafting_rects.append((i, recipe_rect, can_craft))
-            
             selected = (i == self.selected_slot and self.current_tab == "crafting")
-            if selected:
-                pygame.draw.rect(self.screen, self.BLUE, recipe_rect, 3)
-            
-            pygame.draw.rect(self.screen, color, recipe_rect)
-            pygame.draw.rect(self.screen, self.WHITE, recipe_rect, 2)
-            
-            # Nom de la recette
-            name_text = self.font.render(recipe.name, True, self.WHITE)
-            self.screen.blit(name_text, (start_x + 10, y + 5))
-            
-            # Ingrédients
-            ingredients_text = ", ".join([f"{qty} {name}" for name, qty in recipe.ingredients.items()])
-            ing_text = self.small_font.render(f"Requis: {ingredients_text}", True, self.WHITE)
-            self.screen.blit(ing_text, (start_x + 10, y + 25))
+
+            recipe_surface = pygame.Surface((450, 55), pygame.SRCALPHA)
+            if can_craft:
+                bg_color = (50, 100, 80, 150) if selected else (40, 80, 60, 120)
+                border_color = (100, 255, 150) if selected else (80, 200, 120)
+            else:
+                bg_color = (80, 40, 40, 100)
+                border_color = (180, 100, 100)
+
+            border_width = 3 if selected else 2
+            pygame.draw.rect(recipe_surface, bg_color, recipe_surface.get_rect(), border_radius=6)
+            pygame.draw.rect(recipe_surface, border_color, recipe_surface.get_rect(), border_width, border_radius=6)
+
+            self.screen.blit(recipe_surface, recipe_rect)
+
+            name_text = self.font.render(f"🔨 {recipe.name}", True, (245, 247, 255) if can_craft else (180, 100, 100))
+            self.screen.blit(name_text, (start_x + 15, y + 5))
+
+            ingredients_text = ", ".join([f"{qty}× {name[:10]}" for name, qty in recipe.ingredients.items()])
+            ing_color = (200, 230, 200) if can_craft else (200, 100, 100)
+            ing_text = self.small_font.render(f"Requis: {ingredients_text}", True, ing_color)
+            self.screen.blit(ing_text, (start_x + 15, y + 28))
     
     def draw_equipment_tab(self, inventory):
         """Dessine l'onglet équipement."""
