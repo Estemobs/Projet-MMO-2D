@@ -10,30 +10,49 @@ class UpdateChecker:
     """Checks for available updates from GitHub releases"""
 
     REPO = "Estemobs/Projet-MMO-2D"
-    API_URL = f"https://api.github.com/repos/{REPO}/releases/latest"
+    API_URL = f"https://api.github.com/repos/{REPO}/releases"
+    LATEST_API = f"https://api.github.com/repos/{REPO}/releases/latest"
 
-    def __init__(self):
+    def __init__(self, check_nightly=True):
         self.current_version = get_current_version()
         self.latest_release = None
         self.has_update = False
         self.error = None
+        self.check_nightly = check_nightly
+        self.is_nightly = False
 
     def check(self):
         """Check for updates from GitHub API"""
         try:
-            response = requests.get(self.API_URL, timeout=5)
+            # D'abord chercher la dernière version stable
+            response = requests.get(self.LATEST_API, timeout=5)
             response.raise_for_status()
             self.latest_release = response.json()
 
             latest_tag = self.latest_release.get("tag_name", "")
             latest_version_str = self._parse_version(latest_tag)
 
+            has_stable_update = False
             if latest_version_str:
-                self.has_update = self._compare_versions(
+                has_stable_update = self._compare_versions(
                     self.current_version,
                     latest_version_str
                 )
 
+            # Si check_nightly est activé, chercher aussi les nightly builds
+            if self.check_nightly and not has_stable_update:
+                response = requests.get(f"{self.API_URL}?per_page=5", timeout=5)
+                response.raise_for_status()
+                releases = response.json()
+
+                for release in releases:
+                    if release.get("tag_name") == "nightly":
+                        self.latest_release = release
+                        self.is_nightly = True
+                        self.has_update = True
+                        return True
+
+            self.has_update = has_stable_update
             return True
 
         except requests.exceptions.Timeout:
@@ -66,6 +85,8 @@ class UpdateChecker:
         """Returns the latest version string"""
         if self.latest_release:
             tag = self.latest_release.get("tag_name", "")
+            if tag == "nightly":
+                return "nightly"
             return self._parse_version(tag)
         return None
 
@@ -90,12 +111,15 @@ class UpdateChecker:
     def get_release_notes(self):
         """Returns release notes for latest version"""
         if self.latest_release:
-            return self.latest_release.get("body", "No release notes")
+            body = self.latest_release.get("body", "No release notes")
+            if self.is_nightly:
+                return f"🌙 Nightly Build\n\n{body}"
+            return body
         return None
 
 
-def check_for_updates_sync():
+def check_for_updates_sync(check_nightly=True):
     """Synchronous update check (blocking but simple)"""
-    checker = UpdateChecker()
+    checker = UpdateChecker(check_nightly=check_nightly)
     checker.check()
     return checker

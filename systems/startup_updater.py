@@ -32,7 +32,7 @@ def check_and_prompt_for_update() -> bool:
     should exit.
     """
 
-    checker = check_for_updates_sync()
+    checker = check_for_updates_sync(check_nightly=True)
 
     if checker.error:
         print(f"⚠️  Mise à jour ignorée: {checker.error}")
@@ -45,7 +45,7 @@ def check_and_prompt_for_update() -> bool:
     current_version = checker.current_version
     release_notes = checker.get_release_notes() or "Aucune note de version disponible."
 
-    if not _show_update_dialog(current_version, latest_version, release_notes):
+    if not _show_update_dialog(current_version, latest_version, release_notes, checker.is_nightly):
         return True
 
     installer = UpdateInstaller(checker)
@@ -70,16 +70,16 @@ def check_and_prompt_for_update() -> bool:
     return True
 
 
-def _show_update_dialog(current_version: str, latest_version: str, release_notes: str) -> bool:
+def _show_update_dialog(current_version: str, latest_version: str, release_notes: str, is_nightly: bool = False) -> bool:
     """Display a small modal dialog asking the user to update."""
 
     if tk is None:
-        return _fallback_console_prompt(current_version, latest_version, release_notes)
+        return _fallback_console_prompt(current_version, latest_version, release_notes, is_nightly)
 
     try:
         root = tk.Tk()
     except Exception:
-        return _fallback_console_prompt(current_version, latest_version, release_notes)
+        return _fallback_console_prompt(current_version, latest_version, release_notes, is_nightly)
 
     root.withdraw()
     root.title(DIALOG_TITLE)
@@ -97,7 +97,7 @@ def _show_update_dialog(current_version: str, latest_version: str, release_notes
 
     title_label = tk.Label(
         container,
-        text="Une nouvelle version est disponible.",
+        text="Une nouvelle version est disponible." + (" 🌙 Nightly Build" if is_nightly else ""),
         font=("TkDefaultFont", 11, "bold"),
     )
     title_label.pack(anchor="w")
@@ -153,15 +153,16 @@ def _show_update_dialog(current_version: str, latest_version: str, release_notes
     return result["accepted"]
 
 
-def _fallback_console_prompt(current_version: str, latest_version: str, release_notes: str) -> bool:
+def _fallback_console_prompt(current_version: str, latest_version: str, release_notes: str, is_nightly: bool = False) -> bool:
     """Fallback prompt when tkinter is not available."""
 
     if not sys.stdin.isatty():
         print("⚠️  Impossible d'afficher la fenêtre de mise à jour, lancement du jeu.")
         return False
 
+    nightly_tag = "🌙 " if is_nightly else ""
     print()
-    print(f"Nouvelle version disponible: {current_version} -> {latest_version}")
+    print(f"{nightly_tag}Nouvelle version disponible: {current_version} -> {latest_version}")
     print(release_notes.strip()[:800])
     response = input("Mettre à jour maintenant ? [o/N]: ").strip().lower()
     return response in {"o", "oui", "y", "yes", ""}
