@@ -15,21 +15,21 @@ class RenderManager:
     def get_tile_color(self, tile_type):
         """Retourne la couleur d'une tile (fallback si pas de sprite)"""
         tile_colors = {
-            TileType.GRASS: COLORS["GREEN"],
-            TileType.TREE: COLORS["BROWN"],
-            TileType.STONE: COLORS["GRAY"],
-            TileType.IRON_ORE: (139, 69, 19),
-            TileType.GOLD_ORE: (255, 215, 0),
-            TileType.DIAMOND_ORE: (185, 242, 255),
-            TileType.COAL_ORE: (64, 64, 64),
+            TileType.GRASS: COLORS["GRASS"],
+            TileType.TREE: COLORS["DARK_GREEN"],
+            TileType.STONE: COLORS["STONE"],
+            TileType.IRON_ORE: (150, 100, 100),
+            TileType.GOLD_ORE: COLORS["YELLOW"],
+            TileType.DIAMOND_ORE: COLORS["LIGHT_BLUE"],
+            TileType.COAL_ORE: (40, 40, 40),
             TileType.APPLE_TREE: COLORS["GREEN"],
-            TileType.BERRY_BUSH: (128, 0, 128),
-            TileType.FOUNDATION: (160, 160, 160),
+            TileType.BERRY_BUSH: COLORS["PURPLE"],
+            TileType.FOUNDATION: (140, 140, 140),
             TileType.WALL: COLORS["BROWN"],
-            TileType.DIRT: (139, 117, 78),  # Couleur terre
-            TileType.WATER: (64, 164, 223),  # Couleur eau
+            TileType.DIRT: COLORS["DIRT"],
+            TileType.WATER: COLORS["WATER"],
         }
-        return tile_colors.get(tile_type, COLORS["GREEN"])
+        return tile_colors.get(tile_type, COLORS["GRASS"])
     
     def get_tile_sprite_name(self, tile_type, x=0, y=0):
         """Retourne le nom du sprite pour une tile avec variantes consistantes"""
@@ -71,27 +71,23 @@ class RenderManager:
         """Dessine le monde avec sprites ou couleurs"""
         screen_width = self.screen.get_width()
         screen_height = self.screen.get_height()
-        
-        # Calculer les tiles visibles
+
         start_x = max(0, int(camera.x // TILE_SIZE))
         end_x = min(MAP_WIDTH, int((camera.x + screen_width) // TILE_SIZE) + 1)
         start_y = max(0, int(camera.y // TILE_SIZE))
         end_y = min(MAP_HEIGHT, int((camera.y + screen_height) // TILE_SIZE) + 1)
-        
-        # Dessiner les tiles visibles
+
         for y in range(start_y, end_y):
             for x in range(start_x, end_x):
                 tile_type = world_map[y][x]
                 screen_x = x * TILE_SIZE - camera.x
                 screen_y = y * TILE_SIZE - camera.y
-                
-                # Essayer d'utiliser un sprite
+
                 sprite_name = self.get_tile_sprite_name(tile_type, x, y)
                 if not self.sprite_manager.draw_tile(self.screen, sprite_name, screen_x, screen_y):
-                    # Fallback: dessiner avec des couleurs
                     color = self.get_tile_color(tile_type)
                     pygame.draw.rect(self.screen, color, (screen_x, screen_y, TILE_SIZE, TILE_SIZE))
-                    pygame.draw.rect(self.screen, COLORS["BLACK"], (screen_x, screen_y, TILE_SIZE, TILE_SIZE), 1)
+                    pygame.draw.rect(self.screen, (0, 0, 0, 50), (screen_x, screen_y, TILE_SIZE, TILE_SIZE), 1)
     
     def draw_player(self, player, camera):
         """Dessine le joueur avec animation de marche"""
@@ -169,14 +165,18 @@ class RenderManager:
                                      TILE_SIZE // 3)
                 
                 # Barre de vie de l'ennemi (ajustée pour les sprites plus grands)
-                bar_width = 48  # Largeur du nouveau sprite
-                bar_height = 4
+                bar_width = 48
+                bar_height = 5
                 health_ratio = enemy.health / enemy.max_health
-                
-                pygame.draw.rect(self.screen, COLORS["RED"], 
-                               (draw_x, draw_y - 8, bar_width, bar_height))
-                pygame.draw.rect(self.screen, COLORS["GREEN"], 
-                               (draw_x, draw_y - 8, bar_width * health_ratio, bar_height))
+
+                health_color = COLORS["RED"] if health_ratio < 0.33 else (COLORS["YELLOW"] if health_ratio < 0.66 else COLORS["GREEN"])
+
+                pygame.draw.rect(self.screen, (30, 30, 30),
+                               (draw_x, draw_y - 10, bar_width, bar_height), border_radius=2)
+                pygame.draw.rect(self.screen, health_color,
+                               (draw_x, draw_y - 10, bar_width * health_ratio, bar_height), border_radius=2)
+                pygame.draw.rect(self.screen, (100, 100, 100),
+                               (draw_x, draw_y - 10, bar_width, bar_height), 1, border_radius=2)
     
     def draw_death_markers(self, death_markers, camera):
         """Dessine les marqueurs de mort"""
