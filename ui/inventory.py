@@ -267,61 +267,65 @@ class InventoryUI:
         """Dessine l'interface d'inventaire."""
         if not self.visible:
             return
-        
-        # Fond semi-transparent
-        overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
-        overlay.set_alpha(180)
-        overlay.fill(self.BLACK)
+
+        overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 140))
         self.screen.blit(overlay, (0, 0))
-        
-        # Titre
-        title_text = "Inventaire et Artisanat"
-        title = self.font.render(title_text, True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, 30))
+
+        title_text = "📦 Inventaire et Artisanat"
+        title = self.font.render(title_text, True, (245, 247, 255))
+        title_rect = title.get_rect(center=(self.screen.get_width()//2, 20))
         self.screen.blit(title, title_rect)
-        
-        # Onglets
-        tab_width = 120
-        tab_height = 30
-        tab_y = 60
-        tabs = [("inventory", "Inventaire"), ("crafting", "Artisanat"), ("equipment", "Équipement")]
-        
-        # Stocker les rectangles des onglets pour les clics
+
+        # Onglets modernes
+        tab_width = 140
+        tab_height = 35
+        tab_y = 50
+        tabs = [("inventory", "📋 Inventaire"), ("crafting", "🔨 Artisanat"), ("equipment", "⚔ Équipement")]
+
         self.tab_rects = []
-        
+
         for i, (tab_id, tab_name) in enumerate(tabs):
-            x = 50 + i * (tab_width + 10)
-            color = self.BLUE if tab_id == self.current_tab else self.GRAY
-            
+            x = 50 + i * (tab_width + 15)
+            is_active = tab_id == self.current_tab
+
             tab_rect = pygame.Rect(x, tab_y, tab_width, tab_height)
             self.tab_rects.append((tab_id, tab_rect))
-            
-            pygame.draw.rect(self.screen, color, tab_rect)
-            pygame.draw.rect(self.screen, self.WHITE, tab_rect, 2)
-            
-            tab_text = self.small_font.render(tab_name, True, self.WHITE)
+
+            tab_surface = pygame.Surface((tab_width, tab_height), pygame.SRCALPHA)
+            if is_active:
+                pygame.draw.rect(tab_surface, (112, 165, 255, 220), tab_surface.get_rect(), border_radius=6)
+                pygame.draw.rect(tab_surface, (189, 214, 255), tab_surface.get_rect(), 2, border_radius=6)
+                text_color = (255, 255, 255)
+            else:
+                pygame.draw.rect(tab_surface, (50, 60, 100, 150), tab_surface.get_rect(), border_radius=6)
+                pygame.draw.rect(tab_surface, (100, 120, 180), tab_surface.get_rect(), 1, border_radius=6)
+                text_color = (180, 190, 220)
+
+            self.screen.blit(tab_surface, tab_rect)
+
+            tab_text = self.small_font.render(tab_name, True, text_color)
             text_rect = tab_text.get_rect(center=(x + tab_width//2, tab_y + tab_height//2))
             self.screen.blit(tab_text, text_rect)
-        
-        # Contenu de l'onglet
+
         if self.current_tab == "inventory":
             self.draw_inventory_tab(inventory)
         elif self.current_tab == "crafting":
             self.draw_crafting_tab(recipes, inventory)
         elif self.current_tab == "equipment":
             self.draw_equipment_tab(inventory)
-        
-        # Instructions
+
+        # Instructions en bas
         instructions = [
-            "Clic: Sélectionner/Utiliser",
-            "WASD: Naviguer (clavier)",
-            "ENTER: Utiliser/Équiper",
-            "I: Fermer inventaire"
+            "🖱 Clic: Sélectionner",
+            "⌨ TAB: Onglets",
+            "⌨ I: Fermer"
         ]
-        
+
+        info_y = self.screen.get_height() - 70
         for i, instruction in enumerate(instructions):
-            inst_text = self.small_font.render(instruction, True, self.WHITE)
-            self.screen.blit(inst_text, (self.screen.get_width() - 200, 100 + i * 20))
+            inst_text = self.small_font.render(instruction, True, (180, 200, 240))
+            self.screen.blit(inst_text, (20 + i * 200, info_y))
     
     def handle_event(self, event, inventory, recipes):
         """Gère les événements de l'interface d'inventaire."""
