@@ -51,6 +51,5 @@ modules:
       - type: git
         url: https://github.com/Estemobs/Projet-MMO-2D.git
         branch: main
-        commit: HEAD
       - type: file
         path: run.sh

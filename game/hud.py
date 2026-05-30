@@ -86,7 +86,7 @@ class HUD:
             self._draw_panel(screen, panel_x, build_panel_y, build_width, 45)
 
             mode_text = self.font.render(
-                f"🏗 CONSTRUCTION", True, COLORS['YELLOW'])
+                "🏗 CONSTRUCTION", True, COLORS['YELLOW'])
             screen.blit(mode_text, (panel_x + 15, build_panel_y + 12))
 
             building_text = self.small_font.render(
