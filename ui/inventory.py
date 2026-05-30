@@ -145,36 +145,35 @@ class InventoryUI:
     
     def draw_slot(self, x, y, item_stack, selected=False):
         """Dessine un emplacement d'inventaire."""
-        # Fond de l'emplacement
-        color = self.BLUE if selected else self.GRAY
-        pygame.draw.rect(self.screen, color, (x, y, self.slot_size, self.slot_size))
-        pygame.draw.rect(self.screen, self.WHITE, (x, y, self.slot_size, self.slot_size), 2)
-        
+        border_color = (255, 200, 100) if selected else (117, 171, 255)
+        border_width = 3 if selected else 2
+
+        slot_surface = pygame.Surface((self.slot_size, self.slot_size), pygame.SRCALPHA)
+        pygame.draw.rect(slot_surface, (30, 35, 60, 200), slot_surface.get_rect(), border_radius=4)
+        pygame.draw.rect(slot_surface, border_color, slot_surface.get_rect(), border_width, border_radius=4)
+        self.screen.blit(slot_surface, (x, y))
+
         if item_stack:
-            # Essayer d'afficher le sprite de l'item
             sprite_drawn = False
             if self.sprite_manager:
                 sprite = self.sprite_manager.get_item_sprite(item_stack.item.sprite_name)
                 if sprite:
-                    # Redimensionner le sprite pour s'adapter au slot
-                    item_size = self.slot_size - 10
+                    item_size = self.slot_size - 8
                     sprite_scaled = pygame.transform.scale(sprite, (item_size, item_size))
-                    self.screen.blit(sprite_scaled, (x + 5, y + 5))
+                    self.screen.blit(sprite_scaled, (x + 4, y + 4))
                     sprite_drawn = True
-            
-            # Si pas de sprite trouvé, utiliser la couleur comme avant
+
             if not sprite_drawn:
                 item_color = item_stack.item.color
-                pygame.draw.rect(self.screen, item_color, 
-                               (x + 5, y + 5, self.slot_size - 10, self.slot_size - 10))
-            
-            # Quantité
+                pygame.draw.rect(self.screen, item_color,
+                               (x + 4, y + 4, self.slot_size - 8, self.slot_size - 8), border_radius=3)
+
             if item_stack.quantity > 1:
                 qty_text = self.small_font.render(str(item_stack.quantity), True, self.WHITE)
-                # Fond noir pour mieux voir le texte
                 text_rect = qty_text.get_rect()
-                text_rect.bottomright = (x + self.slot_size - 2, y + self.slot_size - 2)
-                pygame.draw.rect(self.screen, self.BLACK, text_rect.inflate(2, 1))
+                text_rect.bottomright = (x + self.slot_size - 2, y + self.slot_size - 1)
+                bg_rect = text_rect.inflate(4, 2)
+                pygame.draw.rect(self.screen, (0, 0, 0, 150), bg_rect, border_radius=2)
                 self.screen.blit(qty_text, text_rect)
     
     def draw_inventory_tab(self, inventory):
