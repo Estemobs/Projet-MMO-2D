@@ -686,12 +686,12 @@ class Menu:
     def handle_controls_event(self, event):
         """Gère les événements du menu des contrôles"""
         modifiable_controls = [k for k in self.control_names.keys() if k != "harvest"]
-        max_selection = len(modifiable_controls)  # +1 pour le bouton retour sera géré séparément
+        max_selection = len(modifiable_controls)
         
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.current_menu = "options"
-                self.selected_button = 3  # Retour sur le bouton contrôles
+                self.selected_button = 3
                 self.save_settings()
             elif event.key == pygame.K_UP:
                 self.controls_menu_selected = max(0, self.controls_menu_selected - 1)
@@ -699,11 +699,9 @@ class Menu:
                 self.controls_menu_selected = min(max_selection, self.controls_menu_selected + 1)
             elif event.key == pygame.K_RETURN:
                 if self.controls_menu_selected < max_selection:
-                    # Modifier un contrôle
                     control_key = modifiable_controls[self.controls_menu_selected]
                     return f"remap_control_{control_key}"
                 else:
-                    # Bouton retour
                     self.current_menu = "options"
                     self.selected_button = 3
                     self.save_settings()
@@ -711,20 +709,18 @@ class Menu:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
             
-            # Vérifier les clics sur les boutons de contrôles
-            y = 150
-            button_height = 40
-            button_width = 200
-            button_x = 350
+            y = s(150)
+            button_height = s(40)
+            button_width = s(200)
+            button_x = s(400)
             
             for i, control_key in enumerate(modifiable_controls):
-                button_rect = pygame.Rect(button_x, y + i * 60, button_width, button_height)
+                button_rect = pygame.Rect(button_x, y + i * s(60), button_width, button_height)
                 if button_rect.collidepoint(mouse_pos):
                     return f"remap_control_{control_key}"
             
-            # Vérifier le clic sur le bouton retour
-            retour_rect = pygame.Rect(self.screen.get_width()//2 - 100, 
-                                    self.screen.get_height() - 100, 200, 50)
+            retour_rect = pygame.Rect(self.screen.get_width()//2 - s(100), 
+                                    self.screen.get_height() - s(100), s(200), s(50))
             if retour_rect.collidepoint(mouse_pos):
                 self.current_menu = "options"
                 self.selected_button = 3
