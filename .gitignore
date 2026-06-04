@@ -51,6 +51,8 @@ logs/
 saves/
 screenshots/
 profiles/
+data/savegame.json
+settings.json
 
 # OS
 .DS_Store
