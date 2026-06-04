@@ -267,6 +267,10 @@ class GameManager:
             # Mettre à jour le temps pour les animations de rendu
             self.render_manager.update_time(dt)
             
+            # Mettre à jour les animations du HUD
+            if self.hud:
+                self.hud.update(dt)
+            
             # Synchroniser les références
             self.player = self.gameplay_manager.player
             self.enemies = self.gameplay_manager.enemies
@@ -299,6 +303,10 @@ class GameManager:
             self.player, self.enemies, self.dropped_inventories, self.camera, 
             self.gameplay_manager.item_manager
         )
+        
+        # Dessiner les particules
+        if hasattr(self.gameplay_manager, 'particle_manager'):
+            self.gameplay_manager.particle_manager.draw(self.screen, self.camera)
         
         # Dessiner la minimap en haut à droite
         self.minimap.draw(self.screen, self.player, self.enemies, self.camera, self.dropped_inventories)

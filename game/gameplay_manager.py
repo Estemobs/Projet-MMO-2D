@@ -262,13 +262,32 @@ class GameplayManager:
             self.enemies, mouse_pos, self.camera.x, self.camera.y, current_time
         )
         if hit_enemy is not None:
-            return  # attack was performed, don't harvest
+            # Effet de dégâts
+            if hasattr(self, 'particle_manager'):
+                self.particle_manager.emit_damage_flash(hit_enemy.x + 16, hit_enemy.y + 16)
+            return
 
         # 4. Récolte de ressources
-        self.player.harvest_resource(
+        harvested = self.player.harvest_resource(
             self.world_map, mouse_pos, self.camera.x, self.camera.y,
             items, self.item_manager
         )
+        if harvested and hasattr(self, 'particle_manager'):
+            # Déterminer le type de tile récoltée
+            world_x = mouse_pos[0] + self.camera.x
+            world_y = mouse_pos[1] + self.camera.y
+            tile_x = int(world_x // TILE_SIZE)
+            tile_y = int(world_y // TILE_SIZE)
+            from .tiletype import TileType
+            tile_type = self.world_map[tile_y][tile_x] if 0 <= tile_x < MAP_WIDTH and 0 <= tile_y < MAP_HEIGHT else TileType.GRASS
+            tile_category = {
+                TileType.TREE: 'wood', TileType.APPLE_TREE: 'wood',
+                TileType.STONE: 'stone',
+                TileType.IRON_ORE: 'ore', TileType.GOLD_ORE: 'ore',
+                TileType.DIAMOND_ORE: 'ore', TileType.COAL_ORE: 'ore',
+                TileType.BERRY_BUSH: 'food',
+            }.get(tile_type, 'stone')
+            self.particle_manager.emit_harvest_sparks(world_x, world_y, tile_category)
     
     def get_playtime(self):
         """Retourne le temps de jeu actuel formaté"""

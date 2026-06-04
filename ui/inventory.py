@@ -124,51 +124,95 @@ class InventoryUI:
         self.screen = screen
         self.font = font
         self.small_font = pygame.font.Font(None, 16)
+        self.tooltip_font = pygame.font.Font(None, 18)
         self.sprite_manager = sprite_manager
         
-        # Couleurs
-        self.WHITE = (255, 255, 255)
+        # Couleurs modernes
+        self.WHITE = (245, 247, 255)
         self.BLACK = (0, 0, 0)
-        self.GRAY = (128, 128, 128)
-        self.DARK_GRAY = (64, 64, 64)
-        self.GREEN = (0, 255, 0)
-        self.BLUE = (0, 100, 255)
-        self.BROWN = (139, 69, 19)
+        self.GRAY = (132, 144, 170)
+        self.DARK_GRAY = (36, 44, 68)
+        self.GREEN = (84, 214, 125)
+        self.BLUE = (88, 138, 255)
+        self.RED = (245, 98, 98)
+        self.ORANGE = (255, 165, 0)
+        self.PURPLE = (200, 120, 255)
+        self.YELLOW = (255, 221, 129)
         
-        self.slot_size = 40
-        self.slot_padding = 5
+        self.slot_size = 44
+        self.slot_padding = 4
         self.visible = False
         self.selected_slot = 0
+        self.hover_slot = -1
         
         # Modes d'affichage
-        self.current_tab = "inventory"  # "inventory", "crafting", "equipment"
-    
+        self.current_tab = "inventory"
+        
+        # Couleurs par catégorie d'item
+        self.category_colors = {
+            "resource": (84, 180, 120),   # Vert ressource
+            "food": (220, 140, 60),       # Orange nourriture
+            "weapon": (220, 80, 80),      # Rouge arme
+            "tool": (140, 160, 200),      # Bleu outil
+            "armor": (180, 140, 200),     # Violet armure
+            "material": (180, 170, 120),  # Jaune matériau
+        }
+
+    def _get_category_color(self, item_type):
+        """Retourne la couleur de bordure selon le type d'item."""
+        return self.category_colors.get(item_type, (117, 171, 255))
+
     def draw_slot(self, x, y, item_stack, selected=False):
-        """Dessine un emplacement d'inventaire."""
-        border_color = (255, 200, 100) if selected else (117, 171, 255)
+        """Dessine un emplacement d'inventaire avec style amélioré."""
+        # Couleur de bordure selon la catégorie
+        if item_stack:
+            base_color = self._get_category_color(item_stack.item.type)
+        else:
+            base_color = (60, 70, 100)
+        
+        border_color = (255, 220, 120) if selected else base_color
         border_width = 3 if selected else 2
 
+        # Fond du slot
         slot_surface = pygame.Surface((self.slot_size, self.slot_size), pygame.SRCALPHA)
-        pygame.draw.rect(slot_surface, (30, 35, 60, 200), slot_surface.get_rect(), border_radius=4)
-        pygame.draw.rect(slot_surface, border_color, slot_surface.get_rect(), border_width, border_radius=4)
+        # Dégradé vertical subtil
+        for i in range(self.slot_size):
+            t = i / self.slot_size
+            r = int(25 + t * 10)
+            g = int(30 + t * 10)
+            b = int(50 + t * 15)
+            pygame.draw.line(slot_surface, (r, g, b, 210), (0, i), (self.slot_size, i))
+        # Bordure
+        pygame.draw.rect(slot_surface, border_color, slot_surface.get_rect(), border_width, border_radius=5)
         self.screen.blit(slot_surface, (x, y))
 
         if item_stack:
+            # Dessiner le sprite
             sprite_drawn = False
             if self.sprite_manager:
                 sprite = self.sprite_manager.get_item_sprite(item_stack.item.sprite_name)
                 if sprite:
                     item_size = self.slot_size - 8
-                    sprite_scaled = pygame.transform.scale(sprite, (item_size, item_size))
+                    sprite_scaled = pygame.transform.smoothscale(sprite, (item_size, item_size))
                     self.screen.blit(sprite_scaled, (x + 4, y + 4))
                     sprite_drawn = True
 
             if not sprite_drawn:
-                item_color = item_stack.item.color
-                pygame.draw.rect(self.screen, item_color,
-                               (x + 4, y + 4, self.slot_size - 8, self.slot_size - 8), border_radius=3)
+                # Fallback : rectangle coloré avec icône
+                color = self._get_category_color(item_stack.item.type)
+                pygame.draw.rect(self.screen, color,
+                               (x + 6, y + 6, self.slot_size - 12, self.slot_size - 12), border_radius=4)
 
+            # Quantité avec fond
             if item_stack.quantity > 1:
+                qty_text = self.small_font.render(str(item_stack.quantity), True, self.WHITE)
+                text_rect = qty_text.get_rect()
+                text_rect.bottomright = (x + self.slot_size - 2, y + self.slot_size - 1)
+                bg_rect = text_rect.inflate(4, 2)
+                bg_surf = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+                pygame.draw.rect(bg_surf, (0, 0, 0, 180), bg_surf.get_rect(), border_radius=2)
+                self.screen.blit(bg_surf, bg_rect.topleft)
+                self.screen.blit(qty_text, text_rect)
                 qty_text = self.small_font.render(str(item_stack.quantity), True, self.WHITE)
                 text_rect = qty_text.get_rect()
                 text_rect.bottomright = (x + self.slot_size - 2, y + self.slot_size - 1)
@@ -317,15 +361,89 @@ class InventoryUI:
 
         # Instructions en bas
         instructions = [
-            "🖱 Clic: Sélectionner",
-            "⌨ TAB: Onglets",
-            "⌨ I: Fermer"
+            "Clic: Sélectionner / Utiliser",
+            "TAB: Onglets",
+            "I: Fermer"
         ]
 
         info_y = self.screen.get_height() - 70
         for i, instruction in enumerate(instructions):
-            inst_text = self.small_font.render(instruction, True, (180, 200, 240))
-            self.screen.blit(inst_text, (20 + i * 200, info_y))
+            inst_text = self.small_font.render(instruction, True, (140, 160, 200))
+            self.screen.blit(inst_text, (20 + i * 220, info_y))
+
+        # Tooltip au survol
+        self._draw_tooltip(inventory)
+
+    def _draw_tooltip(self, inventory):
+        """Dessine un tooltip si on survole un slot avec un item."""
+        mouse_pos = pygame.mouse.get_pos()
+        
+        if self.current_tab == "inventory" and hasattr(self, 'inventory_slots_rects'):
+            for slot_index, slot_rect in self.inventory_slots_rects:
+                if slot_rect.collidepoint(mouse_pos) and inventory.slots[slot_index]:
+                    item_stack = inventory.slots[slot_index]
+                    item = item_stack.item
+                    
+                    # Construire le texte du tooltip
+                    lines = [item.name]
+                    if hasattr(item, 'description') and item.description:
+                        lines.append(item.description)
+                    
+                    # Catégorie
+                    cat_names = {
+                        "resource": "Ressource",
+                        "food": "Nourriture",
+                        "weapon": "Arme",
+                        "tool": "Outil",
+                        "armor": "Armure",
+                        "material": "Matériau",
+                    }
+                    cat = cat_names.get(item.type, item.type)
+                    lines.append(f"Type: {cat}")
+                    
+                    # Quantité
+                    if item_stack.quantity > 1:
+                        lines.append(f"Quantité: {item_stack.quantity}")
+                    
+                    # Dessiner le tooltip
+                    self._render_tooltip(mouse_pos[0] + 15, mouse_pos[1] + 15, lines, item.type)
+                    break
+
+    def _render_tooltip(self, x, y, lines, item_type="resource"):
+        """Dessine un tooltip stylisé."""
+        padding = 8
+        line_height = 18
+        width = max(self.tooltip_font.size(line)[0] for line in lines) + padding * 2
+        height = len(lines) * line_height + padding * 2
+
+        # Ajuster pour ne pas dépasser l'écran
+        if x + width > self.screen.get_width():
+            x = self.screen.get_width() - width - 5
+        if y + height > self.screen.get_height():
+            y = self.screen.get_height() - height - 5
+
+        # Fond du tooltip
+        tooltip_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        pygame.draw.rect(tooltip_surf, (15, 20, 35, 230), (0, 0, width, height), border_radius=6)
+        
+        # Bordure colorée selon la catégorie
+        cat_color = self._get_category_color(item_type)
+        pygame.draw.rect(tooltip_surf, cat_color, (0, 0, width, height), 1, border_radius=6)
+        
+        self.screen.blit(tooltip_surf, (x, y))
+
+        # Texte
+        for i, line in enumerate(lines):
+            if i == 0:
+                # Titre : blanc gras
+                color = self.WHITE
+            elif "Type:" in line:
+                color = self._get_category_color(item_type)
+            else:
+                color = self.GRAY
+            
+            text_surf = self.tooltip_font.render(line, True, color)
+            self.screen.blit(text_surf, (x + padding, y + padding + i * line_height))
     
     def handle_event(self, event, inventory, recipes):
         """Gère les événements de l'interface d'inventaire."""
