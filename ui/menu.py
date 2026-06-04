@@ -1,9 +1,11 @@
 import pygame
 import json
 import os
+import math
+import time as _time
 
 class Menu:
-    STAR_COUNT = 90
+    STAR_COUNT = 120
     STAR_X_MULTIPLIER = 37
     STAR_Y_MULTIPLIER = 91
     STAR_Y_OFFSET = 13
@@ -43,6 +45,7 @@ class Menu:
         self._background_stars = Menu.DECORATIVE_STARS
         self._background_cache = None
         self._background_cache_size = None
+        self._menu_time = 0.0
         
         try:
             from systems.version import get_current_version
