@@ -7,6 +7,7 @@ import time
 
 from ui.inventory import InventoryUI
 from ui.menu import Menu
+from ui.pause_menu import PauseMenu
 from game.constants import COLORS, TARGET_FPS
 from game.hud import HUD
 from game.render_manager import RenderManager
@@ -69,6 +70,7 @@ class GameManager:
         # Interfaces
         self.menu = Menu(self.screen, self.font)
         self.inventory_ui = InventoryUI(self.screen, self.font, self.sprite_manager)
+        self.pause_menu = PauseMenu(self.screen, self.font)
         
         # Nouveaux gestionnaires modulaires
         self.render_manager = RenderManager(self.screen)
@@ -246,11 +248,28 @@ class GameManager:
 
     def _handle_game_events(self, event):
         """Gère les événements en jeu"""
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
+        # Si le menu pause est ouvert, déléguer les événements
+        if self.pause_menu.visible:
+            action = self.pause_menu.handle_event(event)
+            if action == "resume":
+                self.pause_menu.hide()
+            elif action == "save":
+                if self.save_game():
+                    self.show_save_message = True
+                    self.save_message_timer = 2.0
+                    self.sound_manager.play('save')
+                self.pause_menu.hide()
+            elif action == "menu":
+                self.pause_menu.hide()
                 self.state = "menu"
                 self.menu.current_menu = "main"
-                self.menu.selected_button = 0
+            elif action == "quit":
+                self.running = False
+            return
+        
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.pause_menu.show()
             elif event.key == pygame.K_F5:
                 if self.save_game():
                     print("✅ Partie sauvegardée!")
