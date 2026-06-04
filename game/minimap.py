@@ -101,6 +101,12 @@ class MiniMap:
         self.screen_width = screen_width
         self.x = screen_width - self.width - 10  # Petite marge à droite
         self.y = 10  # Petite marge en haut
+
+    def update_screen_size(self, screen_width, screen_height):
+        """Met à jour la taille d'écran de la minimap."""
+        self.screen_width = screen_width
+        self.x = screen_width - self.width - 10
+        self.y = 10
     
     def draw(self, screen, player, enemies=None, camera=None, death_markers=None):
         """Dessine la minimap avec style amélioré."""
