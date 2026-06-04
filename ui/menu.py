@@ -379,43 +379,70 @@ class Menu:
             ])
 
     def _draw_button(self, text, cx, cy, w, h, selected=False, font_size_pct=2.5):
-        """Dessine un bouton centré sur (cx, cy)."""
+        """Dessine un bouton centré sur (cx, cy) avec animations améliorées."""
         x = cx - w // 2
         y = cy - h // 2
         rect = pygame.Rect(x, y, w, h)
-        br = max(4, h // 5)
+        br = max(6, h // 4)
 
-        # Ombre
-        shadow = pygame.Surface((w, h + 8), pygame.SRCALPHA)
-        pygame.draw.rect(shadow, (0, 0, 0, 130 if selected else 80), (0, 4, w, h), border_radius=br)
-        self.screen.blit(shadow, (x, y))
+        # Ombre profonde
+        shadow = pygame.Surface((w + 4, h + 12), pygame.SRCALPHA)
+        pygame.draw.rect(shadow, (0, 0, 0, 160 if selected else 90), (2, 6, w, h), border_radius=br)
+        self.screen.blit(shadow, (x - 2, y))
 
-        # Glow
+        # Glow animé pour bouton sélectionné
         if selected:
-            glow = pygame.Surface((w + 20, h + 20), pygame.SRCALPHA)
-            pulse = int(abs(math.sin(self._menu_time * 3)) * 30) + 50
-            pygame.draw.rect(glow, (112, 165, 255, pulse), (0, 0, w + 20, h + 20), border_radius=br + 6)
-            self.screen.blit(glow, (x - 10, y - 10))
+            for layer in range(3):
+                glow_size = 12 + layer * 6
+                glow = pygame.Surface((w + glow_size * 2, h + glow_size * 2), pygame.SRCALPHA)
+                pulse = int(abs(math.sin(self._menu_time * 3 + layer * 0.5)) * (25 - layer * 6)) + (50 - layer * 10)
+                glow_alpha = max(0, pulse)
+                pygame.draw.rect(glow, (100, 160, 255, glow_alpha), (0, 0, w + glow_size * 2, h + glow_size * 2), border_radius=br + glow_size)
+                self.screen.blit(glow, (x - glow_size, y - glow_size))
 
-        # Fond
+        # Fond du bouton avec gradient
         color = self.BUTTON_SELECTED if selected else self.BUTTON_DEFAULT
-        border_c = self.BUTTON_BORDER if selected else (80, 100, 150)
         btn_surf = pygame.Surface((w, h), pygame.SRCALPHA)
-        pygame.draw.rect(btn_surf, (*color, 230), (0, 0, w, h), border_radius=br)
-        highlight = tuple(min(255, c + 40) for c in color)
-        pygame.draw.line(btn_surf, (*highlight, 150), (12, 2), (w - 12, 2), 1)
+        for i in range(h):
+            t = i / max(1, h - 1)
+            r = int(color[0] * (1 - t * 0.3))
+            g = int(color[1] * (1 - t * 0.3))
+            b = int(color[2] * (1 - t * 0.3))
+            alpha = 240 if selected else 210
+            pygame.draw.line(btn_surf, (r, g, b, alpha), (0, i), (w, i))
+
+        # Highlight en haut du bouton
+        highlight = tuple(min(255, c + 50) for c in color)
+        pygame.draw.line(btn_surf, (*highlight, 160), (14, 2), (w - 14, 2), 2)
         self.screen.blit(btn_surf, (x, y))
-        pygame.draw.rect(self.screen, border_c, rect, 2, border_radius=br)
+
+        # Bordure
+        border_c = self.BUTTON_BORDER if selected else (70, 95, 145)
+        border_alpha = 220 if selected else 160
+        border_surf = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.rect(border_surf, (*border_c, border_alpha), (0, 0, w, h), 2, border_radius=br)
+        self.screen.blit(border_surf, (x, y))
 
         # Texte
         font = pygame.font.Font(None, self._font(font_size_pct))
-        text_color = (255, 255, 255) if selected else (200, 210, 235)
+        text_color = (255, 255, 255) if selected else (190, 200, 225)
         text_surf = font.render(text, True, text_color)
         text_rect = text_surf.get_rect(center=(cx, cy))
         if selected:
-            shadow_t = font.render(text, True, (0, 0, 0))
-            self.screen.blit(shadow_t, (text_rect.x + 2, text_rect.y + 2))
+            shadow_t = font.render(text, True, (20, 30, 60))
+            self.screen.blit(shadow_t, (text_rect.x + 2, text_rect.y + 3))
         self.screen.blit(text_surf, text_rect)
+
+        # Petit indicateur flèche pour bouton sélectionné
+        if selected:
+            arrow_x = x - 18
+            arrow_y = cy
+            arrow_pulse = int(abs(math.sin(self._menu_time * 4)) * 6) + 4
+            pygame.draw.polygon(self.screen, (130, 180, 255), [
+                (arrow_x + arrow_pulse, arrow_y),
+                (arrow_x, arrow_y - 5),
+                (arrow_x, arrow_y + 5)
+            ])
 
         return rect
 
@@ -425,83 +452,236 @@ class Menu:
         self._draw_gradient_background()
         w, h = self._W(), self._H()
 
-        # Panneau titre
-        title_w = int(w * 0.6)
-        title_h = int(h * 0.16)
-        title_x = (w - title_w) // 2
-        title_y = int(h * 0.04)
+        # Éléments showcase du jeu (items flottants autour)
+        self._draw_showcase_items(w, h)
 
-        panel = pygame.Surface((title_w, title_h), pygame.SRCALPHA)
-        for i in range(title_h):
-            t = i / title_h
-            alpha = int(210 - t * 30)
-            r, g, b = int(10 + t * 5), int(16 + t * 8), int(34 + t * 15)
-            pygame.draw.line(panel, (r, g, b, alpha), (0, i), (title_w, i))
-        border_alpha = int(180 + math.sin(self._menu_time * 1.5) * 30)
-        pygame.draw.rect(panel, (150, 180, 255, border_alpha), (0, 0, title_w, title_h), 3, border_radius=18)
-        self.screen.blit(panel, (title_x, title_y))
+        # Titre principal avec effets
+        self._draw_title(w, h)
 
-        # Titre
-        title_font = pygame.font.Font(None, self._font(6))
-        shadow = title_font.render("MMO 2D", True, (0, 0, 0))
-        title = title_font.render("MMO 2D", True, (240, 245, 255))
-        tr = title.get_rect(center=(w // 2, title_y + title_h * 0.4))
-        self.screen.blit(shadow, (tr.x + 3, tr.y + 3))
-        self.screen.blit(title, tr)
-
-        # Sous-titre
-        sub_alpha = int(200 + math.sin(self._menu_time * 0.8) * 55)
-        sub_font = pygame.font.Font(None, self._font(3))
-        sub = sub_font.render("Survie  |  Exploration  |  Construction", True, (199, 214, 248))
-        sub.set_alpha(sub_alpha)
-        sr = sub.get_rect(center=(w // 2, title_y + title_h * 0.75))
-        self.screen.blit(sub, sr)
-
-        # Version
-        try:
-            from systems.version import get_current_version
-            ver = f"v{get_current_version()}"
-        except Exception:
-            ver = ""
-        if ver:
-            vf = pygame.font.Font(None, self._font(1.8))
-            vs = vf.render(ver, True, (100, 120, 160))
-            self.screen.blit(vs, (title_x + title_w - vs.get_width() - 15, title_y + 10))
-
-        # Boutons
-        btn_w = int(w * 0.28)
-        btn_h = int(h * 0.065)
-        start_y = int(h * 0.30)
-        spacing = int(h * 0.095)
+        # Boutons du menu
+        btn_w = int(w * 0.26)
+        btn_h = int(h * 0.06)
+        start_y = int(h * 0.38)
+        spacing = int(h * 0.088)
 
         for i, button in enumerate(self.main_buttons):
             cx = w // 2
             cy = start_y + i * spacing
             selected = (i == self.selected_button)
-            self._draw_button(button["text"], cx, cy, btn_w, btn_h, selected, font_size_pct=2.8)
+            self._draw_button(button["text"], cx, cy, btn_w, btn_h, selected, font_size_pct=2.6)
 
-        # Personnage pixel art à droite
+        # Personnage joueur animé à droite
+        self._draw_character_showcase(w, h)
+
+        # Badge version stylisé
+        self._draw_version_badge(w, h)
+
+        # Texte d'accroche en bas
+        self._draw_tagline(w, h)
+
+    def _draw_title(self, w, h):
+        """Dessine le titre avec effets de glow et animation."""
+        title_w = int(w * 0.65)
+        title_h = int(h * 0.20)
+        title_x = (w - title_w) // 2
+        title_y = int(h * 0.03)
+
+        # Panneau titre avec gradient profond
+        panel = pygame.Surface((title_w, title_h), pygame.SRCALPHA)
+        for i in range(title_h):
+            t = i / title_h
+            alpha = int(220 - t * 40)
+            r = int(6 + t * 8)
+            g = int(10 + t * 12)
+            b = int(24 + t * 20)
+            pygame.draw.line(panel, (r, g, b, alpha), (0, i), (title_w, i))
+
+        # Bordure animée
+        border_alpha = int(160 + math.sin(self._menu_time * 1.5) * 40)
+        pygame.draw.rect(panel, (120, 160, 255, border_alpha), (0, 0, title_w, title_h), 3, border_radius=20)
+
+        # Coins décoratifs
+        corner_size = 12
+        for cx, cy in [(10, 10), (title_w - 10 - corner_size, 10), (10, title_h - 10 - corner_size), (title_w - 10 - corner_size, title_h - 10 - corner_size)]:
+            pygame.draw.rect(panel, (150, 200, 255, border_alpha), (cx, cy, corner_size, corner_size), 2, border_radius=3)
+
+        self.screen.blit(panel, (title_x, title_y))
+
+        # Titre "MMO 2D" avec glow
+        title_font = pygame.font.Font(None, self._font(7))
+        title_text = "MMO 2D"
+
+        # Glow derrière le titre
+        glow_surf = pygame.Surface((title_w, int(title_h * 0.5)), pygame.SRCALPHA)
+        glow_pulse = int(abs(math.sin(self._menu_time * 1.2)) * 20) + 30
+        glow_font = pygame.font.Font(None, self._font(8))
+        glow_render = glow_font.render(title_text, True, (80, 140, 255, glow_pulse))
+        glow_rect = glow_render.get_rect(center=(title_w // 2, int(title_h * 0.38)))
+        glow_surf.blit(glow_render, glow_rect)
+        self.screen.blit(glow_surf, (title_x, title_y))
+
+        # Ombre du titre
+        shadow = title_font.render(title_text, True, (0, 0, 0))
+        tr = shadow.get_rect(center=(w // 2, title_y + title_h * 0.38))
+        self.screen.blit(shadow, (tr.x + 4, tr.y + 4))
+
+        # Titre principal
+        title_color = (
+            min(255, 235 + int(math.sin(self._menu_time) * 10)),
+            min(255, 240 + int(math.sin(self._menu_time * 0.8) * 10)),
+            255
+        )
+        title = title_font.render(title_text, True, title_color)
+        self.screen.blit(title, tr)
+
+        # Sous-titre avec séparateurs animés
+        sub_alpha = int(190 + math.sin(self._menu_time * 0.8) * 65)
+        sub_font = pygame.font.Font(None, self._font(2.8))
+        sub_text = "Survie  \u2022  Exploration  \u2022  Construction"
+        sub = sub_font.render(sub_text, True, (180, 200, 240))
+        sub.set_alpha(sub_alpha)
+        sr = sub.get_rect(center=(w // 2, title_y + title_h * 0.72))
+        self.screen.blit(sub, sr)
+
+        # Lignes décoratives sous le sous-titre
+        line_w = int(title_w * 0.35)
+        line_y = title_y + title_h - 6
+        line_alpha = int(120 + math.sin(self._menu_time * 1.0) * 40)
+        line_surf = pygame.Surface((line_w * 2 + 20, 3), pygame.SRCALPHA)
+        pygame.draw.line(line_surf, (100, 150, 220, line_alpha), (0, 1), (line_w, 1), 1)
+        pygame.draw.line(line_surf, (100, 150, 220, line_alpha), (line_w + 20, 1), (line_w * 2 + 20, 1), 1)
+        self.screen.blit(line_surf, (w // 2 - line_w - 10, line_y))
+
+    def _draw_showcase_items(self, w, h):
+        """Dessine des items du jeu flottant autour du menu pour montrer le contenu."""
         try:
-            sprite_manager = None
             from game.sprite_manager import get_sprite_manager
-            sprite_manager = get_sprite_manager()
-            player_sprite = sprite_manager.get_entity_sprite("player")
-            if player_sprite:
-                pw = int(h * 0.25)
-                ph = int(pw * 48 / 32)
-                scaled = pygame.transform.smoothscale(player_sprite, (pw, ph))
-                px = int(w * 0.72)
-                py = int(h * 0.35)
-                self.screen.blit(scaled, (px, py))
+            sm = get_sprite_manager()
         except Exception:
-            pass
+            return
+
+        showcase_items = [
+            ("iron_sword", 0.08, 0.40, 0.035, 0.0, 0.8),
+            ("diamond_pickaxe", 0.90, 0.35, 0.03, 1.2, 0.6),
+            ("apple", 0.12, 0.65, 0.025, 2.4, 0.9),
+            ("iron_armor", 0.88, 0.55, 0.03, 3.6, 0.7),
+            ("wood", 0.06, 0.52, 0.025, 4.8, 1.0),
+            ("diamond", 0.92, 0.70, 0.02, 0.5, 0.5),
+            ("berry", 0.15, 0.78, 0.022, 1.8, 0.8),
+            ("iron_ingot", 0.85, 0.45, 0.023, 3.0, 0.65),
+        ]
+
+        for item_name, xr, yr, size_ratio, phase, speed in showcase_items:
+            sprite = sm.get_item_sprite(item_name)
+            if not sprite:
+                continue
+            float_y = math.sin(self._menu_time * speed + phase) * 8
+            float_x = math.sin(self._menu_time * speed * 0.5 + phase * 0.7) * 4
+            item_size = int(h * size_ratio)
+            scaled = pygame.transform.smoothscale(sprite, (item_size, item_size))
+            ix = int(xr * w + float_x)
+            iy = int(yr * h + float_y)
+
+            # Halo subtil
+            halo = pygame.Surface((item_size + 12, item_size + 12), pygame.SRCALPHA)
+            halo_alpha = int(40 + math.sin(self._menu_time * speed * 1.5 + phase) * 20)
+            pygame.draw.circle(halo, (100, 160, 255, halo_alpha), (item_size // 2 + 6, item_size // 2 + 6), item_size // 2 + 6)
+            self.screen.blit(halo, (ix - 6, iy - 6))
+            self.screen.blit(scaled, (ix, iy))
+
+    def _draw_character_showcase(self, w, h):
+        """Dessine le personnage joueur avec animation de marche."""
+        try:
+            from game.sprite_manager import get_sprite_manager
+            sm = get_sprite_manager()
+        except Exception:
+            return
+
+        # Alterner les sprites de marche
+        walk_cycle = int(self._menu_time * 3) % 3
+        if walk_cycle == 0:
+            sprite = sm.get_entity_sprite("player")
+        elif walk_cycle == 1:
+            sprite = sm.get_entity_sprite("player_walk1")
+        else:
+            sprite = sm.get_entity_sprite("player_walk2")
+
+        if not sprite:
+            sprite = sm.get_entity_sprite("player")
+        if not sprite:
+            return
+
+        pw = int(h * 0.22)
+        ph = int(pw * 48 / 32)
+        scaled = pygame.transform.smoothscale(sprite, (pw, ph))
+
+        # Position avec léger flottement
+        float_y = math.sin(self._menu_time * 1.5) * 5
+        px = int(w * 0.70)
+        py = int(h * 0.42 + float_y)
+
+        # Ombre sous le personnage
+        shadow_w = int(pw * 0.8)
+        shadow_h = int(ph * 0.1)
+        shadow_surf = pygame.Surface((shadow_w, shadow_h), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow_surf, (0, 0, 0, 60), (0, 0, shadow_w, shadow_h))
+        self.screen.blit(shadow_surf, (px + (pw - shadow_w) // 2, py + ph - 5))
+
+        # Halo derrière le personnage
+        halo_size = int(pw * 0.7)
+        halo = pygame.Surface((halo_size * 2, halo_size * 2), pygame.SRCALPHA)
+        halo_alpha = int(30 + math.sin(self._menu_time * 2) * 15)
+        pygame.draw.circle(halo, (80, 140, 255, halo_alpha), (halo_size, halo_size), halo_size)
+        self.screen.blit(halo, (px + pw // 2 - halo_size, py + ph // 2 - halo_size))
+
+        self.screen.blit(scaled, (px, py))
+
+    def _draw_version_badge(self, w, h):
+        """Dessine un badge version stylisé."""
+        try:
+            from systems.version import get_current_version
+            ver = f"v{get_current_version()}"
+        except Exception:
+            return
+
+        badge_font = pygame.font.Font(None, self._font(1.8))
+        badge_text = badge_font.render(ver, True, (140, 160, 200))
+        bw = badge_text.get_width() + 20
+        bh = badge_text.get_height() + 10
+        bx = int(w * 0.03)
+        by = int(h * 0.03)
+
+        badge_bg = pygame.Surface((bw, bh), pygame.SRCALPHA)
+        pygame.draw.rect(badge_bg, (20, 30, 55, 160), (0, 0, bw, bh), border_radius=8)
+        pygame.draw.rect(badge_bg, (70, 100, 160, 120), (0, 0, bw, bh), 1, border_radius=8)
+        self.screen.blit(badge_bg, (bx, by))
+        self.screen.blit(badge_text, (bx + 10, by + 5))
+
+    def _draw_tagline(self, w, h):
+        """Dessine le texte d'accroche en bas."""
+        tag_font = pygame.font.Font(None, self._font(2.0))
+        tag_alpha = int(140 + math.sin(self._menu_time * 0.6) * 40)
+        tag_text = tag_font.render("Appuyez sur Entree pour commencer l'aventure", True, (150, 170, 210))
+        tag_text.set_alpha(tag_alpha)
+        self.screen.blit(tag_text, tag_text.get_rect(center=(w // 2, int(h * 0.92))))
+
+        # Contrôles rapides
+        ctrl_font = pygame.font.Font(None, self._font(1.6))
+        ctrl_text = ctrl_font.render("WASD: Deplacer  |  I: Inventaire  |  C: Craft  |  B: Construire", True, (100, 120, 160))
+        ctrl_alpha = int(120 + math.sin(self._menu_time * 0.4 + 1) * 30)
+        ctrl_text.set_alpha(ctrl_alpha)
+        self.screen.blit(ctrl_text, ctrl_text.get_rect(center=(w // 2, int(h * 0.955))))
 
     def draw_options_menu(self):
         self._draw_gradient_background()
         w, h = self._W(), self._H()
 
-        # Titre
+        # Titre avec glow
         title_font = pygame.font.Font(None, self._font(5))
+        glow_surf = pygame.Surface((w, int(h * 0.1)), pygame.SRCALPHA)
+        glow_a = int(30 + math.sin(self._menu_time * 1.5) * 15)
+        glow_render = pygame.font.Font(None, self._font(6)).render("Options", True, (80, 140, 255, glow_a))
+        self.screen.blit(glow_render, glow_render.get_rect(center=(w // 2, int(h * 0.08))))
         title = title_font.render("Options", True, self.WHITE)
         self.screen.blit(title, title.get_rect(center=(w // 2, int(h * 0.08))))
 
@@ -511,8 +691,15 @@ class Menu:
         panel_x = (w - panel_w) // 2
         panel_y = int(h * 0.15)
         panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-        pygame.draw.rect(panel, (16, 22, 40, 210), (0, 0, panel_w, panel_h), border_radius=12)
-        pygame.draw.rect(panel, (60, 80, 130, 150), (0, 0, panel_w, panel_h), 2, border_radius=12)
+        for i in range(panel_h):
+            t = i / panel_h
+            alpha = int(220 - t * 30)
+            r = int(12 + t * 6)
+            g = int(18 + t * 8)
+            b = int(35 + t * 15)
+            pygame.draw.line(panel, (r, g, b, alpha), (0, i), (panel_w, i))
+        border_alpha = int(150 + math.sin(self._menu_time * 1.2) * 30)
+        pygame.draw.rect(panel, (80, 120, 200, border_alpha), (0, 0, panel_w, panel_h), 2, border_radius=14)
         self.screen.blit(panel, (panel_x, panel_y))
 
         opt_font = pygame.font.Font(None, self._font(2.8))
@@ -551,6 +738,8 @@ class Menu:
         w, h = self._W(), self._H()
 
         title_font = pygame.font.Font(None, self._font(4.5))
+        glow_render = pygame.font.Font(None, self._font(5.5)).render("Configuration des Controles", True, (80, 140, 255, 40))
+        self.screen.blit(glow_render, glow_render.get_rect(center=(w // 2, int(h * 0.06))))
         title = title_font.render("Configuration des Controles", True, self.WHITE)
         self.screen.blit(title, title.get_rect(center=(w // 2, int(h * 0.06))))
 
@@ -565,8 +754,15 @@ class Menu:
         panel_x = (w - panel_w) // 2
         panel_y = int(h * 0.14)
         panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-        pygame.draw.rect(panel, (16, 22, 40, 210), (0, 0, panel_w, panel_h), border_radius=12)
-        pygame.draw.rect(panel, (60, 80, 130, 150), (0, 0, panel_w, panel_h), 2, border_radius=12)
+        for i in range(panel_h):
+            t = i / panel_h
+            alpha = int(220 - t * 30)
+            r = int(12 + t * 6)
+            g = int(18 + t * 8)
+            b = int(35 + t * 15)
+            pygame.draw.line(panel, (r, g, b, alpha), (0, i), (panel_w, i))
+        border_alpha = int(150 + math.sin(self._menu_time * 1.2) * 30)
+        pygame.draw.rect(panel, (80, 120, 200, border_alpha), (0, 0, panel_w, panel_h), 2, border_radius=14)
         self.screen.blit(panel, (panel_x, panel_y))
 
         row_h = int(panel_h / (len(modifiable) + 1.5))
@@ -611,6 +807,8 @@ class Menu:
 
         title_font = pygame.font.Font(None, self._font(4.5))
         title_text = "Charger une partie" if menu_type == "load" else "Sauvegarder la partie"
+        glow_render = pygame.font.Font(None, self._font(5.5)).render(title_text, True, (80, 140, 255, 40))
+        self.screen.blit(glow_render, glow_render.get_rect(center=(w // 2, int(h * 0.06))))
         title = title_font.render(title_text, True, self.WHITE)
         self.screen.blit(title, title.get_rect(center=(w // 2, int(h * 0.06))))
 
@@ -628,20 +826,35 @@ class Menu:
             y = start_y + i * spacing
             selected = (i == self.selected_save_slot)
 
-            # Slot background
+            # Slot background avec gradient
             slot_bg = pygame.Surface((slot_w, slot_h), pygame.SRCALPHA)
             if selected:
-                slot_color = (88, 138, 255, 200)
+                for row in range(slot_h):
+                    t = row / max(1, slot_h - 1)
+                    r = int(60 + t * 20)
+                    g = int(90 + t * 30)
+                    b = int(160 + t * 40)
+                    alpha = int(210 - t * 20)
+                    pygame.draw.line(slot_bg, (r, g, b, alpha), (0, row), (slot_w, row))
                 border_color = self.WHITE
             else:
-                slot_color = (36, 44, 68, 200)
+                for row in range(slot_h):
+                    t = row / max(1, slot_h - 1)
+                    r = int(24 + t * 8)
+                    g = int(32 + t * 10)
+                    b = int(55 + t * 15)
+                    alpha = int(210 - t * 20)
+                    pygame.draw.line(slot_bg, (r, g, b, alpha), (0, row), (slot_w, row))
                 border_color = self.GRAY
-            pygame.draw.rect(slot_bg, slot_color, (0, 0, slot_w, slot_h), border_radius=10)
+
+            slot_border_alpha = int(180 + math.sin(self._menu_time * 2 + i) * 30) if selected else 100
             self.screen.blit(slot_bg, (x, y))
-            pygame.draw.rect(self.screen, border_color, (x, y, slot_w, slot_h), 2, border_radius=10)
+            border_surf = pygame.Surface((slot_w, slot_h), pygame.SRCALPHA)
+            pygame.draw.rect(border_surf, (*border_color, slot_border_alpha), (0, 0, slot_w, slot_h), 2, border_radius=10)
+            self.screen.blit(border_surf, (x, y))
 
             # Slot title
-            slot_title = btn_font.render(f"Slot {i+1}", True, self.WHITE)
+            slot_title = btn_font.render(f"Emplacement {i+1}", True, self.WHITE)
             self.screen.blit(slot_title, (x + 20, y + 10))
 
             if self.save_slots[i] and self.save_slots[i]["exists"]:
@@ -651,9 +864,11 @@ class Menu:
                 self.screen.blit(small_font.render(f"Temps: {info['playtime']}", True, self.WHITE), (x + 20, y + int(slot_h * 0.5)))
                 self.screen.blit(small_font.render(f"Sante: {info['player_health']}/100", True, self.GREEN), (x + int(slot_w * 0.5), y + int(slot_h * 0.3)))
                 action = "Entree: Charger" if menu_type == "load" else "Entree: Ecraser"
-                self.screen.blit(small_font.render(action, True, self.YELLOW), (x + int(slot_w * 0.5), y + int(slot_h * 0.5)))
+                action_color = self.YELLOW if selected else (160, 170, 200)
+                self.screen.blit(small_font.render(action, True, action_color), (x + int(slot_w * 0.5), y + int(slot_h * 0.5)))
             else:
-                self.screen.blit(opt_font.render("Slot vide", True, self.GRAY), (x + 20, y + int(slot_h * 0.35)))
+                empty_text = opt_font.render("Emplacement vide", True, (100, 110, 140))
+                self.screen.blit(empty_text, (x + 20, y + int(slot_h * 0.35)))
 
         # Retour
         self._draw_button("Retour", w // 2, start_y + 3 * spacing + int(h * 0.03), int(w * 0.15), int(h * 0.055), self.selected_save_slot == 3, 2.2)
@@ -677,17 +892,20 @@ class Menu:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 self.selected_button = (self.selected_button - 1) % len(self.main_buttons)
+                self.sound_manager.play('menu_click')
             elif event.key == pygame.K_DOWN:
                 self.selected_button = (self.selected_button + 1) % len(self.main_buttons)
+                self.sound_manager.play('menu_click')
             elif event.key == pygame.K_RETURN:
+                self.sound_manager.play('menu_select')
                 return self.main_buttons[self.selected_button]["action"]
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
             w, h = self._W(), self._H()
-            btn_w = int(w * 0.28)
-            btn_h = int(h * 0.065)
-            start_y = int(h * 0.30)
-            spacing = int(h * 0.095)
+            btn_w = int(w * 0.26)
+            btn_h = int(h * 0.06)
+            start_y = int(h * 0.38)
+            spacing = int(h * 0.088)
             for i, button in enumerate(self.main_buttons):
                 cx = w // 2
                 cy = start_y + i * spacing
