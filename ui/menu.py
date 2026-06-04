@@ -1,33 +1,23 @@
+"""
+Menu principal et sous-menus du jeu MMO 2D
+Layout 100% basé sur pourcentages de l'écran - pas de taille fixe
+"""
+
 import pygame
 import json
 import os
 import math
 import time as _time
 from game.sound_manager import get_sound_manager
-from game.constants import s, SCALE_FACTOR
+
 
 class Menu:
-    STAR_COUNT = 120
-    STAR_X_MULTIPLIER = 37
-    STAR_Y_MULTIPLIER = 91
-    STAR_Y_OFFSET = 13
-    STAR_GRID_SIZE = 1000
-    STAR_RADIUS_BASE = 1
-    STAR_RADIUS_VARIATION = 3
-    STAR_SHADE_BASE = 165
-    STAR_SHADE_VARIATION = 70
-    VERSION_OFFSET_X = 55
-    VERSION_OFFSET_Y = 38
-    BUTTON_HIGHLIGHT = (240, 248, 255)
     DECORATIVE_STARS = None
 
     def __init__(self, screen, font):
         self.screen = screen
-        self.font = font
-        self.big_font = pygame.font.Font(None, 48)
-        self.button_font = pygame.font.Font(None, 32)
-        self.small_font = pygame.font.Font(None, 20)
-        
+        self._menu_time = 0.0
+
         # Couleurs
         self.WHITE = (245, 247, 255)
         self.BLACK = (8, 12, 24)
@@ -37,26 +27,24 @@ class Menu:
         self.RED = (245, 98, 98)
         self.BLUE = (88, 138, 255)
         self.YELLOW = (255, 221, 129)
-        self.PANEL = (16, 22, 40)
         self.BUTTON_DEFAULT = (62, 88, 148)
         self.BUTTON_SELECTED = (112, 165, 255)
         self.BUTTON_BORDER = (189, 214, 255)
-        self.SHADOW = (0, 0, 0, 110)
+
+        # Étoiles décoratives
         if Menu.DECORATIVE_STARS is None:
             Menu.DECORATIVE_STARS = self._generate_decorative_stars()
         self._background_stars = Menu.DECORATIVE_STARS
         self._background_cache = None
         self._background_cache_size = None
-        self._menu_time = 0.0
-        
-        # Sound manager
+
         self.sound_manager = get_sound_manager()
-        
+
         # État du menu
         self.current_menu = "main"
         self.selected_button = 0
         self.controls_menu_selected = 0
-        
+
         # Boutons du menu principal
         self.main_buttons = [
             {"text": "Nouvelle Partie", "action": "new_game"},
@@ -65,18 +53,18 @@ class Menu:
             {"text": "Options", "action": "options"},
             {"text": "Quitter", "action": "quit"}
         ]
-        
+
         # Système de sauvegarde
-        self.save_slots = [None, None, None]  # 3 slots de sauvegarde
+        self.save_slots = [None, None, None]
         self.selected_save_slot = 0
         self.load_save_slots_info()
-        
-        # Options - Taille de fenêtre en pourcentage de la résolution native
+
+        # Options
         self.window_scales = [0.5, 0.75, 1.0]
         self.window_scale_labels = ["50%", "75%", "100%"]
-        self.current_scale_index = 2  # 100% par défaut
-        self.fullscreen = True  # Plein écran par défaut
-        
+        self.current_scale_index = 2
+        self.fullscreen = True
+
         # Contrôles
         self.controls = {
             "move_up": pygame.K_w,
@@ -90,33 +78,39 @@ class Menu:
             "foundation": pygame.K_1,
             "wall": pygame.K_2
         }
-        
         self.control_names = {
             "move_up": "Monter",
-            "move_down": "Descendre", 
-            "move_left": "Aller à gauche",
-            "move_right": "Aller à droite",
-            "harvest": "Récolter/Construire",
+            "move_down": "Descendre",
+            "move_left": "Aller a gauche",
+            "move_right": "Aller a droite",
+            "harvest": "Recolter/Construire",
             "build_mode": "Mode construction",
             "inventory": "Inventaire",
             "crafting": "Artisanat",
             "foundation": "Fondation",
             "wall": "Mur"
         }
-        
+
         self.load_settings()
-    
+
+    def _W(self):
+        return self.screen.get_width()
+
+    def _H(self):
+        return self.screen.get_height()
+
+    def _font(self, pct):
+        """Taille de police en pourcentage de la hauteur d'écran."""
+        return max(12, int(self._H() * pct / 100))
+
     def load_settings(self):
-        """Charge les paramètres depuis un fichier"""
         try:
             if os.path.exists("settings.json"):
                 with open("settings.json", "r") as f:
                     settings = json.load(f)
-                    # Compatibilité: ancien format "resolution" (index 0-4) → nouveau "scale_index"
                     if "scale_index" in settings:
                         self.current_scale_index = settings["scale_index"]
                     elif "resolution" in settings:
-                        # Mapper: 0→0, 1→0, 2→0, 3→1, 4→2
                         old_res = settings["resolution"]
                         if old_res <= 1:
                             self.current_scale_index = 0
@@ -128,9 +122,8 @@ class Menu:
                     self.controls.update(settings.get("controls", {}))
         except Exception:
             pass
-    
+
     def save_settings(self):
-        """Sauvegarde les paramètres dans un fichier"""
         settings = {
             "scale_index": self.current_scale_index,
             "fullscreen": self.fullscreen,
@@ -141,448 +134,343 @@ class Menu:
                 json.dump(settings, f, indent=4)
         except Exception:
             pass
-    
-    def draw_button(self, text, x, y, width, height, selected=False, font=None):
-        """Dessine un bouton avec effet glow quand sélectionné."""
-        if font is None:
-            font = self.button_font
-        rect = pygame.Rect(x, y, width, height)
 
-        # Ombre portée
-        shadow_surface = pygame.Surface((width, height + 6), pygame.SRCALPHA)
-        shadow_alpha = 140 if selected else 90
-        pygame.draw.rect(shadow_surface, (0, 0, 0, shadow_alpha), (0, 4, width, height), border_radius=s(12))
-        self.screen.blit(shadow_surface, (x, y))
-
-        # Effet glow pour le bouton sélectionné
-        if selected:
-            glow_surf = pygame.Surface((width + 16, height + 16), pygame.SRCALPHA)
-            pulse = int(abs(math.sin(self._menu_time * 3)) * 30) + 50
-            pygame.draw.rect(glow_surf, (112, 165, 255, pulse), (0, 0, width + 16, height + 16), border_radius=s(16))
-            self.screen.blit(glow_surf, (x - 8, y - 8))
-
-        # Fond du bouton
-        color = self.BUTTON_SELECTED if selected else self.BUTTON_DEFAULT
-        border_color = self.BUTTON_BORDER if selected else (80, 100, 150)
-
-        # Dégradé subtil du bouton
-        btn_surf = pygame.Surface((width, height), pygame.SRCALPHA)
-        pygame.draw.rect(btn_surf, (*color, 220), (0, 0, width, height), border_radius=s(12))
-        # Ligne de highlight en haut
-        highlight = tuple(min(255, c + 40) for c in color)
-        pygame.draw.line(btn_surf, (*highlight, 150), (s(12), 2), (width - s(12), 2), 1)
-        self.screen.blit(btn_surf, (x, y))
-
-        # Bordure
-        pygame.draw.rect(self.screen, border_color, rect, 2, border_radius=s(12))
-
-        # Texte
-        text_color = (255, 255, 255) if selected else (200, 210, 235)
-        text_surf = font.render(text, True, text_color)
-        text_rect = text_surf.get_rect(center=(x + width // 2, y + height // 2))
-        # Ombre du texte
-        if selected:
-            shadow = font.render(text, True, (0, 0, 0))
-            self.screen.blit(shadow, (text_rect.x + 1, text_rect.y + 1))
-        self.screen.blit(text_surf, text_rect)
-
-        return rect
-
-    def _generate_decorative_stars(self):
-        """Génère une liste déterministe de points lumineux avec phases de scintillement."""
-        import random
-        stars = []
-        rng = random.Random(42)  # Seed fixe pour reproductibilité
-        for i in range(self.STAR_COUNT):
-            x_ratio = rng.random()
-            y_ratio = rng.random() * 0.7  # Pas d'étoiles en bas
-            radius = rng.choice([1, 1, 1, 2, 2, 3])
-            base_shade = rng.randint(140, 255)
-            phase = rng.uniform(0, math.pi * 2)  # Phase de scintillement
-            speed = rng.uniform(0.5, 2.5)  # Vitesse de scintillement
-            stars.append((x_ratio, y_ratio, radius, base_shade, phase, speed))
-        return stars
+    # ─── Drawing helpers ─────────────────────────────────────
 
     def _draw_gradient_background(self):
-        """Dessine un fond dégradé avec étoiles scintillantes."""
-        width, height = self.screen.get_size()
-        self._menu_time += 0.016  # ~60fps
+        """Fond dégradé qui remplit TOUT l'écran."""
+        w, h = self._W(), self._H()
+        self._menu_time += 0.016
 
-        # Cache du dégradé (pas besoin de le redessiner)
-        if self._background_cache_size != (width, height) or self._background_cache is None:
-            top_color = (6, 10, 30)
-            bottom_color = (18, 35, 72)
-            self._background_cache = pygame.Surface((width, height))
-
-            for y in range(height):
-                t = y / max(1, height - 1)
-                r = int(top_color[0] * (1 - t) + bottom_color[0] * t)
-                g = int(top_color[1] * (1 - t) + bottom_color[1] * t)
-                b = int(top_color[2] * (1 - t) + bottom_color[2] * t)
-                pygame.draw.line(self._background_cache, (r, g, b), (0, y), (width, y))
-
-            self._background_cache_size = (width, height)
+        if self._background_cache_size != (w, h) or self._background_cache is None:
+            self._background_cache = pygame.Surface((w, h))
+            top = (6, 10, 30)
+            bot = (18, 35, 72)
+            for y in range(h):
+                t = y / max(1, h - 1)
+                r = int(top[0] * (1 - t) + bot[0] * t)
+                g = int(top[1] * (1 - t) + bot[1] * t)
+                b = int(top[2] * (1 - t) + bot[2] * t)
+                pygame.draw.line(self._background_cache, (r, g, b), (0, y), (w, y))
+            self._background_cache_size = (w, h)
 
         self.screen.blit(self._background_cache, (0, 0))
 
-        # Dessiner les étoiles avec scintillement
+        # Étoiles scintillantes
         for x_ratio, y_ratio, radius, base_shade, phase, speed in self._background_stars:
-            x = int(x_ratio * width)
-            y = int(y_ratio * height)
-            # Scintillement sinusoïdal
-            twinkle = math.sin(self._menu_time * speed + phase) * 0.5 + 0.5  # 0.0 à 1.0
+            x = int(x_ratio * w)
+            y = int(y_ratio * h)
+            twinkle = math.sin(self._menu_time * speed + phase) * 0.5 + 0.5
             shade = int(base_shade * (0.4 + 0.6 * twinkle))
             alpha = int(180 + 75 * twinkle)
-            
             if radius <= 1:
-                # Petite étoile : un simple pixel
                 star_surf = pygame.Surface((2, 2), pygame.SRCALPHA)
                 star_surf.fill((shade, shade, shade, alpha))
                 self.screen.blit(star_surf, (x, y))
             else:
-                # Grande étoile : cercle avec halo
                 star_surf = pygame.Surface((radius * 4, radius * 4), pygame.SRCALPHA)
-                # Halo extérieur
                 halo_alpha = int(alpha * 0.2)
                 pygame.draw.circle(star_surf, (shade, shade, shade, halo_alpha), (radius * 2, radius * 2), radius * 2)
-                # Centre brillant
                 pygame.draw.circle(star_surf, (shade, shade, shade, alpha), (radius * 2, radius * 2), radius)
                 self.screen.blit(star_surf, (x - radius * 2, y - radius * 2))
 
-    def _draw_title_block(self, title_text):
-        """Dessine un panneau de titre moderne avec animation subtile."""
-        title_width = min(s(900), self.screen.get_width() - s(80))
-        title_x = self.screen.get_width() // 2 - title_width // 2
-        title_rect = pygame.Rect(title_x, s(30), title_width, s(120))
+    def _generate_decorative_stars(self):
+        import random
+        stars = []
+        rng = random.Random(42)
+        for _ in range(150):
+            x_ratio = rng.random()
+            y_ratio = rng.random() * 0.8
+            radius = rng.choice([1, 1, 1, 2, 2, 3])
+            base_shade = rng.randint(140, 255)
+            phase = rng.uniform(0, math.pi * 2)
+            speed = rng.uniform(0.5, 2.5)
+            stars.append((x_ratio, y_ratio, radius, base_shade, phase, speed))
+        return stars
 
-        # Fond du panneau avec gradient
-        panel_surface = pygame.Surface((title_rect.width, title_rect.height), pygame.SRCALPHA)
-        # Dégradé vertical
-        for i in range(title_rect.height):
-            t = i / title_rect.height
+    def _draw_button(self, text, cx, cy, w, h, selected=False, font_size_pct=2.5):
+        """Dessine un bouton centré sur (cx, cy)."""
+        x = cx - w // 2
+        y = cy - h // 2
+        rect = pygame.Rect(x, y, w, h)
+        br = max(4, h // 5)
+
+        # Ombre
+        shadow = pygame.Surface((w, h + 8), pygame.SRCALPHA)
+        pygame.draw.rect(shadow, (0, 0, 0, 130 if selected else 80), (0, 4, w, h), border_radius=br)
+        self.screen.blit(shadow, (x, y))
+
+        # Glow
+        if selected:
+            glow = pygame.Surface((w + 20, h + 20), pygame.SRCALPHA)
+            pulse = int(abs(math.sin(self._menu_time * 3)) * 30) + 50
+            pygame.draw.rect(glow, (112, 165, 255, pulse), (0, 0, w + 20, h + 20), border_radius=br + 6)
+            self.screen.blit(glow, (x - 10, y - 10))
+
+        # Fond
+        color = self.BUTTON_SELECTED if selected else self.BUTTON_DEFAULT
+        border_c = self.BUTTON_BORDER if selected else (80, 100, 150)
+        btn_surf = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.rect(btn_surf, (*color, 230), (0, 0, w, h), border_radius=br)
+        highlight = tuple(min(255, c + 40) for c in color)
+        pygame.draw.line(btn_surf, (*highlight, 150), (12, 2), (w - 12, 2), 1)
+        self.screen.blit(btn_surf, (x, y))
+        pygame.draw.rect(self.screen, border_c, rect, 2, border_radius=br)
+
+        # Texte
+        font = pygame.font.Font(None, self._font(font_size_pct))
+        text_color = (255, 255, 255) if selected else (200, 210, 235)
+        text_surf = font.render(text, True, text_color)
+        text_rect = text_surf.get_rect(center=(cx, cy))
+        if selected:
+            shadow_t = font.render(text, True, (0, 0, 0))
+            self.screen.blit(shadow_t, (text_rect.x + 2, text_rect.y + 2))
+        self.screen.blit(text_surf, text_rect)
+
+        return rect
+
+    # ─── Main Menu ───────────────────────────────────────────
+
+    def draw_main_menu(self):
+        self._draw_gradient_background()
+        w, h = self._W(), self._H()
+
+        # Panneau titre
+        title_w = int(w * 0.6)
+        title_h = int(h * 0.16)
+        title_x = (w - title_w) // 2
+        title_y = int(h * 0.04)
+
+        panel = pygame.Surface((title_w, title_h), pygame.SRCALPHA)
+        for i in range(title_h):
+            t = i / title_h
             alpha = int(210 - t * 30)
-            r = int(10 + t * 5)
-            g = int(16 + t * 8)
-            b = int(34 + t * 15)
-            pygame.draw.line(panel_surface, (r, g, b, alpha), (0, i), (title_rect.width, i))
-        # Bordure dorée subtile
+            r, g, b = int(10 + t * 5), int(16 + t * 8), int(34 + t * 15)
+            pygame.draw.line(panel, (r, g, b, alpha), (0, i), (title_w, i))
         border_alpha = int(180 + math.sin(self._menu_time * 1.5) * 30)
-        pygame.draw.rect(panel_surface, (150, 180, 255, border_alpha), panel_surface.get_rect(), 2, border_radius=s(18))
-        self.screen.blit(panel_surface, title_rect.topleft)
+        pygame.draw.rect(panel, (150, 180, 255, border_alpha), (0, 0, title_w, title_h), 3, border_radius=18)
+        self.screen.blit(panel, (title_x, title_y))
 
-        # Titre avec ombre portée
-        title_font = pygame.font.Font(None, s(48))
-        title_shadow = title_font.render(title_text, True, (0, 0, 0))
-        title = title_font.render(title_text, True, (240, 245, 255))
-        title_rect_pos = title.get_rect(center=(self.screen.get_width() // 2, s(68)))
-        self.screen.blit(title_shadow, (title_rect_pos.x + 2, title_rect_pos.y + 2))
-        self.screen.blit(title, title_rect_pos)
+        # Titre
+        title_font = pygame.font.Font(None, self._font(6))
+        shadow = title_font.render("MMO 2D", True, (0, 0, 0))
+        title = title_font.render("MMO 2D", True, (240, 245, 255))
+        tr = title.get_rect(center=(w // 2, title_y + title_h * 0.4))
+        self.screen.blit(shadow, (tr.x + 3, tr.y + 3))
+        self.screen.blit(title, tr)
 
-        # Sous-titre avec animation de fondu
-        subtitle_alpha = int(200 + math.sin(self._menu_time * 0.8) * 55)
-        subtitle_font = pygame.font.Font(None, s(24))
-        subtitle = subtitle_font.render("Survie  •  Exploration  •  Construction", True, (199, 214, 248))
-        subtitle.set_alpha(subtitle_alpha)
-        subtitle_rect = subtitle.get_rect(center=(self.screen.get_width() // 2, s(105)))
-        self.screen.blit(subtitle, subtitle_rect)
+        # Sous-titre
+        sub_alpha = int(200 + math.sin(self._menu_time * 0.8) * 55)
+        sub_font = pygame.font.Font(None, self._font(3))
+        sub = sub_font.render("Survie  |  Exploration  |  Construction", True, (199, 214, 248))
+        sub.set_alpha(sub_alpha)
+        sr = sub.get_rect(center=(w // 2, title_y + title_h * 0.75))
+        self.screen.blit(sub, sr)
 
-        # Version - auto-actualisée à chaque appel
+        # Version
         try:
             from systems.version import get_current_version
-            version_label = f"v{get_current_version()}"
+            ver = f"v{get_current_version()}"
         except Exception:
-            version_label = ""
-        if version_label:
-            small_font = pygame.font.Font(None, s(20))
-            version_text = small_font.render(version_label, True, (140, 160, 200))
-            self.screen.blit(version_text, (title_x + title_width - s(55), s(38)))
-    
-    def draw_main_menu(self):
-        """Dessine le menu principal"""
-        self._draw_gradient_background()
-        self._draw_title_block("MMO 2D - Jeu de Survie")
-        
-        # Boutons
-        button_width = s(300)
-        button_height = s(60)
-        start_y = s(200)
-        spacing = s(80)
-        button_font = pygame.font.Font(None, s(32))
-        
-        for i, button in enumerate(self.main_buttons):
-            x = self.screen.get_width()//2 - button_width//2
-            y = start_y + i * spacing
-            selected = (i == self.selected_button)
-            self.draw_button(button["text"], x, y, button_width, button_height, selected, button_font)
-    
-    def draw_options_menu(self):
-        """Dessine le menu des options"""
-        self._draw_gradient_background()
-        
-        # Titre
-        title_font = pygame.font.Font(None, s(48))
-        title = title_font.render("Options", True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, s(50)))
-        self.screen.blit(title, title_rect)
-        
-        option_font = pygame.font.Font(None, s(24))
-        small_font = pygame.font.Font(None, s(20))
-        btn_font = pygame.font.Font(None, s(32))
-        
-        y = s(120)
-        
-        # Taille de fenêtre
-        scale_text = f"Taille de la fenêtre: {self.window_scale_labels[self.current_scale_index]}"
-        res_surf = option_font.render(scale_text, True, self.WHITE)
-        self.screen.blit(res_surf, (s(50), y))
-        
-        # Boutons taille
-        self.draw_button("<", s(450), y-s(5), s(40), s(30), self.selected_button == 0, btn_font)
-        self.draw_button(">", s(500), y-s(5), s(40), s(30), self.selected_button == 1, btn_font)
-        y += s(50)
-        
-        # Mode plein écran
-        fs_text = f"Plein écran: {'Oui' if self.fullscreen else 'Non'}"
-        fs_surf = option_font.render(fs_text, True, self.WHITE)
-        self.screen.blit(fs_surf, (s(50), y))
-        self.draw_button("Basculer", s(450), y-s(5), s(100), s(30), self.selected_button == 2, btn_font)
-        y += s(50)
-        
-        # Contrôles
-        controls_text = "Contrôles"
-        controls_surf = option_font.render(controls_text, True, self.WHITE)
-        self.screen.blit(controls_surf, (s(50), y))
-        self.draw_button("Modifier", s(450), y-s(5), s(100), s(30), self.selected_button == 3, btn_font)
-        y += s(80)
-        
-        # Instructions
-        instr1 = small_font.render("Utilisez ↑↓ pour naviguer, ←→ pour changer la taille", True, self.GRAY)
-        self.screen.blit(instr1, (s(50), y))
-        y += s(20)
-        instr2 = small_font.render("Entrée pour sélectionner", True, self.GRAY)
-        self.screen.blit(instr2, (s(50), y))
-        
-        # Bouton retour
-        self.draw_button("Retour", s(50), self.screen.get_height() - s(80), s(100), s(50), 
-                        self.selected_button == 4, btn_font)
-    
-    def draw_controls_menu(self):
-        """Dessine le menu dédié aux contrôles"""
-        self._draw_gradient_background()
-        
-        # Titre
-        title_font = pygame.font.Font(None, s(48))
-        title = title_font.render("Configuration des Contrôles", True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, s(50)))
-        self.screen.blit(title, title_rect)
-        
-        # Instructions
-        option_font = pygame.font.Font(None, s(24))
-        small_font = pygame.font.Font(None, s(20))
-        btn_font = pygame.font.Font(None, s(32))
-        
-        instr = option_font.render("Cliquez sur un bouton pour modifier la touche correspondante", True, self.GRAY)
-        instr_rect = instr.get_rect(center=(self.screen.get_width()//2, s(100)))
-        self.screen.blit(instr, instr_rect)
-        
-        # Filtrer les contrôles modifiables (exclure la souris)
-        modifiable_controls = [(k, v) for k, v in self.control_names.items() if k != "harvest"]
-        
-        # Afficher les contrôles avec de vrais boutons
-        y = s(150)
-        button_width = s(200)
-        button_height = s(40)
-        
-        for i, (key, name) in enumerate(modifiable_controls):
-            # Nom du contrôle
-            name_surf = option_font.render(f"{name}:", True, self.WHITE)
-            self.screen.blit(name_surf, (s(100), y + s(10)))
-            
-            # Touche actuelle
-            key_name = pygame.key.name(self.controls[key]).upper()
-            
-            # Bouton pour modifier
-            is_selected = self.controls_menu_selected == i
-            button_color = self.BLUE if is_selected else self.GRAY
-            border_color = self.WHITE if is_selected else self.DARK_GRAY
-            
-            button_x = s(400)
-            button_rect = pygame.Rect(button_x, y, button_width, button_height)
-            
-            pygame.draw.rect(self.screen, button_color, button_rect, border_radius=s(6))
-            pygame.draw.rect(self.screen, border_color, button_rect, 2, border_radius=s(6))
-            
-            # Texte du bouton
-            button_text = f"{key_name} (Cliquer)"
-            text_surf = small_font.render(button_text, True, self.WHITE)
-            text_rect = text_surf.get_rect(center=button_rect.center)
-            self.screen.blit(text_surf, text_rect)
-            
-            y += s(60)
-        
-        # Bouton pour retourner aux options
-        retour_button_index = len(modifiable_controls)
-        self.draw_button("Retour aux Options", self.screen.get_width()//2 - s(100), 
-                        self.screen.get_height() - s(100), s(200), s(50), 
-                        self.controls_menu_selected == retour_button_index, btn_font)
-        
-        # Instructions de navigation
-        y = self.screen.get_height() - s(50)
-        nav_text = "↑↓: Naviguer • Entrée/Clic: Modifier • Échap: Retour"
-        nav_surf = small_font.render(nav_text, True, self.GRAY)
-        nav_rect = nav_surf.get_rect(center=(self.screen.get_width()//2, y))
-        self.screen.blit(nav_surf, nav_rect)
-    
-    def load_save_slots_info(self):
-        """Charge les informations des slots de sauvegarde"""
-        # Utiliser le même répertoire que SaveSystem
-        if os.getenv('FLATPAK_ID') == 'io.github.Estemobs.ProjetMMO2D':
-            save_dir = os.path.expanduser('~/.var/app/io.github.Estemobs.ProjetMMO2D/data/saves')
-        else:
-            save_dir = os.path.expanduser('~/ProjetMMO2D_saves')
+            ver = ""
+        if ver:
+            vf = pygame.font.Font(None, self._font(1.8))
+            vs = vf.render(ver, True, (100, 120, 160))
+            self.screen.blit(vs, (title_x + title_w - vs.get_width() - 15, title_y + 10))
 
-        for i in range(3):
-            save_file = os.path.join(save_dir, f"save_slot_{i}.json")
-            if os.path.exists(save_file):
-                try:
-                    with open(save_file, "r") as f:
-                        save_data = json.load(f)
-                    
-                    # Récupérer les informations de la sauvegarde
-                    timestamp = save_data.get("timestamp", "Date inconnue")
-                    playtime = save_data.get("playtime", "00:00:00")
-                    level_name = save_data.get("level_name", "Monde généré")
-                    player_health = save_data.get("player", {}).get("health", 100)
-                    
-                    self.save_slots[i] = {
-                        "timestamp": timestamp,
-                        "playtime": playtime,
-                        "level_name": level_name,
-                        "player_health": player_health,
-                        "exists": True
-                    }
-                except Exception:
-                    self.save_slots[i] = None
-            else:
-                self.save_slots[i] = None
-    
-    def format_date(self, timestamp_str):
-        """Formate une date pour l'affichage"""
+        # Boutons
+        btn_w = int(w * 0.28)
+        btn_h = int(h * 0.065)
+        start_y = int(h * 0.30)
+        spacing = int(h * 0.095)
+
+        for i, button in enumerate(self.main_buttons):
+            cx = w // 2
+            cy = start_y + i * spacing
+            selected = (i == self.selected_button)
+            self._draw_button(button["text"], cx, cy, btn_w, btn_h, selected, font_size_pct=2.8)
+
+        # Personnage pixel art à droite
         try:
-            from datetime import datetime
-            dt = datetime.fromisoformat(timestamp_str)
-            return dt.strftime("%d/%m/%Y %H:%M")
+            sprite_manager = None
+            from game.sprite_manager import get_sprite_manager
+            sprite_manager = get_sprite_manager()
+            player_sprite = sprite_manager.get_entity_sprite("player")
+            if player_sprite:
+                pw = int(h * 0.25)
+                ph = int(pw * 48 / 32)
+                scaled = pygame.transform.smoothscale(player_sprite, (pw, ph))
+                px = int(w * 0.72)
+                py = int(h * 0.35)
+                self.screen.blit(scaled, (px, py))
         except Exception:
-            return timestamp_str
-    
-    def draw_save_load_menu(self, menu_type):
-        """Dessine le menu de sauvegarde ou de chargement"""
+            pass
+
+    def draw_options_menu(self):
         self._draw_gradient_background()
-        
-        title_font = pygame.font.Font(None, s(48))
-        option_font = pygame.font.Font(None, s(24))
-        small_font = pygame.font.Font(None, s(20))
-        btn_font = pygame.font.Font(None, s(32))
-        
+        w, h = self._W(), self._H()
+
         # Titre
+        title_font = pygame.font.Font(None, self._font(5))
+        title = title_font.render("Options", True, self.WHITE)
+        self.screen.blit(title, title.get_rect(center=(w // 2, int(h * 0.08))))
+
+        # Panneau options
+        panel_w = int(w * 0.5)
+        panel_h = int(h * 0.6)
+        panel_x = (w - panel_w) // 2
+        panel_y = int(h * 0.15)
+        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        pygame.draw.rect(panel, (16, 22, 40, 210), (0, 0, panel_w, panel_h), border_radius=12)
+        pygame.draw.rect(panel, (60, 80, 130, 150), (0, 0, panel_w, panel_h), 2, border_radius=12)
+        self.screen.blit(panel, (panel_x, panel_y))
+
+        opt_font = pygame.font.Font(None, self._font(2.8))
+        btn_font = pygame.font.Font(None, self._font(2.4))
+
+        row_h = int(panel_h * 0.12)
+        cx = panel_x + panel_w // 2
+
+        # Taille fenêtre
+        y = panel_y + int(panel_h * 0.12)
+        txt = opt_font.render(f"Taille de la fenetre: {self.window_scale_labels[self.current_scale_index]}", True, self.WHITE)
+        self.screen.blit(txt, txt.get_rect(center=(cx, y)))
+        btn_w = int(panel_w * 0.15)
+        btn_h = int(row_h * 0.7)
+        self._draw_button("<", cx - int(panel_w * 0.15), y + int(row_h * 0.5), btn_w, btn_h, self.selected_button == 0, 2.2)
+        self._draw_button(">", cx + int(panel_w * 0.15), y + int(row_h * 0.5), btn_w, btn_h, self.selected_button == 1, 2.2)
+
+        # Fullscreen
+        y += row_h
+        fs = opt_font.render(f"Plein ecran: {'Oui' if self.fullscreen else 'Non'}", True, self.WHITE)
+        self.screen.blit(fs, fs.get_rect(center=(cx, y)))
+        self._draw_button("Basculer", cx, y + int(row_h * 0.55), int(panel_w * 0.22), btn_h, self.selected_button == 2, 2.2)
+
+        # Controles
+        y += row_h
+        ct = opt_font.render("Controles", True, self.WHITE)
+        self.screen.blit(ct, ct.get_rect(center=(cx, y)))
+        self._draw_button("Modifier", cx, y + int(row_h * 0.55), int(panel_w * 0.22), btn_h, self.selected_button == 3, 2.2)
+
+        # Retour
+        back_y = panel_y + panel_h - int(panel_h * 0.15)
+        self._draw_button("Retour", cx, back_y, int(panel_w * 0.2), int(row_h * 0.8), self.selected_button == 4, 2.2)
+
+    def draw_controls_menu(self):
+        self._draw_gradient_background()
+        w, h = self._W(), self._H()
+
+        title_font = pygame.font.Font(None, self._font(4.5))
+        title = title_font.render("Configuration des Controles", True, self.WHITE)
+        self.screen.blit(title, title.get_rect(center=(w // 2, int(h * 0.06))))
+
+        instr_font = pygame.font.Font(None, self._font(2.2))
+        instr = instr_font.render("Cliquez sur une ligne pour modifier la touche", True, self.GRAY)
+        self.screen.blit(instr, instr.get_rect(center=(w // 2, int(h * 0.11))))
+
+        modifiable = [(k, v) for k, v in self.control_names.items() if k != "harvest"]
+
+        panel_w = int(w * 0.65)
+        panel_h = int(h * 0.7)
+        panel_x = (w - panel_w) // 2
+        panel_y = int(h * 0.14)
+        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        pygame.draw.rect(panel, (16, 22, 40, 210), (0, 0, panel_w, panel_h), border_radius=12)
+        pygame.draw.rect(panel, (60, 80, 130, 150), (0, 0, panel_w, panel_h), 2, border_radius=12)
+        self.screen.blit(panel, (panel_x, panel_y))
+
+        row_h = int(panel_h / (len(modifiable) + 1.5))
+        opt_font = pygame.font.Font(None, self._font(2.4))
+        key_font = pygame.font.Font(None, self._font(2.2))
+
+        for i, (key, name) in enumerate(modifiable):
+            y = panel_y + int(panel_h * 0.08) + i * row_h
+            is_sel = (i == self.controls_menu_selected)
+
+            if is_sel:
+                sel_bg = pygame.Surface((panel_w - 20, row_h - 6), pygame.SRCALPHA)
+                pulse = int(abs(math.sin(self._menu_time * 2)) * 20) + 40
+                pygame.draw.rect(sel_bg, (112, 165, 255, pulse), (0, 0, panel_w - 20, row_h - 6), border_radius=8)
+                self.screen.blit(sel_bg, (panel_x + 10, y))
+
+            name_surf = opt_font.render(name, True, self.WHITE if is_sel else (180, 190, 220))
+            self.screen.blit(name_surf, (panel_x + 20, y + row_h // 4))
+
+            key_name = pygame.key.name(self.controls[key]).upper()
+            key_color = (255, 220, 80) if is_sel else (140, 160, 200)
+            key_surf = key_font.render(key_name, True, key_color)
+            kw = key_surf.get_width() + 24
+            kh = row_h - 12
+            kx = panel_x + panel_w - kw - 20
+            ky = y + 6
+            kb = pygame.Surface((kw, kh), pygame.SRCALPHA)
+            pygame.draw.rect(kb, (50, 70, 120, 180), (0, 0, kw, kh), border_radius=6)
+            pygame.draw.rect(kb, (*key_color, 100), (0, 0, kw, kh), 1, border_radius=6)
+            self.screen.blit(kb, (kx, ky))
+            self.screen.blit(key_surf, (kx + 12, ky + kh // 2 - key_surf.get_height() // 2))
+
+        # Retour
+        back_y = panel_y + panel_h - int(row_h * 0.8)
+        self._draw_button("Retour aux Options", w // 2, back_y, int(w * 0.22), int(row_h * 0.8), self.controls_menu_selected >= len(modifiable), 2.2)
+
+    # ─── Save/Load ───────────────────────────────────────────
+
+    def draw_save_load_menu(self, menu_type):
+        self._draw_gradient_background()
+        w, h = self._W(), self._H()
+
+        title_font = pygame.font.Font(None, self._font(4.5))
         title_text = "Charger une partie" if menu_type == "load" else "Sauvegarder la partie"
         title = title_font.render(title_text, True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, s(50)))
-        self.screen.blit(title, title_rect)
-        
-        # Instructions
-        instruction = "Sélectionnez un slot de sauvegarde" if menu_type == "save" else "Sélectionnez une sauvegarde à charger"
-        instr_surf = option_font.render(instruction, True, self.GRAY)
-        instr_rect = instr_surf.get_rect(center=(self.screen.get_width()//2, s(100)))
-        self.screen.blit(instr_surf, instr_rect)
-        
-        # Dessiner les slots de sauvegarde
-        slot_width = s(700)
-        slot_height = s(120)
-        start_y = s(150)
-        spacing = s(140)
-        
+        self.screen.blit(title, title.get_rect(center=(w // 2, int(h * 0.06))))
+
+        opt_font = pygame.font.Font(None, self._font(2.4))
+        small_font = pygame.font.Font(None, self._font(2))
+        btn_font = pygame.font.Font(None, self._font(2.2))
+
+        slot_w = int(w * 0.55)
+        slot_h = int(h * 0.13)
+        start_y = int(h * 0.16)
+        spacing = int(h * 0.17)
+
         for i in range(3):
-            x = self.screen.get_width()//2 - slot_width//2
+            x = (w - slot_w) // 2
             y = start_y + i * spacing
             selected = (i == self.selected_save_slot)
-            
-            # Couleur du slot
+
+            # Slot background
+            slot_bg = pygame.Surface((slot_w, slot_h), pygame.SRCALPHA)
             if selected:
-                slot_color = self.BLUE
+                slot_color = (88, 138, 255, 200)
                 border_color = self.WHITE
             else:
-                slot_color = self.DARK_GRAY
+                slot_color = (36, 44, 68, 200)
                 border_color = self.GRAY
-            
-            # Dessiner le slot
-            slot_surf = pygame.Surface((slot_width, slot_height), pygame.SRCALPHA)
-            pygame.draw.rect(slot_surf, (*slot_color, 200), (0, 0, slot_width, slot_height), border_radius=s(8))
-            self.screen.blit(slot_surf, (x, y))
-            pygame.draw.rect(self.screen, border_color, (x, y, slot_width, slot_height), 2, border_radius=s(8))
-            
-            # Titre du slot
+            pygame.draw.rect(slot_bg, slot_color, (0, 0, slot_w, slot_h), border_radius=10)
+            self.screen.blit(slot_bg, (x, y))
+            pygame.draw.rect(self.screen, border_color, (x, y, slot_w, slot_h), 2, border_radius=10)
+
+            # Slot title
             slot_title = btn_font.render(f"Slot {i+1}", True, self.WHITE)
-            self.screen.blit(slot_title, (x + s(20), y + s(10)))
-            
+            self.screen.blit(slot_title, (x + 20, y + 10))
+
             if self.save_slots[i] and self.save_slots[i]["exists"]:
-                save_info = self.save_slots[i]
-                
-                date_text = self.format_date(save_info["timestamp"])
-                date_surf = small_font.render(f"Sauvegardé le: {date_text}", True, self.WHITE)
-                self.screen.blit(date_surf, (x + s(20), y + s(40)))
-                
-                playtime_surf = small_font.render(f"Temps de jeu: {save_info['playtime']}", True, self.WHITE)
-                self.screen.blit(playtime_surf, (x + s(20), y + s(60)))
-                
-                world_surf = small_font.render(f"Monde: {save_info['level_name']}", True, self.WHITE)
-                self.screen.blit(world_surf, (x + s(20), y + s(80)))
-                
-                health_surf = small_font.render(f"Santé: {save_info['player_health']}/100", True, self.GREEN)
-                self.screen.blit(health_surf, (x + s(400), y + s(40)))
-                
-                if menu_type == "load":
-                    action_surf = small_font.render("Entrée: Charger", True, self.YELLOW)
-                    self.screen.blit(action_surf, (x + s(400), y + s(65)))
-                    delete_surf = small_font.render("Suppr: Effacer", True, self.RED)
-                    self.screen.blit(delete_surf, (x + s(400), y + s(85)))
-                else:
-                    action_surf = small_font.render("Entrée: Écraser", True, self.YELLOW)
-                    self.screen.blit(action_surf, (x + s(400), y + s(80)))
-                
-                if menu_type == "load":
-                    delete_button_x = x + slot_width - s(100)
-                    delete_button_y = y + s(10)
-                    delete_selected = selected and hasattr(self, 'delete_mode') and self.delete_mode
-                    self.draw_button("Supprimer", delete_button_x, delete_button_y, s(80), s(30), delete_selected, btn_font)
-                
+                info = self.save_slots[i]
+                date_text = self.format_date(info["timestamp"])
+                self.screen.blit(small_font.render(f"Sauvegarde: {date_text}", True, self.WHITE), (x + 20, y + int(slot_h * 0.3)))
+                self.screen.blit(small_font.render(f"Temps: {info['playtime']}", True, self.WHITE), (x + 20, y + int(slot_h * 0.5)))
+                self.screen.blit(small_font.render(f"Sante: {info['player_health']}/100", True, self.GREEN), (x + int(slot_w * 0.5), y + int(slot_h * 0.3)))
+                action = "Entree: Charger" if menu_type == "load" else "Entree: Ecraser"
+                self.screen.blit(small_font.render(action, True, self.YELLOW), (x + int(slot_w * 0.5), y + int(slot_h * 0.5)))
             else:
-                empty_text = option_font.render("Slot vide", True, self.GRAY)
-                self.screen.blit(empty_text, (x + s(20), y + s(50)))
-                
-                if menu_type == "save":
-                    create_text = small_font.render("Entrée: Créer nouvelle sauvegarde", True, self.YELLOW)
-                    self.screen.blit(create_text, (x + s(200), y + s(80)))
-                elif menu_type == "load":
-                    unavailable_text = small_font.render("Aucune sauvegarde disponible", True, self.RED)
-                    self.screen.blit(unavailable_text, (x + s(200), y + s(80)))
-        
-        # Bouton retour
-        button_y = start_y + 3 * spacing + s(20)
-        self.draw_button("Retour", s(50), button_y, s(120), s(50), 
-                        self.selected_save_slot == 3, btn_font)
-        
-        # Instructions de navigation
-        if menu_type == "load":
-            nav_text = "↑↓: Naviguer • Entrée: Charger • Suppr: Effacer • Échap: Retour"
-        else:
-            nav_text = "↑↓: Naviguer • Entrée: Sauvegarder • Échap: Retour"
-        nav_surf = small_font.render(nav_text, True, self.GRAY)
-        nav_rect = nav_surf.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - s(30)))
-        self.screen.blit(nav_surf, nav_rect)
-    
+                self.screen.blit(opt_font.render("Slot vide", True, self.GRAY), (x + 20, y + int(slot_h * 0.35)))
+
+        # Retour
+        self._draw_button("Retour", w // 2, start_y + 3 * spacing + int(h * 0.03), int(w * 0.15), int(h * 0.055), self.selected_save_slot == 3, 2.2)
+
+    # ─── Events ──────────────────────────────────────────────
+
     def handle_event(self, event):
-        """Gère les événements du menu"""
         if self.current_menu == "main":
             return self.handle_main_menu_event(event)
         elif self.current_menu == "options":
@@ -594,9 +482,8 @@ class Menu:
         elif self.current_menu == "save_menu":
             return self.handle_save_load_event(event, "save")
         return None
-    
+
     def handle_main_menu_event(self, event):
-        """Gère les événements du menu principal"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
                 self.selected_button = (self.selected_button - 1) % len(self.main_buttons)
@@ -604,27 +491,32 @@ class Menu:
                 self.selected_button = (self.selected_button + 1) % len(self.main_buttons)
             elif event.key == pygame.K_RETURN:
                 return self.main_buttons[self.selected_button]["action"]
-        
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            button_width = s(300)
-            button_height = s(60)
-            start_y = s(200)
-            spacing = s(80)
-            
+            w, h = self._W(), self._H()
+            btn_w = int(w * 0.28)
+            btn_h = int(h * 0.065)
+            start_y = int(h * 0.30)
+            spacing = int(h * 0.095)
             for i, button in enumerate(self.main_buttons):
-                x = self.screen.get_width()//2 - button_width//2
-                y = start_y + i * spacing
-                button_rect = pygame.Rect(x, y, button_width, button_height)
-                
-                if button_rect.collidepoint(mouse_pos):
+                cx = w // 2
+                cy = start_y + i * spacing
+                rect = pygame.Rect(cx - btn_w // 2, cy - btn_h // 2, btn_w, btn_h)
+                if rect.collidepoint(mouse_pos):
                     self.sound_manager.play('menu_click')
                     return button["action"]
-        
         return None
-    
+
     def handle_options_event(self, event):
-        """Gère les événements du menu des options"""
+        w, h = self._W(), self._H()
+        panel_w = int(w * 0.5)
+        panel_h = int(h * 0.6)
+        panel_x = (w - panel_w) // 2
+        panel_y = int(h * 0.15)
+        cx = panel_x + panel_w // 2
+        row_h = int(panel_h * 0.12)
+        btn_h = int(row_h * 0.7)
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.current_menu = "main"
@@ -634,71 +526,66 @@ class Menu:
                 self.selected_button = max(0, self.selected_button - 1)
             elif event.key == pygame.K_DOWN:
                 self.selected_button = min(4, self.selected_button + 1)
-            elif event.key == pygame.K_LEFT:
-                if self.selected_button <= 1:  # Taille de fenêtre
-                    self.current_scale_index = (self.current_scale_index - 1) % len(self.window_scales)
-                    self.save_settings()
-                    return "toggle_fullscreen"  # Forcer le redémarrage de l'affichage
-            elif event.key == pygame.K_RIGHT:
-                if self.selected_button <= 1:  # Taille de fenêtre
-                    self.current_scale_index = (self.current_scale_index + 1) % len(self.window_scales)
+            elif event.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                if self.selected_button <= 1:
+                    direction = 1 if event.key == pygame.K_RIGHT else -1
+                    self.current_scale_index = (self.current_scale_index + direction) % len(self.window_scales)
                     self.save_settings()
                     return "toggle_fullscreen"
             elif event.key == pygame.K_RETURN:
-                if self.selected_button == 0:  # Taille précédente
+                if self.selected_button == 0:
                     self.current_scale_index = (self.current_scale_index - 1) % len(self.window_scales)
                     self.save_settings()
                     return "toggle_fullscreen"
-                elif self.selected_button == 1:  # Taille suivante
+                elif self.selected_button == 1:
                     self.current_scale_index = (self.current_scale_index + 1) % len(self.window_scales)
                     self.save_settings()
                     return "toggle_fullscreen"
-                elif self.selected_button == 2:  # Basculer plein écran
+                elif self.selected_button == 2:
                     self.fullscreen = not self.fullscreen
                     self.save_settings()
                     return "toggle_fullscreen"
-                elif self.selected_button == 3:  # Menu contrôles
+                elif self.selected_button == 3:
                     self.current_menu = "controls"
                     self.controls_menu_selected = 0
-                elif self.selected_button == 4:  # Retour
+                elif self.selected_button == 4:
                     self.current_menu = "main"
                     self.selected_button = 0
                     self.save_settings()
-        
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos()
-            
-            # Clic sur les boutons de taille
-            if pygame.Rect(s(450), s(115), s(40), s(30)).collidepoint(mouse_pos):
+            mouse_pos = event.pos
+            # < button
+            if pygame.Rect(cx - int(panel_w * 0.15) - int(panel_w * 0.075), panel_y + int(panel_h * 0.12) + int(row_h * 0.15), int(panel_w * 0.15), btn_h).collidepoint(mouse_pos):
                 self.current_scale_index = (self.current_scale_index - 1) % len(self.window_scales)
                 self.save_settings()
                 return "toggle_fullscreen"
-            elif pygame.Rect(s(500), s(115), s(40), s(30)).collidepoint(mouse_pos):
+            # > button
+            if pygame.Rect(cx + int(panel_w * 0.075), panel_y + int(panel_h * 0.12) + int(row_h * 0.15), int(panel_w * 0.15), btn_h).collidepoint(mouse_pos):
                 self.current_scale_index = (self.current_scale_index + 1) % len(self.window_scales)
                 self.save_settings()
                 return "toggle_fullscreen"
-            # Clic sur le bouton fullscreen
-            elif pygame.Rect(s(450), s(165), s(100), s(30)).collidepoint(mouse_pos):
+            # Fullscreen
+            fs_y = panel_y + int(panel_h * 0.12) + row_h
+            if pygame.Rect(cx - int(panel_w * 0.11), fs_y + int(row_h * 0.25), int(panel_w * 0.22), btn_h).collidepoint(mouse_pos):
                 self.fullscreen = not self.fullscreen
                 self.save_settings()
                 return "toggle_fullscreen"
-            # Clic sur le bouton contrôles
-            elif pygame.Rect(s(450), s(215), s(100), s(30)).collidepoint(mouse_pos):
+            # Controls
+            ct_y = fs_y + row_h
+            if pygame.Rect(cx - int(panel_w * 0.11), ct_y + int(row_h * 0.25), int(panel_w * 0.22), btn_h).collidepoint(mouse_pos):
                 self.current_menu = "controls"
                 self.controls_menu_selected = 0
-            # Clic sur le bouton retour
-            elif pygame.Rect(s(50), self.screen.get_height() - s(80), s(100), s(50)).collidepoint(mouse_pos):
+            # Back
+            back_y = panel_y + panel_h - int(panel_h * 0.15)
+            if pygame.Rect(cx - int(panel_w * 0.1), back_y - int(row_h * 0.4), int(panel_w * 0.2), int(row_h * 0.8)).collidepoint(mouse_pos):
                 self.current_menu = "main"
                 self.selected_button = 0
                 self.save_settings()
-        
         return None
-    
+
     def handle_controls_event(self, event):
-        """Gère les événements du menu des contrôles"""
-        modifiable_controls = [k for k in self.control_names.keys() if k != "harvest"]
-        max_selection = len(modifiable_controls)
-        
+        modifiable = [k for k in self.control_names.keys() if k != "harvest"]
+        max_sel = len(modifiable)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.current_menu = "options"
@@ -707,40 +594,17 @@ class Menu:
             elif event.key == pygame.K_UP:
                 self.controls_menu_selected = max(0, self.controls_menu_selected - 1)
             elif event.key == pygame.K_DOWN:
-                self.controls_menu_selected = min(max_selection, self.controls_menu_selected + 1)
+                self.controls_menu_selected = min(max_sel, self.controls_menu_selected + 1)
             elif event.key == pygame.K_RETURN:
-                if self.controls_menu_selected < max_selection:
-                    control_key = modifiable_controls[self.controls_menu_selected]
-                    return f"remap_control_{control_key}"
+                if self.controls_menu_selected < max_sel:
+                    return f"remap_control_{modifiable[self.controls_menu_selected]}"
                 else:
                     self.current_menu = "options"
                     self.selected_button = 3
                     self.save_settings()
-        
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos()
-            
-            y = s(150)
-            button_height = s(40)
-            button_width = s(200)
-            button_x = s(400)
-            
-            for i, control_key in enumerate(modifiable_controls):
-                button_rect = pygame.Rect(button_x, y + i * s(60), button_width, button_height)
-                if button_rect.collidepoint(mouse_pos):
-                    return f"remap_control_{control_key}"
-            
-            retour_rect = pygame.Rect(self.screen.get_width()//2 - s(100), 
-                                    self.screen.get_height() - s(100), s(200), s(50))
-            if retour_rect.collidepoint(mouse_pos):
-                self.current_menu = "options"
-                self.selected_button = 3
-                self.save_settings()
-        
         return None
-    
+
     def handle_save_load_event(self, event, menu_type):
-        """Gère les événements du menu de sauvegarde/chargement"""
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.current_menu = "main"
@@ -750,9 +614,7 @@ class Menu:
             elif event.key == pygame.K_DOWN:
                 self.selected_save_slot = min(3, self.selected_save_slot + 1)
             elif event.key == pygame.K_DELETE and menu_type == "load":
-                if (self.selected_save_slot < 3 and 
-                    self.save_slots[self.selected_save_slot] and 
-                    self.save_slots[self.selected_save_slot]["exists"]):
+                if self.selected_save_slot < 3 and self.save_slots[self.selected_save_slot] and self.save_slots[self.selected_save_slot]["exists"]:
                     return f"delete_slot_{self.selected_save_slot}"
             elif event.key == pygame.K_RETURN:
                 if self.selected_save_slot == 3:
@@ -760,74 +622,61 @@ class Menu:
                     self.selected_save_slot = 0
                 else:
                     if menu_type == "load":
-                        if (self.save_slots[self.selected_save_slot] and 
-                            self.save_slots[self.selected_save_slot]["exists"]):
+                        if self.save_slots[self.selected_save_slot] and self.save_slots[self.selected_save_slot]["exists"]:
                             return f"load_slot_{self.selected_save_slot}"
                     else:
                         return f"save_slot_{self.selected_save_slot}"
-        
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos()
-            slot_width = s(700)
-            slot_height = s(120)
-            start_y = s(150)
-            spacing = s(140)
-            
+            mouse_pos = event.pos
+            w, h = self._W(), self._H()
+            slot_w = int(w * 0.55)
+            slot_h = int(h * 0.13)
+            start_y = int(h * 0.16)
+            spacing = int(h * 0.17)
             for i in range(3):
-                x = self.screen.get_width()//2 - slot_width//2
+                x = (w - slot_w) // 2
                 y = start_y + i * spacing
-                slot_rect = pygame.Rect(x, y, slot_width, slot_height)
-                
-                if slot_rect.collidepoint(mouse_pos):
+                if pygame.Rect(x, y, slot_w, slot_h).collidepoint(mouse_pos):
                     self.selected_save_slot = i
-                    
                     if menu_type == "load" and self.save_slots[i] and self.save_slots[i]["exists"]:
-                        delete_button_x = x + slot_width - s(100)
-                        delete_button_y = y + s(10)
-                        delete_rect = pygame.Rect(delete_button_x, delete_button_y, s(80), s(30))
-                        
-                        if delete_rect.collidepoint(mouse_pos):
-                            return f"delete_slot_{i}"
-                    
-                    if menu_type == "load":
-                        if (self.save_slots[i] and self.save_slots[i]["exists"]):
-                            return f"load_slot_{i}"
-                    else:
+                        return f"load_slot_{i}"
+                    elif menu_type == "save":
                         return f"save_slot_{i}"
-            
-            button_y = start_y + 3 * spacing + s(20)
-            retour_rect = pygame.Rect(s(50), button_y, s(120), s(50))
-            if retour_rect.collidepoint(mouse_pos):
-                self.current_menu = "main"
-                self.selected_save_slot = 0
-        
         return None
-    
-    def delete_save_slot(self, slot_number):
-        """Supprime une sauvegarde"""
-        import os
-        # Utiliser le même répertoire que SaveSystem
+
+    # ─── Utils ───────────────────────────────────────────────
+
+    def load_save_slots_info(self):
         if os.getenv('FLATPAK_ID') == 'io.github.Estemobs.ProjetMMO2D':
             save_dir = os.path.expanduser('~/.var/app/io.github.Estemobs.ProjetMMO2D/data/saves')
         else:
             save_dir = os.path.expanduser('~/ProjetMMO2D_saves')
-
-        try:
-            save_file = os.path.join(save_dir, f"save_slot_{slot_number}.json")
+        for i in range(3):
+            save_file = os.path.join(save_dir, f"save_slot_{i}.json")
             if os.path.exists(save_file):
-                os.remove(save_file)
-                self.save_slots[slot_number] = None
-                print(f"✅ Sauvegarde du slot {slot_number + 1} supprimée")
-                return True
+                try:
+                    with open(save_file, "r") as f:
+                        sd = json.load(f)
+                    self.save_slots[i] = {
+                        "timestamp": sd.get("timestamp", ""),
+                        "playtime": sd.get("playtime", "00:00:00"),
+                        "level_name": sd.get("level_name", "Monde"),
+                        "player_health": sd.get("player", {}).get("health", 100),
+                        "exists": True
+                    }
+                except Exception:
+                    self.save_slots[i] = None
             else:
-                print(f"❌ Aucune sauvegarde trouvée dans le slot {slot_number + 1}")
-                return False
-        except Exception as e:
-            print(f"❌ Erreur lors de la suppression : {e}")
-            return False
-    
+                self.save_slots[i] = None
+
+    def format_date(self, ts):
+        try:
+            from datetime import datetime
+            return datetime.fromisoformat(ts).strftime("%d/%m/%Y %H:%M")
+        except Exception:
+            return ts
+
     def draw(self):
-        """Dessine le menu actuel"""
         if self.current_menu == "main":
             self.draw_main_menu()
         elif self.current_menu == "options":
@@ -838,26 +687,35 @@ class Menu:
             self.draw_save_load_menu("load")
         elif self.current_menu == "save_menu":
             self.draw_save_load_menu("save")
-        
         pygame.display.flip()
-    
+
     def get_resolution(self):
-        """Retourne la résolution calculée selon le scale sélectionné"""
         info = pygame.display.Info()
-        native_w, native_h = info.current_w, info.current_h
         scale = self.window_scales[self.current_scale_index]
-        return (int(native_w * scale), int(native_h * scale))
-    
+        return (int(info.current_w * scale), int(info.current_h * scale))
+
     def is_fullscreen(self):
-        """Retourne si le mode plein écran est activé"""
         return self.fullscreen
-    
+
     def refresh_save_slots(self):
-        """Rafraîchit les informations des slots de sauvegarde"""
         self.load_save_slots_info()
-    
-    def get_save_slot_info(self, slot_number):
-        """Retourne les informations d'un slot de sauvegarde"""
-        if 0 <= slot_number <= 2:
-            return self.save_slots[slot_number]
+
+    def get_save_slot_info(self, n):
+        if 0 <= n <= 2:
+            return self.save_slots[n]
         return None
+
+    def delete_save_slot(self, slot_number):
+        if os.getenv('FLATPAK_ID') == 'io.github.Estemobs.ProjetMMO2D':
+            save_dir = os.path.expanduser('~/.var/app/io.github.Estemobs.ProjetMMO2D/data/saves')
+        else:
+            save_dir = os.path.expanduser('~/ProjetMMO2D_saves')
+        try:
+            save_file = os.path.join(save_dir, f"save_slot_{slot_number}.json")
+            if os.path.exists(save_file):
+                os.remove(save_file)
+                self.save_slots[slot_number] = None
+                return True
+        except Exception:
+            pass
+        return False
