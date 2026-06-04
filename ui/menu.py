@@ -7,12 +7,16 @@ import pygame
 import json
 import os
 import math
+import random
 import time as _time
 from game.sound_manager import get_sound_manager
 
 
 class Menu:
     DECORATIVE_STARS = None
+    AURORA_POINTS = None
+    PARTICLES = None
+    LANDSCAPE = None
 
     def __init__(self, screen, font):
         self.screen = screen
@@ -37,6 +41,21 @@ class Menu:
         self._background_stars = Menu.DECORATIVE_STARS
         self._background_cache = None
         self._background_cache_size = None
+
+        # Aurore boréale
+        if Menu.AURORA_POINTS is None:
+            Menu.AURORA_POINTS = self._generate_aurora_points()
+        self._aurora_points = Menu.AURORA_POINTS
+
+        # Particules flottantes (lucioles)
+        if Menu.PARTICLES is None:
+            Menu.PARTICLES = self._generate_particles()
+        self._particles = Menu.PARTICLES
+
+        # Silhouette de paysage
+        if Menu.LANDSCAPE is None:
+            Menu.LANDSCAPE = self._generate_landscape()
+        self._landscape = Menu.LANDSCAPE
 
         self.sound_manager = get_sound_manager()
 
