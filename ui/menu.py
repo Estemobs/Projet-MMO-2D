@@ -739,32 +739,29 @@ class Menu:
             elif event.key == pygame.K_DOWN:
                 self.selected_save_slot = min(3, self.selected_save_slot + 1)
             elif event.key == pygame.K_DELETE and menu_type == "load":
-                # Supprimer une sauvegarde
                 if (self.selected_save_slot < 3 and 
                     self.save_slots[self.selected_save_slot] and 
                     self.save_slots[self.selected_save_slot]["exists"]):
                     return f"delete_slot_{self.selected_save_slot}"
             elif event.key == pygame.K_RETURN:
-                if self.selected_save_slot == 3:  # Bouton retour
+                if self.selected_save_slot == 3:
                     self.current_menu = "main"
                     self.selected_save_slot = 0
                 else:
-                    # Sauvegarder ou charger
                     if menu_type == "load":
                         if (self.save_slots[self.selected_save_slot] and 
                             self.save_slots[self.selected_save_slot]["exists"]):
                             return f"load_slot_{self.selected_save_slot}"
-                    else:  # save
+                    else:
                         return f"save_slot_{self.selected_save_slot}"
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            slot_width = 700
-            slot_height = 120
-            start_y = 150
-            spacing = 140
+            slot_width = s(700)
+            slot_height = s(120)
+            start_y = s(150)
+            spacing = s(140)
             
-            # Vérifier les clics sur les slots
             for i in range(3):
                 x = self.screen.get_width()//2 - slot_width//2
                 y = start_y + i * spacing
@@ -773,25 +770,22 @@ class Menu:
                 if slot_rect.collidepoint(mouse_pos):
                     self.selected_save_slot = i
                     
-                    # Vérifier si c'est un clic sur le bouton supprimer
                     if menu_type == "load" and self.save_slots[i] and self.save_slots[i]["exists"]:
-                        delete_button_x = x + slot_width - 100
-                        delete_button_y = y + 10
-                        delete_rect = pygame.Rect(delete_button_x, delete_button_y, 80, 30)
+                        delete_button_x = x + slot_width - s(100)
+                        delete_button_y = y + s(10)
+                        delete_rect = pygame.Rect(delete_button_x, delete_button_y, s(80), s(30))
                         
                         if delete_rect.collidepoint(mouse_pos):
                             return f"delete_slot_{i}"
                     
-                    # Sinon, charger/sauvegarder normalement
                     if menu_type == "load":
                         if (self.save_slots[i] and self.save_slots[i]["exists"]):
                             return f"load_slot_{i}"
-                    else:  # save
+                    else:
                         return f"save_slot_{i}"
             
-            # Vérifier le clic sur le bouton retour
-            button_y = start_y + 3 * spacing + 20
-            retour_rect = pygame.Rect(50, button_y, 120, 50)
+            button_y = start_y + 3 * spacing + s(20)
+            retour_rect = pygame.Rect(s(50), button_y, s(120), s(50))
             if retour_rect.collidepoint(mouse_pos):
                 self.current_menu = "main"
                 self.selected_save_slot = 0
