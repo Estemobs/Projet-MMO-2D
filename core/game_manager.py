@@ -103,6 +103,10 @@ class GameManager:
         self.show_save_message = False
         self.save_message_timer = 0.0
         
+        # Auto-save
+        self.auto_save_interval = 300.0  # 5 minutes
+        self.auto_save_timer = 0.0
+        
         self.running = True
 
     def init_game(self):
@@ -122,6 +126,13 @@ class GameManager:
         
         # Initialiser la minimap avec la carte du monde
         self.minimap.generate_world_minimap(self.world_map)
+        
+        # Initialiser le tutoriel
+        self.tutorial = Tutorial()
+        self.gameplay_manager.tutorial = self.tutorial
+        
+        # Réinitialiser le cycle jour/nuit
+        self.day_night = DayNightCycle()
         
         # Donner quelques items de départ au joueur
         self._give_starting_items()
