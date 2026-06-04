@@ -156,56 +156,227 @@ class Menu:
 
     # ─── Drawing helpers ─────────────────────────────────────
 
+    def _generate_decorative_stars(self):
+        rng = random.Random(42)
+        stars = []
+        for _ in range(200):
+            x_ratio = rng.random()
+            y_ratio = rng.random() * 0.75
+            radius = rng.choice([1, 1, 1, 1, 2, 2, 3])
+            base_shade = rng.randint(160, 255)
+            phase = rng.uniform(0, math.pi * 2)
+            speed = rng.uniform(0.3, 2.0)
+            stars.append((x_ratio, y_ratio, radius, base_shade, phase, speed))
+        return stars
+
+    def _generate_aurora_points(self):
+        rng = random.Random(77)
+        auroras = []
+        for _ in range(5):
+            base_x = rng.uniform(0.0, 1.0)
+            base_y = rng.uniform(0.05, 0.35)
+            width = rng.uniform(0.15, 0.4)
+            height = rng.uniform(0.08, 0.2)
+            color = rng.choice([
+                (40, 180, 120), (60, 140, 220), (100, 80, 200),
+                (30, 200, 160), (80, 120, 240)
+            ])
+            speed = rng.uniform(0.2, 0.6)
+            phase = rng.uniform(0, math.pi * 2)
+            auroras.append((base_x, base_y, width, height, color, speed, phase))
+        return auroras
+
+    def _generate_particles(self):
+        rng = random.Random(99)
+        particles = []
+        for _ in range(40):
+            x_ratio = rng.random()
+            y_ratio = rng.uniform(0.2, 0.85)
+            size = rng.uniform(1.5, 4.0)
+            speed = rng.uniform(0.15, 0.5)
+            phase = rng.uniform(0, math.pi * 2)
+            drift = rng.uniform(-0.3, 0.3)
+            color_type = rng.choice(["warm", "cool", "white"])
+            particles.append((x_ratio, y_ratio, size, speed, phase, drift, color_type))
+        return particles
+
+    def _generate_landscape(self):
+        rng = random.Random(55)
+        points = []
+        num_hills = 12
+        for i in range(num_hills + 1):
+            x_ratio = i / num_hills
+            y_base = 0.82 + rng.uniform(-0.04, 0.04)
+            points.append((x_ratio, y_base))
+        tree_positions = []
+        for _ in range(15):
+            tx = rng.uniform(0.02, 0.98)
+            ty = rng.uniform(0.72, 0.82)
+            tsize = rng.uniform(0.03, 0.07)
+            tree_positions.append((tx, ty, tsize))
+        return {"hills": points, "trees": tree_positions}
+
     def _draw_gradient_background(self):
-        """Fond dégradé qui remplit TOUT l'écran."""
+        """Fond dégradé étoilé avec aurore boréale."""
         w, h = self._W(), self._H()
         self._menu_time += 0.016
 
+        # Cache du fond dégradé
         if self._background_cache_size != (w, h) or self._background_cache is None:
             self._background_cache = pygame.Surface((w, h))
-            top = (6, 10, 30)
-            bot = (18, 35, 72)
+            top = (4, 6, 20)
+            mid = (8, 16, 45)
+            bot = (14, 28, 60)
             for y in range(h):
                 t = y / max(1, h - 1)
-                r = int(top[0] * (1 - t) + bot[0] * t)
-                g = int(top[1] * (1 - t) + bot[1] * t)
-                b = int(top[2] * (1 - t) + bot[2] * t)
+                if t < 0.5:
+                    tt = t * 2
+                    r = int(top[0] * (1 - tt) + mid[0] * tt)
+                    g = int(top[1] * (1 - tt) + mid[1] * tt)
+                    b = int(top[2] * (1 - tt) + mid[2] * tt)
+                else:
+                    tt = (t - 0.5) * 2
+                    r = int(mid[0] * (1 - tt) + bot[0] * tt)
+                    g = int(mid[1] * (1 - tt) + bot[1] * tt)
+                    b = int(mid[2] * (1 - tt) + bot[2] * tt)
                 pygame.draw.line(self._background_cache, (r, g, b), (0, y), (w, y))
             self._background_cache_size = (w, h)
 
         self.screen.blit(self._background_cache, (0, 0))
+
+        # Aurore boréale
+        self._draw_aurora(w, h)
 
         # Étoiles scintillantes
         for x_ratio, y_ratio, radius, base_shade, phase, speed in self._background_stars:
             x = int(x_ratio * w)
             y = int(y_ratio * h)
             twinkle = math.sin(self._menu_time * speed + phase) * 0.5 + 0.5
-            shade = int(base_shade * (0.4 + 0.6 * twinkle))
-            alpha = int(180 + 75 * twinkle)
+            shade = int(base_shade * (0.3 + 0.7 * twinkle))
+            alpha = int(160 + 95 * twinkle)
             if radius <= 1:
                 star_surf = pygame.Surface((2, 2), pygame.SRCALPHA)
                 star_surf.fill((shade, shade, shade, alpha))
                 self.screen.blit(star_surf, (x, y))
             else:
-                star_surf = pygame.Surface((radius * 4, radius * 4), pygame.SRCALPHA)
-                halo_alpha = int(alpha * 0.2)
-                pygame.draw.circle(star_surf, (shade, shade, shade, halo_alpha), (radius * 2, radius * 2), radius * 2)
-                pygame.draw.circle(star_surf, (shade, shade, shade, alpha), (radius * 2, radius * 2), radius)
-                self.screen.blit(star_surf, (x - radius * 2, y - radius * 2))
+                size = radius * 5
+                star_surf = pygame.Surface((size, size), pygame.SRCALPHA)
+                cx, cy = size // 2, size // 2
+                halo_alpha = int(alpha * 0.15)
+                pygame.draw.circle(star_surf, (shade, shade, shade, halo_alpha), (cx, cy), radius * 3)
+                core_alpha = min(255, int(alpha * 1.2))
+                pygame.draw.circle(star_surf, (min(255, shade + 40), min(255, shade + 40), min(255, shade + 40), core_alpha), (cx, cy), radius)
+                self.screen.blit(star_surf, (x - cx, y - cy))
 
-    def _generate_decorative_stars(self):
-        import random
-        stars = []
-        rng = random.Random(42)
-        for _ in range(150):
-            x_ratio = rng.random()
-            y_ratio = rng.random() * 0.8
-            radius = rng.choice([1, 1, 1, 2, 2, 3])
-            base_shade = rng.randint(140, 255)
-            phase = rng.uniform(0, math.pi * 2)
-            speed = rng.uniform(0.5, 2.5)
-            stars.append((x_ratio, y_ratio, radius, base_shade, phase, speed))
-        return stars
+        # Particules flottantes (lucioles)
+        self._draw_particles(w, h)
+
+        # Silhouette de paysage en bas
+        self._draw_landscape(w, h)
+
+    def _draw_aurora(self, w, h):
+        """Dessine l'aurore boréale animée."""
+        aurora_surf = pygame.Surface((w, int(h * 0.5)), pygame.SRCALPHA)
+        for bx, by, bw, bh, color, speed, phase in self._aurora_points:
+            wave = math.sin(self._menu_time * speed + phase)
+            wave2 = math.sin(self._menu_time * speed * 0.7 + phase + 1.5)
+            offset_x = wave * w * 0.03
+            offset_y = wave2 * h * 0.02
+            cx = int(bx * w + offset_x)
+            cy = int(by * h + offset_y)
+            rw = int(bw * w)
+            rh = int(bh * h)
+            alpha_base = 35 + int(wave * 15)
+            for i in range(8):
+                t = i / 8
+                a = max(0, alpha_base - int(t * alpha_base * 0.8))
+                stretch = 1.0 + t * 0.6
+                r = int(rw * stretch)
+                rh_i = int(rh * (1.0 - t * 0.4))
+                local_color = (
+                    min(255, color[0] + int(wave * 20)),
+                    min(255, color[1] + int(wave2 * 15)),
+                    min(255, color[2] + int(wave * 10))
+                )
+                pygame.draw.ellipse(aurora_surf, (*local_color, a), (cx - r, cy - rh_i // 2, r * 2, rh_i))
+        self.screen.blit(aurora_surf, (0, 0))
+
+    def _draw_particles(self, w, h):
+        """Dessine les particules flottantes (lucioles)."""
+        for x_ratio, y_ratio, size, speed, phase, drift, color_type in self._particles:
+            px = (x_ratio + math.sin(self._menu_time * speed + phase) * 0.02 + self._menu_time * drift * 0.01) % 1.0
+            py = y_ratio + math.sin(self._menu_time * speed * 0.5 + phase * 2) * 0.015
+            x = int(px * w)
+            y = int(py * h)
+            glow_pulse = math.sin(self._menu_time * speed * 2 + phase) * 0.5 + 0.5
+            if color_type == "warm":
+                base_r, base_g, base_b = 255, 200, 80
+            elif color_type == "cool":
+                base_r, base_g, base_b = 100, 200, 255
+            else:
+                base_r, base_g, base_b = 220, 220, 255
+            alpha = int(120 + glow_pulse * 135)
+            glow_size = int(size * 3)
+            glow_surf = pygame.Surface((glow_size * 2, glow_size * 2), pygame.SRCALPHA)
+            glow_a = int(alpha * 0.25)
+            pygame.draw.circle(glow_surf, (base_r, base_g, base_b, glow_a), (glow_size, glow_size), glow_size)
+            core_a = min(255, int(alpha * 1.5))
+            pygame.draw.circle(glow_surf, (min(255, base_r + 30), min(255, base_g + 30), min(255, base_b + 30), core_a), (glow_size, glow_size), int(size))
+            self.screen.blit(glow_surf, (x - glow_size, y - glow_size))
+
+    def _draw_landscape(self, w, h):
+        """Dessine la silhouette du paysage en bas de l'écran."""
+        hills = self._landscape["hills"]
+        trees = self._landscape["trees"]
+        landscape_h = int(h * 0.25)
+        landscape_y = h - landscape_h
+
+        # Couche arrière (montagnes lointaines, plus sombres)
+        back_surf = pygame.Surface((w, landscape_h + 4), pygame.SRCALPHA)
+        back_points = []
+        for i, (xr, yr) in enumerate(hills):
+            x = int(xr * w)
+            y_offset = math.sin(self._menu_time * 0.15 + xr * 3) * 3
+            y = int((yr - 0.82 + 0.82) * landscape_h + y_offset + 15)
+            back_points.append((x, y))
+        if len(back_points) > 1:
+            back_points.append((w, landscape_h + 4))
+            back_points.append((0, landscape_h + 4))
+            pygame.draw.polygon(back_surf, (6, 10, 22, 200), back_points)
+        self.screen.blit(back_surf, (0, landscape_y))
+
+        # Couche avant (collines, légèrement plus claires)
+        front_surf = pygame.Surface((w, landscape_h + 4), pygame.SRCALPHA)
+        front_points = []
+        rng = random.Random(55)
+        for i, (xr, yr) in enumerate(hills):
+            x = int(xr * w)
+            offset = math.sin(self._menu_time * 0.1 + xr * 2.5) * 2
+            y = int((yr - 0.82 + 0.82) * landscape_h + offset)
+            front_points.append((x, y))
+        if len(front_points) > 1:
+            front_points.append((w, landscape_h + 4))
+            front_points.append((0, landscape_h + 4))
+            pygame.draw.polygon(front_surf, (4, 8, 18, 230), front_points)
+        self.screen.blit(front_surf, (0, landscape_y))
+
+        # Arbres en silhouette
+        for tx, ty, tsize in trees:
+            tree_x = int(tx * w)
+            tree_y_base = int((ty - 0.82 + 0.82) * landscape_h)
+            tree_h = int(tsize * h * 0.6)
+            tree_w = int(tsize * w * 0.15)
+            trunk_w = max(2, tree_w // 4)
+            trunk_h = tree_h // 3
+            trunk_x = tree_x - trunk_w // 2
+            trunk_y = landscape_y + tree_y_base - trunk_h
+            pygame.draw.rect(self.screen, (3, 6, 14), (trunk_x, trunk_y, trunk_w, trunk_h))
+            canopy_y = trunk_y - tree_h * 2 // 3
+            pygame.draw.polygon(self.screen, (4, 8, 18), [
+                (tree_x, canopy_y),
+                (tree_x - tree_w, canopy_y + tree_h * 2 // 3),
+                (tree_x + tree_w, canopy_y + tree_h * 2 // 3)
+            ])
 
     def _draw_button(self, text, cx, cy, w, h, selected=False, font_size_pct=2.5):
         """Dessine un bouton centré sur (cx, cy)."""
