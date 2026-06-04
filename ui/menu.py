@@ -831,8 +831,11 @@ class Menu:
         pygame.display.flip()
     
     def get_resolution(self):
-        """Retourne la résolution actuelle"""
-        return self.resolutions[self.current_resolution]
+        """Retourne la résolution calculée selon le scale sélectionné"""
+        info = pygame.display.Info()
+        native_w, native_h = info.current_w, info.current_h
+        scale = self.window_scales[self.current_scale_index]
+        return (int(native_w * scale), int(native_h * scale))
     
     def is_fullscreen(self):
         """Retourne si le mode plein écran est activé"""
