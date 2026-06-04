@@ -131,21 +131,23 @@ class Menu:
         except Exception:
             pass
     
-    def draw_button(self, text, x, y, width, height, selected=False):
+    def draw_button(self, text, x, y, width, height, selected=False, font=None):
         """Dessine un bouton avec effet glow quand sélectionné."""
+        if font is None:
+            font = self.button_font
         rect = pygame.Rect(x, y, width, height)
 
         # Ombre portée
         shadow_surface = pygame.Surface((width, height + 6), pygame.SRCALPHA)
         shadow_alpha = 140 if selected else 90
-        pygame.draw.rect(shadow_surface, (0, 0, 0, shadow_alpha), (0, 4, width, height), border_radius=12)
+        pygame.draw.rect(shadow_surface, (0, 0, 0, shadow_alpha), (0, 4, width, height), border_radius=s(12))
         self.screen.blit(shadow_surface, (x, y))
 
         # Effet glow pour le bouton sélectionné
         if selected:
             glow_surf = pygame.Surface((width + 16, height + 16), pygame.SRCALPHA)
             pulse = int(abs(math.sin(self._menu_time * 3)) * 30) + 50
-            pygame.draw.rect(glow_surf, (112, 165, 255, pulse), (0, 0, width + 16, height + 16), border_radius=16)
+            pygame.draw.rect(glow_surf, (112, 165, 255, pulse), (0, 0, width + 16, height + 16), border_radius=s(16))
             self.screen.blit(glow_surf, (x - 8, y - 8))
 
         # Fond du bouton
@@ -154,22 +156,22 @@ class Menu:
 
         # Dégradé subtil du bouton
         btn_surf = pygame.Surface((width, height), pygame.SRCALPHA)
-        pygame.draw.rect(btn_surf, (*color, 220), (0, 0, width, height), border_radius=12)
+        pygame.draw.rect(btn_surf, (*color, 220), (0, 0, width, height), border_radius=s(12))
         # Ligne de highlight en haut
         highlight = tuple(min(255, c + 40) for c in color)
-        pygame.draw.line(btn_surf, (*highlight, 150), (12, 2), (width - 12, 2), 1)
+        pygame.draw.line(btn_surf, (*highlight, 150), (s(12), 2), (width - s(12), 2), 1)
         self.screen.blit(btn_surf, (x, y))
 
         # Bordure
-        pygame.draw.rect(self.screen, border_color, rect, 2, border_radius=12)
+        pygame.draw.rect(self.screen, border_color, rect, 2, border_radius=s(12))
 
         # Texte
         text_color = (255, 255, 255) if selected else (200, 210, 235)
-        text_surf = self.button_font.render(text, True, text_color)
+        text_surf = font.render(text, True, text_color)
         text_rect = text_surf.get_rect(center=(x + width // 2, y + height // 2))
         # Ombre du texte
         if selected:
-            shadow = self.button_font.render(text, True, (0, 0, 0))
+            shadow = font.render(text, True, (0, 0, 0))
             self.screen.blit(shadow, (text_rect.x + 1, text_rect.y + 1))
         self.screen.blit(text_surf, text_rect)
 
@@ -290,89 +292,100 @@ class Menu:
         self._draw_title_block("MMO 2D - Jeu de Survie")
         
         # Boutons
-        button_width = 300
-        button_height = 60
-        start_y = 200
-        spacing = 80
+        button_width = s(300)
+        button_height = s(60)
+        start_y = s(200)
+        spacing = s(80)
+        button_font = pygame.font.Font(None, s(32))
         
         for i, button in enumerate(self.main_buttons):
             x = self.screen.get_width()//2 - button_width//2
             y = start_y + i * spacing
             selected = (i == self.selected_button)
-            self.draw_button(button["text"], x, y, button_width, button_height, selected)
+            self.draw_button(button["text"], x, y, button_width, button_height, selected, button_font)
     
     def draw_options_menu(self):
         """Dessine le menu des options"""
         self._draw_gradient_background()
         
         # Titre
-        title = self.big_font.render("Options", True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, 50))
+        title_font = pygame.font.Font(None, s(48))
+        title = title_font.render("Options", True, self.WHITE)
+        title_rect = title.get_rect(center=(self.screen.get_width()//2, s(50)))
         self.screen.blit(title, title_rect)
         
-        y = 120
+        option_font = pygame.font.Font(None, s(24))
+        small_font = pygame.font.Font(None, s(20))
+        btn_font = pygame.font.Font(None, s(32))
         
-        # Résolution
-        res_text = f"Résolution: {self.resolutions[self.current_resolution][0]}x{self.resolutions[self.current_resolution][1]}"
-        res_surf = self.font.render(res_text, True, self.WHITE)
-        self.screen.blit(res_surf, (50, y))
+        y = s(120)
         
-        # Boutons résolution
-        self.draw_button("<", 400, y-5, 40, 30, self.selected_button == 0)
-        self.draw_button(">", 450, y-5, 40, 30, self.selected_button == 1)
-        y += 50
+        # Taille de fenêtre
+        scale_text = f"Taille de la fenêtre: {self.window_scale_labels[self.current_scale_index]}"
+        res_surf = option_font.render(scale_text, True, self.WHITE)
+        self.screen.blit(res_surf, (s(50), y))
+        
+        # Boutons taille
+        self.draw_button("<", s(450), y-s(5), s(40), s(30), self.selected_button == 0, btn_font)
+        self.draw_button(">", s(500), y-s(5), s(40), s(30), self.selected_button == 1, btn_font)
+        y += s(50)
         
         # Mode plein écran
         fs_text = f"Plein écran: {'Oui' if self.fullscreen else 'Non'}"
-        fs_surf = self.font.render(fs_text, True, self.WHITE)
-        self.screen.blit(fs_surf, (50, y))
-        self.draw_button("Basculer", 400, y-5, 100, 30, self.selected_button == 2)
-        y += 50
+        fs_surf = option_font.render(fs_text, True, self.WHITE)
+        self.screen.blit(fs_surf, (s(50), y))
+        self.draw_button("Basculer", s(450), y-s(5), s(100), s(30), self.selected_button == 2, btn_font)
+        y += s(50)
         
-        # Contrôles - Bouton pour accéder au menu des contrôles
+        # Contrôles
         controls_text = "Contrôles"
-        controls_surf = self.font.render(controls_text, True, self.WHITE)
-        self.screen.blit(controls_surf, (50, y))
-        self.draw_button("Modifier", 400, y-5, 100, 30, self.selected_button == 3)
-        y += 80
+        controls_surf = option_font.render(controls_text, True, self.WHITE)
+        self.screen.blit(controls_surf, (s(50), y))
+        self.draw_button("Modifier", s(450), y-s(5), s(100), s(30), self.selected_button == 3, btn_font)
+        y += s(80)
         
         # Instructions
-        instr1 = self.small_font.render("Utilisez ↑↓ pour naviguer, ←→ pour changer la résolution", True, self.GRAY)
-        self.screen.blit(instr1, (50, y))
-        y += 20
-        instr2 = self.small_font.render("Entrée pour sélectionner", True, self.GRAY)
-        self.screen.blit(instr2, (50, y))
+        instr1 = small_font.render("Utilisez ↑↓ pour naviguer, ←→ pour changer la taille", True, self.GRAY)
+        self.screen.blit(instr1, (s(50), y))
+        y += s(20)
+        instr2 = small_font.render("Entrée pour sélectionner", True, self.GRAY)
+        self.screen.blit(instr2, (s(50), y))
         
         # Bouton retour
-        self.draw_button("Retour", 50, self.screen.get_height() - 80, 100, 50, 
-                        self.selected_button == 4)
+        self.draw_button("Retour", s(50), self.screen.get_height() - s(80), s(100), s(50), 
+                        self.selected_button == 4, btn_font)
     
     def draw_controls_menu(self):
         """Dessine le menu dédié aux contrôles"""
         self._draw_gradient_background()
         
         # Titre
-        title = self.big_font.render("Configuration des Contrôles", True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, 50))
+        title_font = pygame.font.Font(None, s(48))
+        title = title_font.render("Configuration des Contrôles", True, self.WHITE)
+        title_rect = title.get_rect(center=(self.screen.get_width()//2, s(50)))
         self.screen.blit(title, title_rect)
         
         # Instructions
-        instr = self.font.render("Cliquez sur un bouton pour modifier la touche correspondante", True, self.GRAY)
-        instr_rect = instr.get_rect(center=(self.screen.get_width()//2, 100))
+        option_font = pygame.font.Font(None, s(24))
+        small_font = pygame.font.Font(None, s(20))
+        btn_font = pygame.font.Font(None, s(32))
+        
+        instr = option_font.render("Cliquez sur un bouton pour modifier la touche correspondante", True, self.GRAY)
+        instr_rect = instr.get_rect(center=(self.screen.get_width()//2, s(100)))
         self.screen.blit(instr, instr_rect)
         
         # Filtrer les contrôles modifiables (exclure la souris)
         modifiable_controls = [(k, v) for k, v in self.control_names.items() if k != "harvest"]
         
         # Afficher les contrôles avec de vrais boutons
-        y = 150
-        button_width = 200
-        button_height = 40
+        y = s(150)
+        button_width = s(200)
+        button_height = s(40)
         
         for i, (key, name) in enumerate(modifiable_controls):
             # Nom du contrôle
-            name_surf = self.font.render(f"{name}:", True, self.WHITE)
-            self.screen.blit(name_surf, (100, y + 10))
+            name_surf = option_font.render(f"{name}:", True, self.WHITE)
+            self.screen.blit(name_surf, (s(100), y + s(10)))
             
             # Touche actuelle
             key_name = pygame.key.name(self.controls[key]).upper()
@@ -382,30 +395,30 @@ class Menu:
             button_color = self.BLUE if is_selected else self.GRAY
             border_color = self.WHITE if is_selected else self.DARK_GRAY
             
-            button_x = 350
+            button_x = s(400)
             button_rect = pygame.Rect(button_x, y, button_width, button_height)
             
-            pygame.draw.rect(self.screen, button_color, button_rect)
-            pygame.draw.rect(self.screen, border_color, button_rect, 2)
+            pygame.draw.rect(self.screen, button_color, button_rect, border_radius=s(6))
+            pygame.draw.rect(self.screen, border_color, button_rect, 2, border_radius=s(6))
             
             # Texte du bouton
-            button_text = f"{key_name} (Cliquer pour modifier)"
-            text_surf = self.button_font.render(button_text, True, self.WHITE)
+            button_text = f"{key_name} (Cliquer)"
+            text_surf = small_font.render(button_text, True, self.WHITE)
             text_rect = text_surf.get_rect(center=button_rect.center)
             self.screen.blit(text_surf, text_rect)
             
-            y += 60
+            y += s(60)
         
         # Bouton pour retourner aux options
         retour_button_index = len(modifiable_controls)
-        self.draw_button("Retour aux Options", self.screen.get_width()//2 - 100, 
-                        self.screen.get_height() - 100, 200, 50, 
-                        self.controls_menu_selected == retour_button_index)
+        self.draw_button("Retour aux Options", self.screen.get_width()//2 - s(100), 
+                        self.screen.get_height() - s(100), s(200), s(50), 
+                        self.controls_menu_selected == retour_button_index, btn_font)
         
         # Instructions de navigation
-        y = self.screen.get_height() - 50
+        y = self.screen.get_height() - s(50)
         nav_text = "↑↓: Naviguer • Entrée/Clic: Modifier • Échap: Retour"
-        nav_surf = self.small_font.render(nav_text, True, self.GRAY)
+        nav_surf = small_font.render(nav_text, True, self.GRAY)
         nav_rect = nav_surf.get_rect(center=(self.screen.get_width()//2, y))
         self.screen.blit(nav_surf, nav_rect)
     
