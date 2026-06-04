@@ -517,6 +517,22 @@ class InventoryUI:
                             if slot_name in equipment_slots:
                                 self.selected_slot = equipment_slots.index(slot_name)
                             return
+            
+            elif event.button == 3:  # Clic droit - Manger de la nourriture
+                mouse_pos = pygame.mouse.get_pos()
+                if self.current_tab == "inventory" and hasattr(self, 'inventory_slots_rects'):
+                    for slot_index, slot_rect in self.inventory_slots_rects:
+                        if slot_rect.collidepoint(mouse_pos):
+                            if inventory.slots[slot_index]:
+                                item = inventory.slots[slot_index].item
+                                if item.type == "food":
+                                    # Retirer l'item de l'inventaire
+                                    inventory.remove_item(item.name, 1)
+                                    self.sound_manager.play('pickup')
+                                    self.craft_feedback = f"Mangé: {item.name}"
+                                    self.craft_feedback_timer = 2.0
+                                    print(f"Consommé: {item.name}")
+                            return
         
         # Gestion du clavier (optionnelle)
         if event.type == pygame.KEYDOWN:
