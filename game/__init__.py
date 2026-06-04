@@ -3,14 +3,13 @@
 from .tiletype import TileType
 from .player import Player
 from .enemy import Enemy
-from .world import WorldGenerator
 from .camera import Camera
 from .hud import HUD
-from .factions import Faction
-from .building import Building
-from .core import Game
+from .natural_world import NaturalWorldGenerator
+from .constants import COLORS, TILE_SIZE, MAP_WIDTH, MAP_HEIGHT
 
 __all__ = [
-    'TileType', 'Player', 'Enemy', 'WorldGenerator', 'Camera', 
-    'HUD', 'Faction', 'Building', 'Game'
+    'TileType', 'Player', 'Enemy', 'Camera',
+    'HUD', 'NaturalWorldGenerator', 'COLORS',
+    'TILE_SIZE', 'MAP_WIDTH', 'MAP_HEIGHT',
 ]

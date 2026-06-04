@@ -6,7 +6,7 @@ import time
 import random
 from .player import Player
 from .enemy import Enemy
-from .world import WorldGenerator
+from .natural_world import NaturalWorldGenerator
 from .camera import Camera
 from .item_system import ItemManager
 from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, ENEMY_COUNT
@@ -45,7 +45,7 @@ class GameplayManager:
     
     def init_new_game(self, screen_width, screen_height):
         """Initialise une nouvelle partie"""
-        self.world_map = WorldGenerator.generate_map()
+        self.world_map = NaturalWorldGenerator.generate_natural_map()
         self.player = Player(MAP_WIDTH * TILE_SIZE // 2, MAP_HEIGHT * TILE_SIZE // 2)
         self.camera = Camera(screen_width, screen_height)
         
