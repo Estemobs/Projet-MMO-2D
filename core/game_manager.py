@@ -15,6 +15,7 @@ from game.minimap import MiniMap
 from game.sprite_manager import get_sprite_manager
 from game.sound_manager import get_sound_manager
 from game.transitions import ScreenTransition
+from game.controls_hint import ControlsHint
 from core.items import create_items, create_recipes
 from systems.save_system import SaveSystem
 
@@ -71,6 +72,9 @@ class GameManager:
         self.render_manager = RenderManager(self.screen)
         self.gameplay_manager = GameplayManager()
         self.minimap = MiniMap(self.screen.get_width(), self.screen.get_height())  # Passer la vraie taille
+        
+        # Controls hint (bas de l'écran)
+        self.controls_hint = ControlsHint(self.screen.get_width(), self.screen.get_height())
         
         # Composants du jeu (initialisés quand on commence une partie)
         self.world_map = None
@@ -336,6 +340,14 @@ class GameManager:
         
         # Dessiner l'interface d'inventaire (une seule fois)
         self.inventory_ui.draw(self.player.inventory, self.recipes)
+        
+        # Contrôles en bas de l'écran
+        context = "normal"
+        if self.inventory_ui.visible:
+            context = "inventory"
+        elif self.player.build_mode:
+            context = "build"
+        self.controls_hint.draw(self.screen, context)
         
         # Instructions (uniquement quand l'inventaire est fermé)
         if not self.inventory_ui.visible:

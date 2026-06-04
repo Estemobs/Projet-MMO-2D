@@ -3,6 +3,7 @@ import json
 import os
 import math
 import time as _time
+from game.sound_manager import get_sound_manager
 
 class Menu:
     STAR_COUNT = 120
@@ -46,6 +47,9 @@ class Menu:
         self._background_cache = None
         self._background_cache_size = None
         self._menu_time = 0.0
+        
+        # Sound manager
+        self.sound_manager = get_sound_manager()
         
         try:
             from systems.version import get_current_version
@@ -597,6 +601,7 @@ class Menu:
                 button_rect = pygame.Rect(x, y, button_width, button_height)
                 
                 if button_rect.collidepoint(mouse_pos):
+                    self.sound_manager.play('menu_click')
                     return button["action"]
         
         return None

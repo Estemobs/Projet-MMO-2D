@@ -1,4 +1,5 @@
 import pygame
+from game.sound_manager import get_sound_manager
 
 class Item:
     def __init__(self, name, item_type, description, stack_size=99, color=(255, 255, 255), sprite_name=None):
@@ -144,6 +145,13 @@ class InventoryUI:
         self.visible = False
         self.selected_slot = 0
         self.hover_slot = -1
+        
+        # Sound manager
+        self.sound_manager = get_sound_manager()
+        
+        # Craft feedback
+        self.craft_feedback = ""
+        self.craft_feedback_timer = 0.0
         
         # Modes d'affichage
         self.current_tab = "inventory"
@@ -312,6 +320,10 @@ class InventoryUI:
         if not self.visible:
             return
 
+        # Mettre à jour le timer de feedback
+        if self.craft_feedback_timer > 0:
+            self.craft_feedback_timer -= 1/60  # ~60fps
+
         overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 140))
         self.screen.blit(overlay, (0, 0))
@@ -370,6 +382,17 @@ class InventoryUI:
         for i, instruction in enumerate(instructions):
             inst_text = self.small_font.render(instruction, True, (140, 160, 200))
             self.screen.blit(inst_text, (20 + i * 220, info_y))
+
+        # Craft feedback
+        if self.craft_feedback_timer > 0:
+            feedback_text = self.font.render(self.craft_feedback, True, (84, 214, 125))
+            feedback_rect = feedback_text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - 100))
+            # Fond semi-transparent
+            bg_rect = feedback_rect.inflate(20, 10)
+            bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+            bg_surface.fill((30, 60, 40, 200))
+            self.screen.blit(bg_surface, bg_rect)
+            self.screen.blit(feedback_text, feedback_rect)
 
         # Tooltip au survol
         self._draw_tooltip(inventory)
@@ -484,8 +507,12 @@ class InventoryUI:
                             if can_craft and recipe_index < len(recipes):
                                 recipe = recipes[recipe_index]
                                 if recipe.craft(inventory):
+                                    self.sound_manager.play('craft')
+                                    self.craft_feedback = f"Crafté: {recipe.name}"
+                                    self.craft_feedback_timer = 2.0
                                     print(f"Crafté: {recipe.name}")
                                 else:
+                                    self.sound_manager.play('craft_fail')
                                     print("Pas assez de ressources!")
                             return
                 
