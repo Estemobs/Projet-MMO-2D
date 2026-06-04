@@ -1,572 +1,402 @@
+"""
+Inventaire et équipement - Style survivor moderne
+"""
+
 import pygame
 from game.sound_manager import get_sound_manager
 from game.constants import s
 
+
 class Item:
     def __init__(self, name, item_type, description, stack_size=99, color=(255, 255, 255), sprite_name=None):
         self.name = name
-        self.type = item_type  # "resource", "tool", "food", "weapon"
+        self.type = item_type
         self.description = description
         self.stack_size = stack_size
         self.color = color
-        # Le nom du sprite correspond au nom de l'item par défaut
         self.sprite_name = sprite_name if sprite_name else name.lower().replace(" ", "_")
+
 
 class ItemStack:
     def __init__(self, item, quantity=1):
         self.item = item
         self.quantity = quantity
-    
+
     def can_stack_with(self, other_stack):
         return self.item.name == other_stack.item.name
-    
+
     def add(self, quantity):
-        """Ajoute une quantité à la pile. Retourne la quantité qui n'a pas pu être ajoutée."""
         max_add = self.item.stack_size - self.quantity
         actual_add = min(quantity, max_add)
         self.quantity += actual_add
         return quantity - actual_add
 
+
 class Inventory:
-    def __init__(self, size=36):
+    def __init__(self, size=24):
         self.size = size
-        self.slots = [None] * size  # Liste de ItemStack ou None
-        
-        # Emplacement d'équipement (arme, armure, etc.)
-        self.equipment = {
-            "weapon": None,
-            "armor": None,
-            "tool": None
-        }
-    
+        self.slots = [None] * size
+        self.equipment = {"weapon": None, "armor": None, "tool": None}
+
     def add_item(self, item, quantity=1):
-        """Ajoute un item à l'inventaire. Retourne la quantité qui n'a pas pu être ajoutée."""
         remaining = quantity
-        
-        # D'abord, essayer d'ajouter aux piles existantes
         for slot in self.slots:
             if slot and slot.can_stack_with(ItemStack(item)):
                 remaining = slot.add(remaining)
                 if remaining == 0:
                     return 0
-        
-        # Ensuite, créer de nouvelles piles dans les emplacements vides
         for i, slot in enumerate(self.slots):
             if slot is None and remaining > 0:
                 take = min(remaining, item.stack_size)
                 self.slots[i] = ItemStack(item, take)
                 remaining -= take
-        
         return remaining
-    
+
     def remove_item(self, item_name, quantity=1):
-        """Retire un item de l'inventaire. Retourne la quantité effectivement retirée."""
         removed = 0
-        
         for i, slot in enumerate(self.slots):
             if slot and slot.item.name == item_name:
                 take = min(quantity - removed, slot.quantity)
                 slot.quantity -= take
                 removed += take
-                
                 if slot.quantity == 0:
                     self.slots[i] = None
-                
                 if removed >= quantity:
                     break
-        
         return removed
-    
+
     def has_item(self, item_name, quantity=1):
-        """Vérifie si l'inventaire contient assez d'un item."""
         total = 0
         for slot in self.slots:
             if slot and slot.item.name == item_name:
                 total += slot.quantity
         return total >= quantity
-    
+
     def get_item_count(self, item_name):
-        """Retourne la quantité totale d'un item."""
         total = 0
         for slot in self.slots:
             if slot and slot.item.name == item_name:
                 total += slot.quantity
         return total
 
+
 class CraftingRecipe:
     def __init__(self, name, ingredients, result_item, result_quantity=1, description=""):
         self.name = name
-        self.ingredients = ingredients  # {"item_name": quantity, ...}
+        self.ingredients = ingredients
         self.result_item = result_item
         self.result_quantity = result_quantity
         self.description = description
-    
+
     def can_craft(self, inventory):
-        """Vérifie si on peut crafter cette recette avec l'inventaire donné."""
         for item_name, needed_quantity in self.ingredients.items():
             if not inventory.has_item(item_name, needed_quantity):
                 return False
         return True
-    
+
     def craft(self, inventory):
-        """Effectue le crafting si possible. Retourne True si réussi."""
         if not self.can_craft(inventory):
             return False
-        
-        # Retirer les ingrédients
         for item_name, needed_quantity in self.ingredients.items():
             inventory.remove_item(item_name, needed_quantity)
-        
-        # Ajouter le résultat
         inventory.add_item(self.result_item, self.result_quantity)
         return True
+
 
 class InventoryUI:
     def __init__(self, screen, font, sprite_manager=None):
         self.screen = screen
         self.font = font
+        self.tooltip_font = pygame.font.Font(None, max(14, int(screen.get_height() * 0.02)))
         self.sprite_manager = sprite_manager
-        
-        # Couleurs modernes
-        self.WHITE = (245, 247, 255)
+
+        self.WHITE = (240, 242, 250)
         self.BLACK = (0, 0, 0)
-        self.GRAY = (132, 144, 170)
-        self.DARK_GRAY = (36, 44, 68)
-        self.GREEN = (84, 214, 125)
-        self.BLUE = (88, 138, 255)
-        self.RED = (245, 98, 98)
+        self.GRAY = (120, 130, 155)
+        self.DARK_BG = (14, 18, 30)
+        self.GREEN = (80, 210, 120)
+        self.BLUE = (90, 140, 255)
+        self.RED = (240, 85, 85)
         self.ORANGE = (255, 165, 0)
         self.PURPLE = (200, 120, 255)
-        self.YELLOW = (255, 221, 129)
-        
+        self.YELLOW = (255, 215, 110)
+        self.ACCENT = (100, 150, 255)
+
         self.visible = False
         self.selected_slot = 0
-        self.hover_slot = -1
-        
-        # Sound manager
-        self.sound_manager = get_sound_manager()
-        
-        # Craft feedback
-        self.craft_feedback = ""
-        self.craft_feedback_timer = 0.0
-        
-        # Modes d'affichage
         self.current_tab = "inventory"
-        
-        # Couleurs par catégorie d'item
+
+        self.sound_manager = get_sound_manager()
+        self.feedback_text = ""
+        self.feedback_timer = 0.0
+
         self.category_colors = {
             "resource": (84, 180, 120),
             "food": (220, 140, 60),
             "weapon": (220, 80, 80),
             "tool": (140, 160, 200),
             "armor": (180, 140, 200),
-            "material": (180, 170, 120),
         }
-    
-    def _get_slot_size(self):
-        return s(44)
-    
-    def _get_slot_padding(self):
-        return s(4)
 
-    def _get_category_color(self, item_type):
-        """Retourne la couleur de bordure selon le type d'item."""
-        return self.category_colors.get(item_type, (117, 171, 255))
+    def toggle_visibility(self):
+        self.visible = not self.visible
+        if self.visible:
+            self.selected_slot = 0
 
-    def draw_slot(self, x, y, item_stack, selected=False):
-        """Dessine un emplacement d'inventaire avec style amélioré."""
-        slot_size = self._get_slot_size()
-        small_font = pygame.font.Font(None, s(16))
-        
-        if item_stack:
-            base_color = self._get_category_color(item_stack.item.type)
-        else:
-            base_color = (60, 70, 100)
-        
-        border_color = (255, 220, 120) if selected else base_color
-        border_width = 3 if selected else 2
+    def _slot_size(self):
+        return s(48)
 
-        slot_surface = pygame.Surface((slot_size, slot_size), pygame.SRCALPHA)
-        for i in range(slot_size):
-            t = i / slot_size
-            r = int(25 + t * 10)
-            g = int(30 + t * 10)
-            b = int(50 + t * 15)
-            pygame.draw.line(slot_surface, (r, g, b, 210), (0, i), (slot_size, i))
-        pygame.draw.rect(slot_surface, border_color, slot_surface.get_rect(), border_width, border_radius=s(5))
-        self.screen.blit(slot_surface, (x, y))
+    def _cat_color(self, item_type):
+        return self.category_colors.get(item_type, (100, 120, 160))
+
+    def _draw_slot(self, x, y, item_stack, selected=False):
+        sz = self._slot_size()
+        bg = pygame.Surface((sz, sz), pygame.SRCALPHA)
+
+        if selected:
+            pulse = int(abs(pygame.time.get_ticks() / 300 % 6.28) * 8) + 60
+            glow = pygame.Surface((sz + 8, sz + 8), pygame.SRCALPHA)
+            pygame.draw.rect(glow, (*self.ACCENT, pulse), (0, 0, sz + 8, sz + 8), border_radius=8)
+            self.screen.blit(glow, (x - 4, y - 4))
+
+        for i in range(sz):
+            t = i / max(1, sz)
+            r, g, b = int(22 + t * 6), int(26 + t * 6), int(40 + t * 8)
+            pygame.draw.line(bg, (r, g, b, 220), (0, i), (sz, i))
+
+        bc = self.ACCENT if selected else (50, 58, 80)
+        pygame.draw.rect(bg, (*bc, 200), (0, 0, sz, sz), 2, border_radius=6)
+        self.screen.blit(bg, (x, y))
 
         if item_stack:
-            sprite_drawn = False
+            drawn = False
             if self.sprite_manager:
                 sprite = self.sprite_manager.get_item_sprite(item_stack.item.sprite_name)
                 if sprite:
-                    item_size = slot_size - s(8)
-                    sprite_scaled = pygame.transform.smoothscale(sprite, (item_size, item_size))
-                    self.screen.blit(sprite_scaled, (x + s(4), y + s(4)))
-                    sprite_drawn = True
-
-            if not sprite_drawn:
-                color = self._get_category_color(item_stack.item.type)
-                pygame.draw.rect(self.screen, color,
-                               (x + s(6), y + s(6), slot_size - s(12), slot_size - s(12)), border_radius=s(4))
+                    isz = sz - s(10)
+                    scaled = pygame.transform.smoothscale(sprite, (isz, isz))
+                    self.screen.blit(scaled, (x + s(5), y + s(5)))
+                    drawn = True
+            if not drawn:
+                cc = self._cat_color(item_stack.item.type)
+                pygame.draw.rect(self.screen, cc, (x + s(8), y + s(8), sz - s(16), sz - s(16)), border_radius=4)
 
             if item_stack.quantity > 1:
-                qty_text = small_font.render(str(item_stack.quantity), True, self.WHITE)
-                text_rect = qty_text.get_rect()
-                text_rect.bottomright = (x + slot_size - s(2), y + slot_size - s(1))
-                bg_rect = text_rect.inflate(s(4), s(2))
-                bg_surf = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
-                pygame.draw.rect(bg_surf, (0, 0, 0, 180), bg_surf.get_rect(), border_radius=s(2))
-                self.screen.blit(bg_surf, bg_rect.topleft)
-                self.screen.blit(qty_text, text_rect)
-    
-    def draw_inventory_tab(self, inventory):
-        """Dessine l'onglet inventaire."""
-        slot_size = self._get_slot_size()
-        slot_padding = self._get_slot_padding()
-        start_x = s(50)
-        start_y = s(100)
-        cols = 9
-        rows = 4
-        
-        self.inventory_slots_rects = []
-        
-        for i in range(min(inventory.size, cols * rows)):
-            row = i // cols
-            col = i % cols
-            
-            x = start_x + col * (slot_size + slot_padding)
-            y = start_y + row * (slot_size + slot_padding)
-            
-            slot_rect = pygame.Rect(x, y, slot_size, slot_size)
-            self.inventory_slots_rects.append((i, slot_rect))
-            
-            selected = (i == self.selected_slot and self.current_tab == "inventory")
-            self.draw_slot(x, y, inventory.slots[i], selected)
-    
-    def draw_crafting_tab(self, recipes, inventory):
-        """Dessine l'onglet crafting."""
-        small_font = pygame.font.Font(None, s(16))
-        start_x = s(50)
-        start_y = s(110)
-        self.crafting_rects = []
+                sf = pygame.font.Font(None, s(16))
+                qt = sf.render(str(item_stack.quantity), True, self.WHITE)
+                qr = qt.get_rect(bottomright=(x + sz - 2, y + sz - 1))
+                bg2 = pygame.Surface((qr.width + 4, qr.height + 2), pygame.SRCALPHA)
+                pygame.draw.rect(bg2, (0, 0, 0, 180), bg2.get_rect(), border_radius=2)
+                self.screen.blit(bg2, (qr.x - 2, qr.y - 1))
+                self.screen.blit(qt, qr)
 
-        for i, recipe in enumerate(recipes[:10]):
-            y = start_y + i * s(65)
-            can_craft = recipe.can_craft(inventory)
-            recipe_rect = pygame.Rect(start_x, y, s(450), s(55))
-
-            self.crafting_rects.append((i, recipe_rect, can_craft))
-            selected = (i == self.selected_slot and self.current_tab == "crafting")
-
-            recipe_surface = pygame.Surface((s(450), s(55)), pygame.SRCALPHA)
-            if can_craft:
-                bg_color = (50, 100, 80, 150) if selected else (40, 80, 60, 120)
-                border_color = (100, 255, 150) if selected else (80, 200, 120)
-            else:
-                bg_color = (80, 40, 40, 100)
-                border_color = (180, 100, 100)
-
-            border_width = 3 if selected else 2
-            pygame.draw.rect(recipe_surface, bg_color, recipe_surface.get_rect(), border_radius=s(6))
-            pygame.draw.rect(recipe_surface, border_color, recipe_surface.get_rect(), border_width, border_radius=s(6))
-
-            self.screen.blit(recipe_surface, recipe_rect)
-
-            name_text = self.font.render(f"{recipe.name}", True, (245, 247, 255) if can_craft else (180, 100, 100))
-            self.screen.blit(name_text, (start_x + s(15), y + s(5)))
-
-            ingredients_text = ", ".join([f"{qty}x {name[:10]}" for name, qty in recipe.ingredients.items()])
-            ing_color = (200, 230, 200) if can_craft else (200, 100, 100)
-            ing_text = small_font.render(f"Requis: {ingredients_text}", True, ing_color)
-            self.screen.blit(ing_text, (start_x + s(15), y + s(28)))
-    
-    def draw_equipment_tab(self, inventory):
-        """Dessine l'onglet équipement."""
-        slot_size = self._get_slot_size()
-        start_x = s(200)
-        start_y = s(150)
-        
-        self.equipment_rects = []
-        
-        equipment_slots = ["weapon", "armor", "tool"]
-        slot_names = ["Arme", "Armure", "Outil"]
-        
-        for i, (slot_name, display_name) in enumerate(zip(equipment_slots, slot_names)):
-            x = start_x
-            y = start_y + i * s(80)
-            
-            name_text = self.font.render(display_name + ":", True, self.WHITE)
-            self.screen.blit(name_text, (x - s(100), y + s(10)))
-            
-            slot_rect = pygame.Rect(x, y, slot_size, slot_size)
-            self.equipment_rects.append((slot_name, slot_rect))
-            
-            selected = (i == self.selected_slot and self.current_tab == "equipment")
-            self.draw_slot(x, y, inventory.equipment[slot_name], selected)
-    
     def draw(self, inventory, recipes):
-        """Dessine l'interface d'inventaire."""
         if not self.visible:
             return
 
-        if self.craft_feedback_timer > 0:
-            self.craft_feedback_timer -= 1/60
+        w, h = self.screen.get_size()
 
-        overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 140))
+        overlay = pygame.Surface((w, h), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
         self.screen.blit(overlay, (0, 0))
 
-        title_text = "Inventaire et Artisanat"
-        title_font = pygame.font.Font(None, s(28))
-        title = title_font.render(title_text, True, (245, 247, 255))
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, s(20)))
-        self.screen.blit(title, title_rect)
+        pw = int(w * 0.45)
+        ph = int(h * 0.65)
+        px = (w - pw) // 2
+        py = (h - ph) // 2
 
-        # Onglets modernes
-        tab_width = s(140)
-        tab_height = s(35)
-        tab_y = s(50)
-        tabs = [("inventory", "Inventaire"), ("crafting", "Artisanat"), ("equipment", "Equipement")]
+        panel = pygame.Surface((pw, ph), pygame.SRCALPHA)
+        for i in range(ph):
+            t = i / max(1, ph)
+            r, g, b = int(14 + t * 4), int(18 + t * 4), int(28 + t * 6)
+            pygame.draw.line(panel, (r, g, b, 230), (0, i), (pw, i))
+        pygame.draw.rect(panel, (*self.ACCENT, 120), (0, 0, pw, ph), 1, border_radius=12)
+        self.screen.blit(panel, (px, py))
 
+        title_font = pygame.font.Font(None, max(20, int(h * 0.03)))
+        title = title_font.render("Inventaire", True, self.WHITE)
+        self.screen.blit(title, title.get_rect(center=(px + pw // 2, py + 20)))
+
+        tabs = [("inventory", "Items"), ("equipment", "Equipement")]
+        tab_w = int(pw * 0.2)
+        tab_h = s(28)
+        tab_y = py + 40
         self.tab_rects = []
-        small_font = pygame.font.Font(None, s(16))
 
-        for i, (tab_id, tab_name) in enumerate(tabs):
-            x = s(50) + i * (tab_width + s(15))
-            is_active = tab_id == self.current_tab
+        for i, (tid, tname) in enumerate(tabs):
+            tx = px + int(pw * 0.15) + i * (tab_w + s(10))
+            is_active = tid == self.current_tab
+            tr = pygame.Rect(tx, tab_y, tab_w, tab_h)
+            self.tab_rects.append((tid, tr))
 
-            tab_rect = pygame.Rect(x, tab_y, tab_width, tab_height)
-            self.tab_rects.append((tab_id, tab_rect))
-
-            tab_surface = pygame.Surface((tab_width, tab_height), pygame.SRCALPHA)
+            ts = pygame.Surface((tab_w, tab_h), pygame.SRCALPHA)
             if is_active:
-                pygame.draw.rect(tab_surface, (112, 165, 255, 220), tab_surface.get_rect(), border_radius=s(6))
-                pygame.draw.rect(tab_surface, (189, 214, 255), tab_surface.get_rect(), 2, border_radius=s(6))
-                text_color = (255, 255, 255)
+                pygame.draw.rect(ts, (*self.ACCENT, 200), (0, 0, tab_w, tab_h), border_radius=6)
             else:
-                pygame.draw.rect(tab_surface, (50, 60, 100, 150), tab_surface.get_rect(), border_radius=s(6))
-                pygame.draw.rect(tab_surface, (100, 120, 180), tab_surface.get_rect(), 1, border_radius=s(6))
-                text_color = (180, 190, 220)
+                pygame.draw.rect(ts, (40, 48, 70, 150), (0, 0, tab_w, tab_h), border_radius=6)
+                pygame.draw.rect(ts, (60, 70, 100, 100), (0, 0, tab_w, tab_h), 1, border_radius=6)
+            self.screen.blit(ts, (tx, tab_y))
 
-            self.screen.blit(tab_surface, tab_rect)
-
-            tab_text = small_font.render(tab_name, True, text_color)
-            text_rect = tab_text.get_rect(center=(x + tab_width//2, tab_y + tab_height//2))
-            self.screen.blit(tab_text, text_rect)
+            tf = pygame.font.Font(None, s(16))
+            tt = tf.render(tname, True, (255, 255, 255) if is_active else (140, 150, 175))
+            self.screen.blit(tt, tt.get_rect(center=(tx + tab_w // 2, tab_y + tab_h // 2)))
 
         if self.current_tab == "inventory":
-            self.draw_inventory_tab(inventory)
-        elif self.current_tab == "crafting":
-            self.draw_crafting_tab(recipes, inventory)
+            self._draw_inventory_tab(inventory, px, py, pw, ph)
         elif self.current_tab == "equipment":
-            self.draw_equipment_tab(inventory)
+            self._draw_equipment_tab(inventory, px, py, pw, ph)
 
-        # Instructions en bas
-        instructions = [
-            "Clic: Selectionner / Utiliser",
-            "TAB: Onglets",
-            "I: Fermer"
-        ]
+        inst = pygame.font.Font(None, s(14))
+        self.screen.blit(inst.render("I: Fermer  |  Clic droit: Utiliser", True, (90, 100, 130)), (px + 10, py + ph - 20))
 
-        info_y = self.screen.get_height() - s(70)
-        for i, instruction in enumerate(instructions):
-            inst_text = small_font.render(instruction, True, (140, 160, 200))
-            self.screen.blit(inst_text, (s(20) + i * s(220), info_y))
-
-        # Craft feedback
-        if self.craft_feedback_timer > 0:
-            feedback_font = pygame.font.Font(None, s(24))
-            feedback_text = feedback_font.render(self.craft_feedback, True, (84, 214, 125))
-            feedback_rect = feedback_text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - s(100)))
-            bg_rect = feedback_rect.inflate(s(20), s(10))
-            bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
-            bg_surface.fill((30, 60, 40, 200))
-            self.screen.blit(bg_surface, bg_rect)
-            self.screen.blit(feedback_text, feedback_rect)
+        if self.feedback_timer > 0:
+            self.feedback_timer -= 1 / 60
+            ff = pygame.font.Font(None, s(20))
+            ft = ff.render(self.feedback_text, True, self.GREEN)
+            self.screen.blit(ft, ft.get_rect(center=(w // 2, py + ph + 20)))
 
         self._draw_tooltip(inventory)
 
+    def _draw_inventory_tab(self, inventory, px, py, pw, ph):
+        cols = 6
+        sz = self._slot_size()
+        pad = s(6)
+        start_x = px + (pw - cols * (sz + pad)) // 2
+        start_y = py + 80
+        self.inventory_rects = []
+
+        for i in range(min(inventory.size, cols * 4)):
+            row = i // cols
+            col = i % cols
+            x = start_x + col * (sz + pad)
+            y = start_y + row * (sz + pad)
+            self.inventory_rects.append((i, pygame.Rect(x, y, sz, sz)))
+            self._draw_slot(x, y, inventory.slots[i], i == self.selected_slot and self.current_tab == "inventory")
+
+    def _draw_equipment_tab(self, inventory, px, py, pw, ph):
+        cx = px + pw // 2
+        sz = self._slot_size()
+        self.equipment_rects = []
+
+        eq = [("weapon", "Arme"), ("armor", "Armure"), ("tool", "Outil")]
+        for i, (slot_name, label) in enumerate(eq):
+            y = py + 90 + i * (sz + s(20))
+
+            lf = pygame.font.Font(None, s(18))
+            lt = lf.render(label, True, self.GRAY)
+            self.screen.blit(lt, lt.get_rect(center=(cx - sz - s(30), y + sz // 2)))
+
+            sx = cx - sz // 2
+            self.equipment_rects.append((slot_name, pygame.Rect(sx, y, sz, sz)))
+            self._draw_slot(sx, y, inventory.equipment.get(slot_name), False)
+
+            equipped = inventory.equipment.get(slot_name)
+            if equipped:
+                nf = pygame.font.Font(None, s(16))
+                nt = nf.render(equipped.item.name, True, self.WHITE)
+                self.screen.blit(nt, (cx + sz // 2 + s(10), y + sz // 2 - 8))
+            else:
+                nf = pygame.font.Font(None, s(14))
+                nt = nf.render("Vide", True, (80, 90, 115))
+                self.screen.blit(nt, (cx + sz // 2 + s(10), y + sz // 2 - 6))
+
     def _draw_tooltip(self, inventory):
-        """Dessine un tooltip si on survole un slot avec un item."""
         mouse_pos = pygame.mouse.get_pos()
-        
-        if self.current_tab == "inventory" and hasattr(self, 'inventory_slots_rects'):
-            for slot_index, slot_rect in self.inventory_slots_rects:
-                if slot_rect.collidepoint(mouse_pos) and inventory.slots[slot_index]:
-                    item_stack = inventory.slots[slot_index]
-                    item = item_stack.item
-                    
-                    # Construire le texte du tooltip
+
+        if self.current_tab == "inventory" and hasattr(self, 'inventory_rects'):
+            for idx, rect in self.inventory_rects:
+                if rect.collidepoint(mouse_pos) and inventory.slots[idx]:
+                    item = inventory.slots[idx].item
                     lines = [item.name]
-                    if hasattr(item, 'description') and item.description:
+                    if item.description:
                         lines.append(item.description)
-                    
-                    # Catégorie
-                    cat_names = {
-                        "resource": "Ressource",
-                        "food": "Nourriture",
-                        "weapon": "Arme",
-                        "tool": "Outil",
-                        "armor": "Armure",
-                        "material": "Matériau",
-                    }
-                    cat = cat_names.get(item.type, item.type)
-                    lines.append(f"Type: {cat}")
-                    
-                    # Quantité
-                    if item_stack.quantity > 1:
-                        lines.append(f"Quantité: {item_stack.quantity}")
-                    
-                    # Dessiner le tooltip
+                    cat_names = {"resource": "Ressource", "food": "Nourriture", "weapon": "Arme", "tool": "Outil", "armor": "Armure"}
+                    lines.append(cat_names.get(item.type, item.type))
+                    if inventory.slots[idx].quantity > 1:
+                        lines.append(f"x{inventory.slots[idx].quantity}")
                     self._render_tooltip(mouse_pos[0] + 15, mouse_pos[1] + 15, lines, item.type)
                     break
 
     def _render_tooltip(self, x, y, lines, item_type="resource"):
-        """Dessine un tooltip stylisé."""
-        padding = 8
-        line_height = 18
-        width = max(self.tooltip_font.size(line)[0] for line in lines) + padding * 2
-        height = len(lines) * line_height + padding * 2
+        pad = 8
+        lh = 18
+        w = max(self.tooltip_font.size(line)[0] for line in lines) + pad * 2
+        h = len(lines) * lh + pad * 2
 
-        # Ajuster pour ne pas dépasser l'écran
-        if x + width > self.screen.get_width():
-            x = self.screen.get_width() - width - 5
-        if y + height > self.screen.get_height():
-            y = self.screen.get_height() - height - 5
+        sw, sh = self.screen.get_size()
+        if x + w > sw:
+            x = sw - w - 5
+        if y + h > sh:
+            y = sh - h - 5
 
-        # Fond du tooltip
-        tooltip_surf = pygame.Surface((width, height), pygame.SRCALPHA)
-        pygame.draw.rect(tooltip_surf, (15, 20, 35, 230), (0, 0, width, height), border_radius=6)
-        
-        # Bordure colorée selon la catégorie
-        cat_color = self._get_category_color(item_type)
-        pygame.draw.rect(tooltip_surf, cat_color, (0, 0, width, height), 1, border_radius=6)
-        
-        self.screen.blit(tooltip_surf, (x, y))
+        ts = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.rect(ts, (12, 16, 28, 230), (0, 0, w, h), border_radius=6)
+        cc = self._cat_color(item_type)
+        pygame.draw.rect(ts, (*cc, 150), (0, 0, w, h), 1, border_radius=6)
+        self.screen.blit(ts, (x, y))
 
-        # Texte
         for i, line in enumerate(lines):
-            if i == 0:
-                # Titre : blanc gras
-                color = self.WHITE
-            elif "Type:" in line:
-                color = self._get_category_color(item_type)
-            else:
-                color = self.GRAY
-            
-            text_surf = self.tooltip_font.render(line, True, color)
-            self.screen.blit(text_surf, (x + padding, y + padding + i * line_height))
-    
+            color = self.WHITE if i == 0 else (cc if i == 1 and line in ["Ressource", "Nourriture", "Arme", "Outil", "Armure"] else self.GRAY)
+            st = self.tooltip_font.render(line, True, color)
+            self.screen.blit(st, (x + pad, y + pad + i * lh))
+
     def handle_event(self, event, inventory, recipes):
-        """Gère les événements de l'interface d'inventaire."""
         if not self.visible:
             return
-        
-        # Gestion des clics de souris
+
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Clic gauche
-                mouse_pos = pygame.mouse.get_pos()
-                
-                # Vérifier les clics sur les onglets
-                if hasattr(self, 'tab_rects'):
-                    for tab_id, tab_rect in self.tab_rects:
-                        if tab_rect.collidepoint(mouse_pos):
-                            self.current_tab = tab_id
-                            self.selected_slot = 0
-                            return
-                
-                # Vérifier les clics selon l'onglet actuel
-                if self.current_tab == "inventory" and hasattr(self, 'inventory_slots_rects'):
-                    for slot_index, slot_rect in self.inventory_slots_rects:
-                        if slot_rect.collidepoint(mouse_pos):
-                            self.selected_slot = slot_index
-                            return
-                
-                elif self.current_tab == "crafting" and hasattr(self, 'crafting_rects'):
-                    for recipe_index, recipe_rect, can_craft in self.crafting_rects:
-                        if recipe_rect.collidepoint(mouse_pos):
-                            self.selected_slot = recipe_index
-                            # Crafting direct si possible
-                            if can_craft and recipe_index < len(recipes):
-                                recipe = recipes[recipe_index]
-                                if recipe.craft(inventory):
-                                    self.sound_manager.play('craft')
-                                    self.craft_feedback = f"Crafté: {recipe.name}"
-                                    self.craft_feedback_timer = 2.0
-                                    print(f"Crafté: {recipe.name}")
-                                else:
-                                    self.sound_manager.play('craft_fail')
-                                    print("Pas assez de ressources!")
-                            return
-                
-                elif self.current_tab == "equipment" and hasattr(self, 'equipment_rects'):
-                    for slot_name, slot_rect in self.equipment_rects:
-                        if slot_rect.collidepoint(mouse_pos):
-                            equipment_slots = ["weapon", "armor", "tool"]
-                            if slot_name in equipment_slots:
-                                self.selected_slot = equipment_slots.index(slot_name)
-                            return
-            
-            elif event.button == 3:  # Clic droit - Manger de la nourriture
-                mouse_pos = pygame.mouse.get_pos()
-                if self.current_tab == "inventory" and hasattr(self, 'inventory_slots_rects'):
-                    for slot_index, slot_rect in self.inventory_slots_rects:
-                        if slot_rect.collidepoint(mouse_pos):
-                            if inventory.slots[slot_index]:
-                                item = inventory.slots[slot_index].item
-                                if item.type == "food":
-                                    # Retirer l'item de l'inventaire
-                                    inventory.remove_item(item.name, 1)
-                                    self.sound_manager.play('pickup')
-                                    self.craft_feedback = f"Mangé: {item.name}"
-                                    self.craft_feedback_timer = 2.0
-                                    print(f"Consommé: {item.name}")
-                            return
-        
-        # Gestion du clavier (optionnelle)
+            mx, my = event.pos
+
+            if hasattr(self, 'tab_rects'):
+                for tid, tr in self.tab_rects:
+                    if tr.collidepoint((mx, my)):
+                        self.current_tab = tid
+                        self.selected_slot = 0
+                        return
+
+            if self.current_tab == "inventory" and hasattr(self, 'inventory_rects'):
+                for idx, rect in self.inventory_rects:
+                    if rect.collidepoint((mx, my)):
+                        self.selected_slot = idx
+                        if event.button == 3 and inventory.slots[idx]:
+                            item = inventory.slots[idx].item
+                            if item.type == "food":
+                                inventory.remove_item(item.name, 1)
+                                self.sound_manager.play('pickup')
+                                self.feedback_text = f"+{item.name}"
+                                self.feedback_timer = 1.5
+                        return
+
+            if self.current_tab == "equipment" and hasattr(self, 'equipment_rects'):
+                for slot_name, rect in self.equipment_rects:
+                    if rect.collidepoint((mx, my)):
+                        if event.button == 1:
+                            self._try_equip(inventory, slot_name)
+                        return
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_TAB:
-                tabs = ["inventory", "crafting", "equipment"]
-                current_index = tabs.index(self.current_tab)
-                self.current_tab = tabs[(current_index + 1) % len(tabs)]
+                tabs = ["inventory", "equipment"]
+                ci = tabs.index(self.current_tab)
+                self.current_tab = tabs[(ci + 1) % len(tabs)]
                 self.selected_slot = 0
-            
-            elif event.key == pygame.K_w:
-                if self.current_tab == "inventory":
-                    self.selected_slot = max(0, self.selected_slot - 9)
-                elif self.current_tab == "crafting":
-                    self.selected_slot = max(0, self.selected_slot - 1)
-                elif self.current_tab == "equipment":
-                    self.selected_slot = max(0, self.selected_slot - 1)
-            
-            elif event.key == pygame.K_s:
-                if self.current_tab == "inventory":
-                    self.selected_slot = min(inventory.size - 1, self.selected_slot + 9)
-                elif self.current_tab == "crafting":
-                    self.selected_slot = min(len(recipes) - 1, self.selected_slot + 1)
-                elif self.current_tab == "equipment":
-                    self.selected_slot = min(2, self.selected_slot + 1)
-            
-            elif event.key == pygame.K_a:
-                if self.current_tab == "inventory":
-                    self.selected_slot = max(0, self.selected_slot - 1)
-            
-            elif event.key == pygame.K_d:
-                if self.current_tab == "inventory":
-                    self.selected_slot = min(inventory.size - 1, self.selected_slot + 1)
-            
-            elif event.key == pygame.K_RETURN:
-                if self.current_tab == "crafting" and self.selected_slot < len(recipes):
-                    recipe = recipes[self.selected_slot]
-                    if recipe.craft(inventory):
-                        print(f"Crafté: {recipe.name}")
-                    else:
-                        print("Pas assez de ressources!")
-    
-    def toggle_visibility(self):
-        """Bascule la visibilité de l'inventaire."""
-        self.visible = not self.visible
-        if self.visible:
-            self.selected_slot = 0
+            elif event.key in (pygame.K_UP, pygame.K_w):
+                self.selected_slot = max(0, self.selected_slot - 6)
+            elif event.key in (pygame.K_DOWN, pygame.K_s):
+                self.selected_slot = min(inventory.size - 1, self.selected_slot + 6)
+            elif event.key in (pygame.K_LEFT, pygame.K_a):
+                self.selected_slot = max(0, self.selected_slot - 1)
+            elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                self.selected_slot = min(inventory.size - 1, self.selected_slot + 1)
+
+    def _try_equip(self, inventory, slot_name):
+        if self.selected_slot < inventory.size and inventory.slots[self.selected_slot]:
+            item = inventory.slots[self.selected_slot].item
+            equip_map = {"weapon": ["weapon"], "armor": ["armor"], "tool": ["tool"]}
+            if item.type in equip_map.get(slot_name, []):
+                old = inventory.equipment.get(slot_name)
+                inventory.equipment[slot_name] = inventory.slots[self.selected_slot]
+                inventory.slots[self.selected_slot] = old
+                self.sound_manager.play('equip')
+                self.feedback_text = f"Equipe: {item.name}"
+                self.feedback_timer = 1.5
