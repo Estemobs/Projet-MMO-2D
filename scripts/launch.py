@@ -97,11 +97,17 @@ def check_game_files():
     project_root = Path(__file__).parent.parent
     
     required_files = [
-        (project_root / 'game/core.py', 'Module principal du jeu'),
         (project_root / 'game/__init__.py', 'Package de jeu'),
-        (project_root / 'data/config.py', 'Configuration du jeu'),
+        (project_root / 'game/player.py', 'Module joueur'),
+        (project_root / 'game/enemy.py', 'Module ennemis'),
+        (project_root / 'game/natural_world.py', 'Génération de monde'),
+        (project_root / 'game/render_manager.py', 'Gestionnaire de rendu'),
+        (project_root / 'game/gameplay_manager.py', 'Gestionnaire de gameplay'),
+        (project_root / 'core/game_manager.py', 'Gestionnaire principal'),
+        (project_root / 'core/items.py', 'Système d\'objets'),
         (project_root / 'ui/inventory.py', 'Système d\'inventaire'),
         (project_root / 'ui/menu.py', 'Interface des menus'),
+        (project_root / 'systems/save_system.py', 'Système de sauvegarde'),
         (project_root / 'requirements.txt', 'Liste des dépendances'),
     ]
     

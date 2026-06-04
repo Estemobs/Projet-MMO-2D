@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
-"""Point d'entree racine: delegue au lanceur complet."""
+"""Point d'entree: lance le jeu via main.py"""
 
-from pathlib import Path
-import runpy
-
+from main import main
 
 if __name__ == "__main__":
-    script_path = Path(__file__).parent / "scripts" / "launch.py"
-    runpy.run_path(str(script_path), run_name="__main__")
+    main()
