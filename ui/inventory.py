@@ -175,7 +175,9 @@ class InventoryUI:
 
     def draw_slot(self, x, y, item_stack, selected=False):
         """Dessine un emplacement d'inventaire avec style amélioré."""
-        # Couleur de bordure selon la catégorie
+        slot_size = self._get_slot_size()
+        small_font = pygame.font.Font(None, s(16))
+        
         if item_stack:
             base_color = self._get_category_color(item_stack.item.type)
         else:
@@ -184,51 +186,39 @@ class InventoryUI:
         border_color = (255, 220, 120) if selected else base_color
         border_width = 3 if selected else 2
 
-        # Fond du slot
-        slot_surface = pygame.Surface((self.slot_size, self.slot_size), pygame.SRCALPHA)
-        # Dégradé vertical subtil
-        for i in range(self.slot_size):
-            t = i / self.slot_size
+        slot_surface = pygame.Surface((slot_size, slot_size), pygame.SRCALPHA)
+        for i in range(slot_size):
+            t = i / slot_size
             r = int(25 + t * 10)
             g = int(30 + t * 10)
             b = int(50 + t * 15)
-            pygame.draw.line(slot_surface, (r, g, b, 210), (0, i), (self.slot_size, i))
-        # Bordure
-        pygame.draw.rect(slot_surface, border_color, slot_surface.get_rect(), border_width, border_radius=5)
+            pygame.draw.line(slot_surface, (r, g, b, 210), (0, i), (slot_size, i))
+        pygame.draw.rect(slot_surface, border_color, slot_surface.get_rect(), border_width, border_radius=s(5))
         self.screen.blit(slot_surface, (x, y))
 
         if item_stack:
-            # Dessiner le sprite
             sprite_drawn = False
             if self.sprite_manager:
                 sprite = self.sprite_manager.get_item_sprite(item_stack.item.sprite_name)
                 if sprite:
-                    item_size = self.slot_size - 8
+                    item_size = slot_size - s(8)
                     sprite_scaled = pygame.transform.smoothscale(sprite, (item_size, item_size))
-                    self.screen.blit(sprite_scaled, (x + 4, y + 4))
+                    self.screen.blit(sprite_scaled, (x + s(4), y + s(4)))
                     sprite_drawn = True
 
             if not sprite_drawn:
-                # Fallback : rectangle coloré avec icône
                 color = self._get_category_color(item_stack.item.type)
                 pygame.draw.rect(self.screen, color,
-                               (x + 6, y + 6, self.slot_size - 12, self.slot_size - 12), border_radius=4)
+                               (x + s(6), y + s(6), slot_size - s(12), slot_size - s(12)), border_radius=s(4))
 
-            # Quantité avec fond
             if item_stack.quantity > 1:
-                qty_text = self.small_font.render(str(item_stack.quantity), True, self.WHITE)
+                qty_text = small_font.render(str(item_stack.quantity), True, self.WHITE)
                 text_rect = qty_text.get_rect()
-                text_rect.bottomright = (x + self.slot_size - 2, y + self.slot_size - 1)
-                bg_rect = text_rect.inflate(4, 2)
+                text_rect.bottomright = (x + slot_size - s(2), y + slot_size - s(1))
+                bg_rect = text_rect.inflate(s(4), s(2))
                 bg_surf = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
-                pygame.draw.rect(bg_surf, (0, 0, 0, 180), bg_surf.get_rect(), border_radius=2)
+                pygame.draw.rect(bg_surf, (0, 0, 0, 180), bg_surf.get_rect(), border_radius=s(2))
                 self.screen.blit(bg_surf, bg_rect.topleft)
-                self.screen.blit(qty_text, text_rect)
-                qty_text = self.small_font.render(str(item_stack.quantity), True, self.WHITE)
-                text_rect = qty_text.get_rect()
-                text_rect.bottomright = (x + self.slot_size - 2, y + self.slot_size - 1)
-                bg_rect = text_rect.inflate(4, 2)
-                pygame.draw.rect(self.screen, (0, 0, 0, 150), bg_rect, border_radius=2)
                 self.screen.blit(qty_text, text_rect)
     
     def draw_inventory_tab(self, inventory):
