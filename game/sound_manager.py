@@ -58,7 +58,7 @@ class SoundManager:
             sample = max(-32767, min(32767, sample))
             buf[i] = sample
 
-        sound = pygame.mixer.Sound(buffer=buf)
+        sound = pygame.mixer.Sound(buffer=buf.tobytes())
         return sound
 
     def _generate_noise_burst(self, duration, volume=0.2):
@@ -74,7 +74,7 @@ class SoundManager:
             val = random.uniform(-1, 1) * envelope * volume
             buf[i] = max(-32767, min(32767, int(val * 32767)))
 
-        return pygame.mixer.Sound(buffer=buf)
+        return pygame.mixer.Sound(buffer=buf.tobytes())
 
     def _generate_all_sounds(self):
         """Génère tous les sons du jeu."""
