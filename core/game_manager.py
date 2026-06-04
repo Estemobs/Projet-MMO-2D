@@ -4,13 +4,6 @@ Gestionnaire principal du jeu MMO 2D
 
 import pygame
 import time
-import os
-import sys
-
-# Ajouter le répertoire parent au path pour les imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
 
 from ui.inventory import InventoryUI
 from ui.menu import Menu
