@@ -29,6 +29,11 @@ class ControlsHint:
         self.fade_speed = 2
         self.target_alpha = 180
 
+    def update_screen_size(self, screen_width, screen_height):
+        """Met à jour la taille d'écran."""
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+
     def set_context(self, context):
         """Change les hints affichés selon le contexte."""
         self.context = context
