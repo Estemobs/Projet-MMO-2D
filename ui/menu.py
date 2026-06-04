@@ -138,43 +138,73 @@ class Menu:
             pass
     
     def draw_button(self, text, x, y, width, height, selected=False):
-        """Dessine un bouton"""
+        """Dessine un bouton avec effet glow quand sélectionné."""
         rect = pygame.Rect(x, y, width, height)
-        shadow_rect = rect.move(0, 4)
-        shadow_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-        pygame.draw.rect(shadow_surface, self.SHADOW, shadow_surface.get_rect(), border_radius=12)
-        self.screen.blit(shadow_surface, shadow_rect.topleft)
 
+        # Ombre portée
+        shadow_surface = pygame.Surface((width, height + 6), pygame.SRCALPHA)
+        shadow_alpha = 140 if selected else 90
+        pygame.draw.rect(shadow_surface, (0, 0, 0, shadow_alpha), (0, 4, width, height), border_radius=12)
+        self.screen.blit(shadow_surface, (x, y))
+
+        # Effet glow pour le bouton sélectionné
+        if selected:
+            glow_surf = pygame.Surface((width + 16, height + 16), pygame.SRCALPHA)
+            pulse = int(abs(math.sin(self._menu_time * 3)) * 30) + 50
+            pygame.draw.rect(glow_surf, (112, 165, 255, pulse), (0, 0, width + 16, height + 16), border_radius=16)
+            self.screen.blit(glow_surf, (x - 8, y - 8))
+
+        # Fond du bouton
         color = self.BUTTON_SELECTED if selected else self.BUTTON_DEFAULT
-        border_color = self.BUTTON_BORDER if selected else self.DARK_GRAY
+        border_color = self.BUTTON_BORDER if selected else (80, 100, 150)
 
-        pygame.draw.rect(self.screen, color, rect, border_radius=12)
+        # Dégradé subtil du bouton
+        btn_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        pygame.draw.rect(btn_surf, (*color, 220), (0, 0, width, height), border_radius=12)
+        # Ligne de highlight en haut
+        highlight = tuple(min(255, c + 40) for c in color)
+        pygame.draw.line(btn_surf, (*highlight, 150), (12, 2), (width - 12, 2), 1)
+        self.screen.blit(btn_surf, (x, y))
+
+        # Bordure
         pygame.draw.rect(self.screen, border_color, rect, 2, border_radius=12)
-        pygame.draw.line(self.screen, self.BUTTON_HIGHLIGHT, (x + 12, y + 10), (x + width - 12, y + 10), 2)
 
-        text_surf = self.button_font.render(text, True, self.WHITE if selected else (233, 238, 252))
-        text_rect = text_surf.get_rect(center=(x + width//2, y + height//2))
+        # Texte
+        text_color = (255, 255, 255) if selected else (200, 210, 235)
+        text_surf = self.button_font.render(text, True, text_color)
+        text_rect = text_surf.get_rect(center=(x + width // 2, y + height // 2))
+        # Ombre du texte
+        if selected:
+            shadow = self.button_font.render(text, True, (0, 0, 0))
+            self.screen.blit(shadow, (text_rect.x + 1, text_rect.y + 1))
         self.screen.blit(text_surf, text_rect)
-        
+
         return rect
 
     def _generate_decorative_stars(self):
-        """Génère une liste déterministe de points lumineux décoratifs."""
+        """Génère une liste déterministe de points lumineux avec phases de scintillement."""
+        import random
         stars = []
+        rng = random.Random(42)  # Seed fixe pour reproductibilité
         for i in range(self.STAR_COUNT):
-            x_ratio = ((i * self.STAR_X_MULTIPLIER) % self.STAR_GRID_SIZE) / self.STAR_GRID_SIZE
-            y_ratio = ((i * self.STAR_Y_MULTIPLIER + self.STAR_Y_OFFSET) % self.STAR_GRID_SIZE) / self.STAR_GRID_SIZE
-            radius = self.STAR_RADIUS_BASE + (i % self.STAR_RADIUS_VARIATION)
-            shade = self.STAR_SHADE_BASE + (i % self.STAR_SHADE_VARIATION)
-            stars.append((x_ratio, y_ratio, radius, shade))
+            x_ratio = rng.random()
+            y_ratio = rng.random() * 0.7  # Pas d'étoiles en bas
+            radius = rng.choice([1, 1, 1, 2, 2, 3])
+            base_shade = rng.randint(140, 255)
+            phase = rng.uniform(0, math.pi * 2)  # Phase de scintillement
+            speed = rng.uniform(0.5, 2.5)  # Vitesse de scintillement
+            stars.append((x_ratio, y_ratio, radius, base_shade, phase, speed))
         return stars
 
     def _draw_gradient_background(self):
-        """Dessine un fond dégradé avec une légère ambiance spatiale."""
+        """Dessine un fond dégradé avec étoiles scintillantes."""
         width, height = self.screen.get_size()
+        self._menu_time += 0.016  # ~60fps
+
+        # Cache du dégradé (pas besoin de le redessiner)
         if self._background_cache_size != (width, height) or self._background_cache is None:
-            top_color = (8, 15, 38)
-            bottom_color = (22, 41, 82)
+            top_color = (6, 10, 30)
+            bottom_color = (18, 35, 72)
             self._background_cache = pygame.Surface((width, height))
 
             for y in range(height):
@@ -184,36 +214,72 @@ class Menu:
                 b = int(top_color[2] * (1 - t) + bottom_color[2] * t)
                 pygame.draw.line(self._background_cache, (r, g, b), (0, y), (width, y))
 
-            for x_ratio, y_ratio, radius, shade in self._background_stars:
-                x = int(x_ratio * width)
-                y = int(y_ratio * height)
-                pygame.draw.circle(self._background_cache, (shade, shade, shade), (x, y), radius)
-
             self._background_cache_size = (width, height)
 
         self.screen.blit(self._background_cache, (0, 0))
 
+        # Dessiner les étoiles avec scintillement
+        for x_ratio, y_ratio, radius, base_shade, phase, speed in self._background_stars:
+            x = int(x_ratio * width)
+            y = int(y_ratio * height)
+            # Scintillement sinusoïdal
+            twinkle = math.sin(self._menu_time * speed + phase) * 0.5 + 0.5  # 0.0 à 1.0
+            shade = int(base_shade * (0.4 + 0.6 * twinkle))
+            alpha = int(180 + 75 * twinkle)
+            
+            if radius <= 1:
+                # Petite étoile : un simple pixel
+                star_surf = pygame.Surface((2, 2), pygame.SRCALPHA)
+                star_surf.fill((shade, shade, shade, alpha))
+                self.screen.blit(star_surf, (x, y))
+            else:
+                # Grande étoile : cercle avec halo
+                star_surf = pygame.Surface((radius * 4, radius * 4), pygame.SRCALPHA)
+                # Halo extérieur
+                halo_alpha = int(alpha * 0.2)
+                pygame.draw.circle(star_surf, (shade, shade, shade, halo_alpha), (radius * 2, radius * 2), radius * 2)
+                # Centre brillant
+                pygame.draw.circle(star_surf, (shade, shade, shade, alpha), (radius * 2, radius * 2), radius)
+                self.screen.blit(star_surf, (x - radius * 2, y - radius * 2))
+
     def _draw_title_block(self, title_text):
-        """Dessine un panneau de titre moderne."""
+        """Dessine un panneau de titre moderne avec animation subtile."""
         title_width = min(900, self.screen.get_width() - 80)
         title_x = self.screen.get_width() // 2 - title_width // 2
-        title_rect = pygame.Rect(title_x, 30, title_width, 110)
+        title_rect = pygame.Rect(title_x, 30, title_width, 120)
 
+        # Fond du panneau avec gradient
         panel_surface = pygame.Surface((title_rect.width, title_rect.height), pygame.SRCALPHA)
-        pygame.draw.rect(panel_surface, (11, 18, 36, 205), panel_surface.get_rect(), border_radius=18)
-        pygame.draw.rect(panel_surface, (117, 171, 255, 230), panel_surface.get_rect(), 2, border_radius=18)
+        # Dégradé vertical
+        for i in range(title_rect.height):
+            t = i / title_rect.height
+            alpha = int(210 - t * 30)
+            r = int(10 + t * 5)
+            g = int(16 + t * 8)
+            b = int(34 + t * 15)
+            pygame.draw.line(panel_surface, (r, g, b, alpha), (0, i), (title_rect.width, i))
+        # Bordure dorée subtile
+        border_alpha = int(180 + math.sin(self._menu_time * 1.5) * 30)
+        pygame.draw.rect(panel_surface, (150, 180, 255, border_alpha), panel_surface.get_rect(), 2, border_radius=18)
         self.screen.blit(panel_surface, title_rect.topleft)
 
-        title = self.big_font.render(title_text, True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width() // 2, 72))
-        self.screen.blit(title, title_rect)
+        # Titre avec ombre portée
+        title_shadow = self.big_font.render(title_text, True, (0, 0, 0))
+        title = self.big_font.render(title_text, True, (240, 245, 255))
+        title_rect_pos = title.get_rect(center=(self.screen.get_width() // 2, 68))
+        self.screen.blit(title_shadow, (title_rect_pos.x + 2, title_rect_pos.y + 2))
+        self.screen.blit(title, title_rect_pos)
 
-        subtitle = self.font.render("Survie • Exploration • Construction", True, (199, 214, 248))
-        subtitle_rect = subtitle.get_rect(center=(self.screen.get_width() // 2, 104))
+        # Sous-titre avec animation de fondu
+        subtitle_alpha = int(200 + math.sin(self._menu_time * 0.8) * 55)
+        subtitle = self.font.render("Survie  •  Exploration  •  Construction", True, (199, 214, 248))
+        subtitle.set_alpha(subtitle_alpha)
+        subtitle_rect = subtitle.get_rect(center=(self.screen.get_width() // 2, 105))
         self.screen.blit(subtitle, subtitle_rect)
 
+        # Version
         if self.version_label:
-            version_text = self.small_font.render(self.version_label, True, (180, 201, 244))
+            version_text = self.small_font.render(self.version_label, True, (140, 160, 200))
             self.screen.blit(version_text, (title_x + title_width - self.VERSION_OFFSET_X, self.VERSION_OFFSET_Y))
     
     def draw_main_menu(self):
