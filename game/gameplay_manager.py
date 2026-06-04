@@ -1,5 +1,5 @@
 """
-Gestionnaire de gameplay pour le jeu MMO 2D
+Gameplay Manager - Battle Royale
 """
 
 import time
@@ -13,18 +13,17 @@ from .particles import ParticleManager
 from .sound_manager import get_sound_manager
 from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, ENEMY_COUNT
 
+
 class DeathMarker:
-    """Marqueur d'inventaire déposé à la mort"""
     def __init__(self, x, y, inventory):
         self.x = x
         self.y = y
         self.inventory = inventory
         self.timestamp = time.time()
-    
-    def can_pickup(self, player_x, player_y):
-        """Vérifie si le joueur peut ramasser l'inventaire"""
-        distance = ((player_x - self.x)**2 + (player_y - self.y)**2) ** 0.5
-        return distance <= TILE_SIZE * 2
+
+    def can_pickup(self, px, py):
+        return ((px - self.x)**2 + (py - self.y)**2)**0.5 <= TILE_SIZE * 2
+
 
 class GameplayManager:
     def __init__(self):
@@ -36,325 +35,195 @@ class GameplayManager:
         self.item_manager = ItemManager()
         self.particle_manager = ParticleManager()
         self.sound_manager = get_sound_manager()
-        self.tutorial = None  # Référence au tutoriel (set par GameManager)
-        
-        # Temps de jeu
+        self.tutorial = None
         self.game_start_time = None
         self.total_playtime = 0
-        
-        # Messages
-        self.show_save_message = False
-        self.save_message_timer = 0.0
         self.show_death_message = False
         self.death_message_timer = 0.0
-    
-    def init_new_game(self, screen_width, screen_height):
-        """Initialise une nouvelle partie"""
+        self.alive_count = 0
+
+    def init_new_game(self, sw, sh):
         self.world_map = NaturalWorldGenerator.generate_natural_map()
         self.player = Player(MAP_WIDTH * TILE_SIZE // 2, MAP_HEIGHT * TILE_SIZE // 2)
-        self.camera = Camera(screen_width, screen_height)
-        
-        # Initialiser le temps de jeu
+        self.camera = Camera(sw, sh)
         self.game_start_time = time.time()
         self.total_playtime = 0
-        
-        # Générer quelques ennemis
+        self.death_markers = []
+        self.alive_count = ENEMY_COUNT
+
         self.enemies = []
-        for _ in range(ENEMY_COUNT):
-            while True:
+        tiers = [1] * (ENEMY_COUNT * 2 // 3) + [2] * (ENEMY_COUNT // 4) + [3] * max(1, ENEMY_COUNT // 6)
+        random.shuffle(tiers)
+
+        for tier in tiers:
+            for _ in range(100):
                 x = random.randint(0, MAP_WIDTH - 1) * TILE_SIZE
                 y = random.randint(0, MAP_HEIGHT - 1) * TILE_SIZE
-                # S'assurer que l'ennemi n'apparaît pas trop près du joueur
-                if abs(x - self.player.x) > TILE_SIZE * 10 or abs(y - self.player.y) > TILE_SIZE * 10:
-                    self.enemies.append(Enemy(x, y))
-                    break
-        
-        print(f"🎮 Nouvelle partie initialisée avec {len(self.enemies)} ennemis")
+                if abs(x - self.player.x) > TILE_SIZE * 15 or abs(y - self.player.y) > TILE_SIZE * 15:
+                    tx, ty = int(x // TILE_SIZE), int(y // TILE_SIZE)
+                    from .tiletype import TileType
+                    if 0 <= tx < MAP_WIDTH and 0 <= ty < MAP_HEIGHT and self.world_map[ty][tx] not in (TileType.WATER, TileType.WALL):
+                        self.enemies.append(Enemy(x, y, tier))
+                        break
+
+        self._spawn_world_loot()
+        self.alive_count = len(self.enemies) + 1
         return True
-    
-    def load_game_data(self, game_data, screen_width, screen_height):
-        """Charge les données d'une partie sauvegardée"""
-        # Restaurer la carte du monde
+
+    def _spawn_world_loot(self):
+        from .tiletype import TileType
+        from core.items import create_items
+        items = create_items()
+        loot_items = list(items.values())
+
+        for y in range(MAP_HEIGHT):
+            for x in range(MAP_WIDTH):
+                if self.world_map[y][x] == TileType.LOOT_SPOT:
+                    item = random.choice(loot_items)
+                    wx = x * TILE_SIZE + TILE_SIZE // 2
+                    wy = y * TILE_SIZE + TILE_SIZE // 2
+                    self.item_manager.drop_item(wx, wy, item, 1)
+
+    def load_game_data(self, game_data, sw, sh):
         self.world_map = game_data["world_map"]
-        
-        # Restaurer le joueur
         self.player = Player(game_data["player"]["x"], game_data["player"]["y"])
         self.player.health = game_data["player"]["health"]
-        self.player.hunger = game_data["player"].get("hunger", 100)
-        self.player.level = game_data["player"].get("level", 1)
-        self.player.xp = game_data["player"].get("xp", 0)
-        self.player.max_health = Player.max_health_for_level(self.player.level)
         self.player.inventory = game_data["player"]["inventory"]
-        
-        # Restaurer la caméra
-        self.camera = Camera(screen_width, screen_height)
-        
-        # Restaurer les ennemis
+        self.camera = Camera(sw, sh)
         self.enemies = []
-        for enemy_data in game_data["enemies"]:
-            enemy = Enemy(enemy_data["x"], enemy_data["y"])
-            enemy.health = enemy_data["health"]
-            self.enemies.append(enemy)
-        
-        # Restaurer les marqueurs de mort si ils existent
+        for ed in game_data.get("enemies", []):
+            e = Enemy(ed["x"], ed["y"], ed.get("tier", 1))
+            e.health = ed["health"]
+            self.enemies.append(e)
         self.death_markers = []
-        if "death_markers" in game_data:
-            for marker_data in game_data["death_markers"]:
-                marker = DeathMarker(
-                    marker_data["x"], 
-                    marker_data["y"], 
-                    marker_data["inventory"]
-                )
-                self.death_markers.append(marker)
-        
-        # Restaurer le temps de jeu
         self.total_playtime = game_data.get("playtime", 0)
         self.game_start_time = time.time()
-        
-        print(f"✅ Partie chargée - Temps de jeu: {self.get_playtime()}")
-    
+        self.alive_count = len(self.enemies) + 1
+
     def update(self, keys, mouse_buttons, mouse_pos, dt, controls, camera, items):
-        """Met à jour le gameplay"""
         if not self.player:
             return
-        
-        # Mise à jour du joueur
+
         dx, dy = self.player.update(keys, dt, controls)
-        
-        # Appliquer le mouvement au joueur
         if dx != 0 or dy != 0:
             self.player.move(dx, dy, dt, self.world_map)
-            # Poussière quand le joueur marche
             if hasattr(self, 'particle_manager'):
                 self.particle_manager.emit_dust(self.player.x + 16, self.player.y + 28)
-            # Son de pas (toutes les 0.3s)
-            if not hasattr(self, '_last_step_time'):
-                self._last_step_time = 0
-            import time as _time
-            now = _time.time()
-            if now - self._last_step_time > 0.3:
-                self.sound_manager.play_random_step()
-                self._last_step_time = now
-            # Tutoriel
-            if self.tutorial:
-                self.tutorial.on_player_move()
-        
-        # Mise à jour des particules
+
         if hasattr(self, 'particle_manager'):
             self.particle_manager.update(dt)
-        
-        # Mise à jour du système d'items
+
         self.item_manager.update(dt, self.world_map)
-        
-        # Ramassage automatique des items proches
-        picked_items = self.item_manager.try_pickup(self.player.x, self.player.y, self.player.inventory)
-        if picked_items:
+
+        picked = self.item_manager.try_pickup(self.player.x, self.player.y, self.player.inventory)
+        if picked:
             self.sound_manager.play('pickup')
-            print(f"🎒 Ramassé: {', '.join(picked_items)}")
-        
-        # Vérifier si le joueur est mort
+            self.player.apply_armor_bonus()
+
         if self.player.health <= 0:
             self.handle_player_death()
-        
-        # Gestion des clics de souris (un seul appel par clic)
+
         if mouse_buttons[0]:
             self.handle_mouse_click(mouse_pos, items)
-        
-        # Mise à jour des ennemis et suppression des morts
-        dead_enemies = []
+
+        dead = []
         for enemy in self.enemies:
             if enemy.is_dead():
-                dead_enemies.append(enemy)
+                dead.append(enemy)
             else:
                 enemy.update(self.player, self.world_map, dt)
-        
-        for enemy in dead_enemies:
+
+        for enemy in dead:
             self._handle_enemy_death(enemy, items)
             self.enemies.remove(enemy)
-        
-        # Respawn des ennemis si le nombre tombe trop bas
+            self.alive_count = max(1, self.alive_count - 1)
+
         self._respawn_enemies_if_needed()
-        
-        # Mise à jour de la caméra
         self.camera.follow_player(self.player)
-        
-        # Gestion des timers de messages
-        if self.show_save_message:
-            self.save_message_timer -= dt
-            if self.save_message_timer <= 0:
-                self.show_save_message = False
-        
+
         if self.show_death_message:
             self.death_message_timer -= dt
             if self.death_message_timer <= 0:
                 self.show_death_message = False
-    
+
     def _handle_enemy_death(self, enemy, items):
-        """Handles loot drops and XP when an enemy dies."""
         drops = enemy.get_loot(items)
         for item, qty in drops:
             for _ in range(qty):
-                import random as _rng
-                ox = _rng.randint(-16, 16)
-                oy = _rng.randint(-16, 16)
+                ox = random.randint(-16, 16)
+                oy = random.randint(-16, 16)
                 self.item_manager.drop_item(enemy.x + ox, enemy.y + oy, item, 1)
         self.player.xp += enemy.XP_REWARD
-        self.player._check_level_up()
         self.sound_manager.play('hit')
-        print(f"☠️ Ennemi éliminé ! +{enemy.XP_REWARD} XP")
+        self.player.kills += 1
 
     def _respawn_enemies_if_needed(self):
-        """Spawns new enemies when the count is below the minimum."""
-        import random as _rng
-        min_enemies = max(3, ENEMY_COUNT // 2)
-        while len(self.enemies) < min_enemies:
-            for _ in range(100):  # max attempts
-                x = _rng.randint(0, MAP_WIDTH - 1) * TILE_SIZE
-                y = _rng.randint(0, MAP_HEIGHT - 1) * TILE_SIZE
-                dist_to_player = ((x - self.player.x) ** 2 + (y - self.player.y) ** 2) ** 0.5
-                tile_x = int(x // TILE_SIZE)
-                tile_y = int(y // TILE_SIZE)
-                from .tiletype import TileType
-                if (dist_to_player > TILE_SIZE * 15 and
-                        self.world_map[tile_y][tile_x] == TileType.GRASS):
-                    self.enemies.append(Enemy(x, y))
-                    break
+        pass
 
     def handle_player_death(self):
-        """Gère la mort du joueur"""
         if self.player.health > 0:
             return
-        
-        # Effet de mort
         if hasattr(self, 'particle_manager'):
             self.particle_manager.emit_death_effect(self.player.x + 16, self.player.y + 16)
         self.sound_manager.play('death')
-        
-        # Créer un marqueur de mort avec l'inventaire
+
         marker = DeathMarker(self.player.x, self.player.y, self.player.inventory)
         self.death_markers.append(marker)
-        
-        # Respawn du joueur
+
         self.player.x = MAP_WIDTH * TILE_SIZE // 2
         self.player.y = MAP_HEIGHT * TILE_SIZE // 2
         self.player.health = self.player.max_health
-        self.player.hunger = self.player.max_hunger
-        
-        # Vider l'inventaire du joueur
-        from ui.inventory import Inventory
-        self.player.inventory = Inventory(36)
-        
-        # Afficher un message
-        self.show_death_message = True
-        self.death_message_timer = 5.0
-        
-        print("💀 Vous êtes mort! Votre inventaire a été déposé.")
-        print("🏃 Vous avez respawné au centre de la carte.")
-    
-    def handle_mouse_click(self, mouse_pos, items):
-        """Gère les clics de souris (priorité: marqueurs de mort > attaque > construction/récolte)"""
-        import time as _time
-        current_time = _time.time()
 
-        # 1. Vérifier les clics sur les marqueurs de mort
+        from ui.inventory import Inventory
+        self.player.inventory = Inventory(24)
+        self.player.apply_armor_bonus()
+
+        self.show_death_message = True
+        self.death_message_timer = 4.0
+
+    def handle_mouse_click(self, mouse_pos, items):
+        current_time = time.time()
+
         for i, marker in enumerate(self.death_markers):
             if marker.can_pickup(self.player.x, self.player.y):
                 world_x = mouse_pos[0] + self.camera.x
                 world_y = mouse_pos[1] + self.camera.y
-                
-                marker_distance = ((world_x - marker.x)**2 + (world_y - marker.y)**2) ** 0.5
-                if marker_distance <= TILE_SIZE:
+                dist = ((world_x - marker.x)**2 + (world_y - marker.y)**2)**0.5
+                if dist <= TILE_SIZE:
                     self.player.inventory = marker.inventory
+                    self.player.apply_armor_bonus()
                     self.death_markers.pop(i)
-                    print("✅ Inventaire récupéré!")
                     return
 
-        # 2. Mode construction
-        if self.player.build_mode:
-            self.player.build_structure(self.world_map, mouse_pos, self.camera.x, self.camera.y)
-            return
-
-        # 3. Attaque d'ennemi (priorité sur la récolte)
-        hit_enemy, damage = self.player.attack_enemies(
+        hit, damage = self.player.attack_enemies(
             self.enemies, mouse_pos, self.camera.x, self.camera.y, current_time
         )
-        if hit_enemy is not None:
-            # Effet de dégâts
+        if hit:
             if hasattr(self, 'particle_manager'):
-                self.particle_manager.emit_damage_flash(hit_enemy.x + 16, hit_enemy.y + 16)
+                self.particle_manager.emit_damage_flash(hit.x + 16, hit.y + 16)
             self.sound_manager.play('hit')
-            return
 
-        # 4. Récolte de ressources
-        harvested = self.player.harvest_resource(
-            self.world_map, mouse_pos, self.camera.x, self.camera.y,
-            items, self.item_manager
-        )
-        if harvested and hasattr(self, 'particle_manager'):
-            # Déterminer le type de tile récoltée
-            world_x = mouse_pos[0] + self.camera.x
-            world_y = mouse_pos[1] + self.camera.y
-            tile_x = int(world_x // TILE_SIZE)
-            tile_y = int(world_y // TILE_SIZE)
-            from .tiletype import TileType
-            tile_type = self.world_map[tile_y][tile_x] if 0 <= tile_x < MAP_WIDTH and 0 <= tile_y < MAP_HEIGHT else TileType.GRASS
-            tile_category = {
-                TileType.TREE: 'wood', TileType.APPLE_TREE: 'wood',
-                TileType.STONE: 'stone',
-                TileType.IRON_ORE: 'ore', TileType.GOLD_ORE: 'ore',
-                TileType.DIAMOND_ORE: 'ore', TileType.COAL_ORE: 'ore',
-                TileType.BERRY_BUSH: 'food',
-            }.get(tile_type, 'stone')
-            self.particle_manager.emit_harvest_sparks(world_x, world_y, tile_category)
-            self.sound_manager.play_harvest(tile_category)
-            # Tutoriel
-            if self.tutorial:
-                self.tutorial.on_player_harvest()
-    
     def get_playtime(self):
-        """Retourne le temps de jeu actuel formaté"""
         if self.game_start_time:
-            current_session = time.time() - self.game_start_time
-            total_time = self.total_playtime + current_session
+            total = self.total_playtime + (time.time() - self.game_start_time)
         else:
-            total_time = self.total_playtime
-        
-        hours = int(total_time // 3600)
-        minutes = int((total_time % 3600) // 60)
-        seconds = int(total_time % 60)
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-    
+            total = self.total_playtime
+        h = int(total // 3600)
+        m = int((total % 3600) // 60)
+        s = int(total % 60)
+        return f"{h:02d}:{m:02d}:{s:02d}"
+
     def get_save_data(self):
-        """Retourne les données à sauvegarder"""
-        save_data = {
+        return {
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "playtime": self.get_playtime(),
-            "level_name": "Monde généré",
+            "level_name": "Battle Royale",
             "world_map": self.world_map,
             "player": {
-                "x": self.player.x,
-                "y": self.player.y,
+                "x": self.player.x, "y": self.player.y,
                 "health": self.player.health,
-                "hunger": self.player.hunger,
-                "inventory": {
-                    "slots": self.player.inventory.slots
-                }
+                "inventory": {"slots": self.player.inventory.slots},
             },
-            "enemies": [
-                {
-                    "x": enemy.x,
-                    "y": enemy.y,
-                    "health": enemy.health
-                }
-                for enemy in self.enemies
-            ],
-            "death_markers": [
-                {
-                    "x": marker.x,
-                    "y": marker.y,
-                    "inventory": marker.inventory
-                }
-                for marker in self.death_markers
-            ]
+            "enemies": [{"x": e.x, "y": e.y, "health": e.health, "tier": e.tier} for e in self.enemies],
+            "death_markers": [{"x": m.x, "y": m.y, "inventory": m.inventory} for m in self.death_markers],
         }
-        return save_data

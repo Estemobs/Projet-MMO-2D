@@ -1,57 +1,52 @@
 """
-Affichage dynamique des raccourcis clavier en bas de l'ecran
+Controls Hint - Battle Royale
 """
 
 import pygame
+from .constants import s
 
 
 class ControlsHint:
     def __init__(self, screen_width, screen_height):
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        self.font = pygame.font.Font(None, 20)
-        self.visible = True
-        self.alpha = 180
-        self.target_alpha = 180
+        self.opacity = 0.0
+        self.fading_in = True
+        self.hints = [
+            "ZQSD / Fleches: Se deplacer",
+            "Souris: Viser et attaquer",
+            "E: Ramasser objet",
+            "F: Boire / Soigner",
+            "TAB: Inventaire",
+            "M: Minimap",
+        ]
 
-    def update_screen_size(self, screen_width, screen_height):
-        self.screen_width = screen_width
-        self.screen_height = screen_height
+    def update(self, dt, mouse_x, mouse_y, screen_width, screen_height):
+        if self.fading_in:
+            self.opacity = min(1.0, self.opacity + dt * 2.0)
+        if self.opacity >= 1.0:
+            self.fading_in = False
 
-    def update(self, dt):
-        pass
-
-    def draw(self, screen, context="normal"):
-        if not self.visible:
+    def draw(self, screen, player=None, controls=None):
+        if self.opacity <= 0:
             return
 
-        if context == "inventory":
-            hints = [("I", "Fermer"), ("Clic", "Utiliser"), ("Clic droit", "Manger")]
-        else:
-            hints = [
-                ("ZQSD", "Deplacer"),
-                ("I", "Inventaire"),
-                ("Clic", "Attaquer/Recolter"),
-                ("H", "Manger"),
-                ("Echap", "Pause"),
-            ]
+        w, h = screen.get_size()
+        alpha = int(180 * self.opacity)
+        panel_w = s(280)
+        panel_h = s(200)
+        px = w - panel_w - s(20)
+        py = h - panel_h - s(20)
 
-        panel_height = 30
-        panel_y = self.screen_height - panel_height - 5
+        font = pygame.font.Font(None, s(22))
 
-        bg = pygame.Surface((self.screen_width, panel_height), pygame.SRCALPHA)
-        bg.fill((10, 15, 30, int(self.alpha * 0.6)))
-        screen.blit(bg, (0, panel_y))
+        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        pygame.draw.rect(panel, (15, 20, 35, alpha), (0, 0, panel_w, panel_h), border_radius=8)
+        pygame.draw.rect(panel, (55, 100, 190, alpha), (0, 0, panel_w, panel_h), 2, border_radius=8)
 
-        x_off = 20
-        for key, label in hints:
-            kt = self.font.render(key, True, (200, 220, 255))
-            kb = pygame.Surface((kt.get_width() + 10, 20), pygame.SRCALPHA)
-            kb.fill((50, 70, 120, int(self.alpha * 0.8)))
-            screen.blit(kb, (x_off - 5, panel_y + 5))
-            screen.blit(kt, (x_off, panel_y + 6))
-            x_off += kt.get_width() + 15
-            lt = self.font.render(label, True, (160, 170, 190))
-            lt.set_alpha(int(self.alpha))
-            screen.blit(lt, (x_off, panel_y + 6))
-            x_off += lt.get_width() + 25
+        title = font.render("Commandes", True, (170, 200, 255))
+        panel.blit(title, (s(15), s(12)))
+
+        for i, hint in enumerate(self.hints):
+            txt = font.render(hint, True, (200, 210, 230))
+            panel.blit(txt, (s(15), s(35) + i * s(26)))
+
+        screen.blit(panel, (px, py))
