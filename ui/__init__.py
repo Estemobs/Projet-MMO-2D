@@ -1,8 +1,8 @@
 """
-Module UI du jeu MMO 2D
+Module UI - Battle Royale
 """
 
 from .menu import Menu
-from .inventory import Inventory, InventoryUI, Item, ItemStack, CraftingRecipe
+from .inventory import Inventory, InventoryUI, Item, ItemStack
 
-__all__ = ['Menu', 'Inventory', 'InventoryUI', 'Item', 'ItemStack', 'CraftingRecipe']
+__all__ = ['Menu', 'Inventory', 'InventoryUI', 'Item', 'ItemStack']

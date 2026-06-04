@@ -56,9 +56,9 @@ class DroppedItem:
         else:
             self.y = new_y
         
-        # Collision avec les obstacles (arbres, pierres, etc.)
+        # Collision avec les obstacles (murs, etc.)
         if (0 <= tile_x < MAP_WIDTH and 0 <= tile_y < MAP_HEIGHT and 
-            world_map[tile_y][tile_x] in [TileType.TREE, TileType.STONE, TileType.WALL]):
+            world_map[tile_y][tile_x] in [TileType.WALL, TileType.BUILDING]):
             
             # Rebondir dans une direction aléatoire
             bounce_angle = random.uniform(0, 2 * math.pi)

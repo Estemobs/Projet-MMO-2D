@@ -1,5 +1,5 @@
 """
-Menu principal - Style survivor moderne
+Menu principal - Battle Royale
 """
 
 import pygame
@@ -7,7 +7,6 @@ import json
 import os
 import math
 import random
-import time as _time
 from game.sound_manager import get_sound_manager
 
 
@@ -43,14 +42,9 @@ class Menu:
 
         self.main_buttons = [
             {"text": "Jouer", "action": "new_game"},
-            {"text": "Charger", "action": "load_menu"},
             {"text": "Options", "action": "options"},
             {"text": "Quitter", "action": "quit"}
         ]
-
-        self.save_slots = [None, None, None]
-        self.selected_save_slot = 0
-        self.load_save_slots_info()
 
         self.window_scales = [0.5, 0.75, 1.0]
         self.window_scale_labels = ["50%", "75%", "100%"]
@@ -60,13 +54,11 @@ class Menu:
         self.controls = {
             "move_up": pygame.K_w, "move_down": pygame.K_s,
             "move_left": pygame.K_a, "move_right": pygame.K_d,
-            "harvest": pygame.MOUSEBUTTONDOWN,
             "inventory": pygame.K_i,
         }
         self.control_names = {
             "move_up": "Monter", "move_down": "Descendre",
             "move_left": "Gauche", "move_right": "Droite",
-            "harvest": "Attaquer",
             "inventory": "Inventaire",
         }
 
@@ -211,15 +203,13 @@ class Menu:
         self.screen.blit(halo, (px - 8, py - 8))
         self.screen.blit(s, (px, py))
 
-    # ─── Main Menu ───────────────────────────────────────
-
     def draw_main_menu(self):
         self._draw_bg()
         w, h = self._W(), self._H()
 
         title_y = int(h * 0.10)
-        self._draw_text("MMO", w // 2, title_y, 10, (230, 238, 255))
-        self._draw_text("2D", w // 2, title_y + int(h * 0.09), 5.5, self.ACCENT, 200)
+        self._draw_text("BATTLE", w // 2, title_y, 10, (230, 238, 255))
+        self._draw_text("ROYALE", w // 2, title_y + int(h * 0.09), 5.5, self.ACCENT, 200)
 
         line_y = title_y + int(h * 0.15)
         lw = int(w * 0.06)
@@ -252,15 +242,13 @@ class Menu:
         ta = int(90 + math.sin(self._menu_time * 0.5) * 35)
         self._draw_text("ENTREE pour commencer", w // 2, int(h * 0.93), 1.8, (90, 100, 140), ta)
 
-    # ─── Options ─────────────────────────────────────────
-
     def draw_options_menu(self):
         self._draw_bg()
         w, h = self._W(), self._H()
         self._draw_text("Options", w // 2, int(h * 0.08), 5, self.WHITE)
 
         pw = int(w * 0.45)
-        ph = int(h * 0.50)
+        ph = int(h * 0.45)
         px = (w - pw) // 2
         py = int(h * 0.16)
 
@@ -270,11 +258,11 @@ class Menu:
         self.screen.blit(panel, (px, py))
 
         cx = px + pw // 2
-        row_h = int(ph * 0.15)
+        row_h = int(ph * 0.18)
         opt = pygame.font.Font(None, self._font(2.4))
         bh = int(row_h * 0.55)
 
-        y = py + int(ph * 0.12)
+        y = py + int(ph * 0.15)
         self.screen.blit(opt.render(f"Taille: {self.window_scale_labels[self.current_scale_index]}", True, self.WHITE), (cx - 90, y))
         self._draw_button("<", cx - 110, y + int(row_h * 0.45), 36, bh, self.selected_button == 0, 2.0)
         self._draw_button(">", cx + 110, y + int(row_h * 0.45), 36, bh, self.selected_button == 1, 2.0)
@@ -289,14 +277,12 @@ class Menu:
 
         self._draw_button("Retour", cx, py + ph - int(ph * 0.12), 120, bh, self.selected_button == 4, 2.0)
 
-    # ─── Controls ─────────────────────────────────────────
-
     def draw_controls_menu(self):
         self._draw_bg()
         w, h = self._W(), self._H()
         self._draw_text("Controles", w // 2, int(h * 0.06), 4.5, self.WHITE)
 
-        modifiable = [(k, v) for k, v in self.control_names.items() if k != "harvest"]
+        modifiable = [(k, v) for k, v in self.control_names.items()]
 
         pw = int(w * 0.50)
         ph = int(h * 0.55)
@@ -340,63 +326,6 @@ class Menu:
         back_y = ppy + ph - int(row_h * 0.8)
         self._draw_button("Retour", w // 2, back_y, 140, int(row_h * 0.65), self.controls_menu_selected >= len(modifiable), 2.0)
 
-    # ─── Save / Load ──────────────────────────────────────
-
-    def draw_save_load_menu(self, menu_type):
-        self._draw_bg()
-        w, h = self._W(), self._H()
-
-        title = "Charger une partie" if menu_type == "load" else "Sauvegarder"
-        self._draw_text(title, w // 2, int(h * 0.07), 4.5, self.WHITE)
-
-        slot_w = int(w * 0.45)
-        slot_h = int(h * 0.11)
-        start_y = int(h * 0.17)
-        spacing = int(h * 0.15)
-
-        opt = pygame.font.Font(None, self._font(2.0))
-        sml = pygame.font.Font(None, self._font(1.7))
-
-        for i in range(3):
-            x = (w - slot_w) // 2
-            y = start_y + i * spacing
-            sel = (i == self.selected_save_slot)
-
-            bg = pygame.Surface((slot_w, slot_h), pygame.SRCALPHA)
-            if sel:
-                for row in range(slot_h):
-                    t = row / max(1, slot_h - 1)
-                    r, g, b = int(35 + t * 10), int(42 + t * 12), int(70 + t * 20)
-                    pygame.draw.line(bg, (r, g, b, 210), (0, row), (slot_w, row))
-            else:
-                for row in range(slot_h):
-                    t = row / max(1, slot_h - 1)
-                    r, g, b = int(18 + t * 4), int(22 + t * 5), int(35 + t * 6)
-                    pygame.draw.line(bg, (r, g, b, 200), (0, row), (slot_w, row))
-            self.screen.blit(bg, (x, y))
-
-            bc = self.ACCENT if sel else (40, 50, 75)
-            bs = pygame.Surface((slot_w, slot_h), pygame.SRCALPHA)
-            pygame.draw.rect(bs, (*bc, 160 if sel else 80), (0, 0, slot_w, slot_h), 1, border_radius=8)
-            self.screen.blit(bs, (x, y))
-
-            self.screen.blit(opt.render(f"Slot {i + 1}", True, (230, 235, 250) if sel else (130, 140, 165)), (x + 16, y + 8))
-
-            if self.save_slots[i] and self.save_slots[i]["exists"]:
-                info = self.save_slots[i]
-                dt = self.format_date(info["timestamp"])
-                self.screen.blit(sml.render(dt, True, (170, 180, 205)), (x + 16, y + int(slot_h * 0.35)))
-                self.screen.blit(sml.render(info["playtime"], True, (170, 180, 205)), (x + 16, y + int(slot_h * 0.55)))
-                self.screen.blit(sml.render(f"{info['player_health']}/100", True, self.GREEN), (x + int(slot_w * 0.5), y + int(slot_h * 0.35)))
-                act = "Entree: Charger" if menu_type == "load" else "Entree: Ecraser"
-                self.screen.blit(sml.render(act, True, self.YELLOW if sel else (120, 130, 160)), (x + int(slot_w * 0.5), y + int(slot_h * 0.55)))
-            else:
-                self.screen.blit(opt.render("Vide", True, (70, 80, 105)), (x + 16, y + int(slot_h * 0.4)))
-
-        self._draw_button("Retour", w // 2, start_y + 3 * spacing + int(h * 0.02), 110, int(h * 0.045), self.selected_save_slot == 3, 2.0)
-
-    # ─── Events ───────────────────────────────────────────
-
     def handle_event(self, event):
         if self.current_menu == "main":
             return self.handle_main_menu_event(event)
@@ -404,10 +333,6 @@ class Menu:
             return self.handle_options_event(event)
         elif self.current_menu == "controls":
             return self.handle_controls_event(event)
-        elif self.current_menu == "load_menu":
-            return self.handle_save_load_event(event, "load")
-        elif self.current_menu == "save_menu":
-            return self.handle_save_load_event(event, "save")
         return None
 
     def handle_main_menu_event(self, event):
@@ -439,11 +364,11 @@ class Menu:
     def handle_options_event(self, event):
         w, h = self._W(), self._H()
         pw = int(w * 0.45)
-        ph = int(h * 0.50)
+        ph = int(h * 0.45)
         px = (w - pw) // 2
         py = int(h * 0.16)
         cx = px + pw // 2
-        row_h = int(ph * 0.15)
+        row_h = int(ph * 0.18)
         bh = int(row_h * 0.55)
 
         if event.type == pygame.KEYDOWN:
@@ -473,7 +398,7 @@ class Menu:
                     self.current_menu = "main"; self.selected_button = 0; self.save_settings()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mp = event.pos
-            y0 = py + int(ph * 0.12)
+            y0 = py + int(ph * 0.15)
             if pygame.Rect(cx - 128, y0 + int(row_h * 0.2), 36, bh).collidepoint(mp):
                 self.current_scale_index = (self.current_scale_index - 1) % len(self.window_scales)
                 self.save_settings(); return "toggle_fullscreen"
@@ -492,7 +417,7 @@ class Menu:
         return None
 
     def handle_controls_event(self, event):
-        modifiable = [k for k in self.control_names.keys() if k != "harvest"]
+        modifiable = list(self.control_names.keys())
         mx = len(modifiable)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -507,46 +432,6 @@ class Menu:
                 else:
                     self.current_menu = "options"; self.selected_button = 3; self.save_settings()
         return None
-
-    def handle_save_load_event(self, event, menu_type):
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                self.current_menu = "main"; self.selected_save_slot = 0
-            elif event.key == pygame.K_UP:
-                self.selected_save_slot = max(0, self.selected_save_slot - 1)
-            elif event.key == pygame.K_DOWN:
-                self.selected_save_slot = min(3, self.selected_save_slot + 1)
-            elif event.key == pygame.K_DELETE and menu_type == "load":
-                if self.selected_save_slot < 3 and self.save_slots[self.selected_save_slot] and self.save_slots[self.selected_save_slot]["exists"]:
-                    return f"delete_slot_{self.selected_save_slot}"
-            elif event.key == pygame.K_RETURN:
-                if self.selected_save_slot == 3:
-                    self.current_menu = "main"; self.selected_save_slot = 0
-                else:
-                    if menu_type == "load":
-                        if self.save_slots[self.selected_save_slot] and self.save_slots[self.selected_save_slot]["exists"]:
-                            return f"load_slot_{self.selected_save_slot}"
-                    else:
-                        return f"save_slot_{self.selected_save_slot}"
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            mx, my = event.pos
-            w, h = self._W(), self._H()
-            sw = int(w * 0.45)
-            sh = int(h * 0.11)
-            sy = int(h * 0.17)
-            sp = int(h * 0.15)
-            for i in range(3):
-                x = (w - sw) // 2
-                y = sy + i * sp
-                if pygame.Rect(x, y, sw, sh).collidepoint((mx, my)):
-                    self.selected_save_slot = i
-                    if menu_type == "load" and self.save_slots[i] and self.save_slots[i]["exists"]:
-                        return f"load_slot_{i}"
-                    elif menu_type == "save":
-                        return f"save_slot_{i}"
-        return None
-
-    # ─── Utils ────────────────────────────────────────────
 
     def load_settings(self):
         try:
@@ -574,36 +459,6 @@ class Menu:
         except Exception:
             pass
 
-    def load_save_slots_info(self):
-        if os.getenv('FLATPAK_ID') == 'io.github.Estemobs.ProjetMMO2D':
-            sd = os.path.expanduser('~/.var/app/io.github.Estemobs.ProjetMMO2D/data/saves')
-        else:
-            sd = os.path.expanduser('~/ProjetMMO2D_saves')
-        for i in range(3):
-            sf = os.path.join(sd, f"save_slot_{i}.json")
-            if os.path.exists(sf):
-                try:
-                    with open(sf, "r") as f:
-                        d = json.load(f)
-                    self.save_slots[i] = {
-                        "timestamp": d.get("timestamp", ""),
-                        "playtime": d.get("playtime", "00:00:00"),
-                        "level_name": d.get("level_name", "Monde"),
-                        "player_health": d.get("player", {}).get("health", 100),
-                        "exists": True
-                    }
-                except Exception:
-                    self.save_slots[i] = None
-            else:
-                self.save_slots[i] = None
-
-    def format_date(self, ts):
-        try:
-            from datetime import datetime
-            return datetime.fromisoformat(ts).strftime("%d/%m/%Y %H:%M")
-        except Exception:
-            return ts
-
     def draw(self):
         if self.current_menu == "main":
             self.draw_main_menu()
@@ -611,10 +466,6 @@ class Menu:
             self.draw_options_menu()
         elif self.current_menu == "controls":
             self.draw_controls_menu()
-        elif self.current_menu == "load_menu":
-            self.draw_save_load_menu("load")
-        elif self.current_menu == "save_menu":
-            self.draw_save_load_menu("save")
         pygame.display.flip()
 
     def get_resolution(self):
@@ -624,24 +475,3 @@ class Menu:
 
     def is_fullscreen(self):
         return self.fullscreen
-
-    def refresh_save_slots(self):
-        self.load_save_slots_info()
-
-    def get_save_slot_info(self, n):
-        return self.save_slots[n] if 0 <= n <= 2 else None
-
-    def delete_save_slot(self, slot_number):
-        if os.getenv('FLATPAK_ID') == 'io.github.Estemobs.ProjetMMO2D':
-            sd = os.path.expanduser('~/.var/app/io.github.Estemobs.ProjetMMO2D/data/saves')
-        else:
-            sd = os.path.expanduser('~/ProjetMMO2D_saves')
-        try:
-            sf = os.path.join(sd, f"save_slot_{slot_number}.json")
-            if os.path.exists(sf):
-                os.remove(sf)
-                self.save_slots[slot_number] = None
-                return True
-        except Exception:
-            pass
-        return False

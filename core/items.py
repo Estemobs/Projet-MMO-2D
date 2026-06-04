@@ -2,7 +2,7 @@
 Items Battle Royale - Armes, Armures, Soins
 """
 
-from ui.inventory import Item, CraftingRecipe
+from ui.inventory import Item
 from game.constants import COLORS
 
 
@@ -31,7 +31,3 @@ def create_items():
         "ammo": Item("Munitions", "ammo", "Pour les armes a feu", 30, (255, 200, 50), "coal"),
     }
     return items
-
-
-def create_recipes(items):
-    return []

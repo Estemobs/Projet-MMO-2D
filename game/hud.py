@@ -16,7 +16,6 @@ class HUD:
         self.time += dt
 
     def draw(self, screen, player, game_instance=None):
-        self.time += 0.016
         w, h = screen.get_size()
 
         bar_w = int(w * 0.30)

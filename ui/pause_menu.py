@@ -25,7 +25,6 @@ class PauseMenu:
         self.selected_button = 0
         self.buttons = [
             {"text": "Reprendre", "action": "resume"},
-            {"text": "Sauvegarder", "action": "save"},
             {"text": "Menu principal", "action": "menu"},
             {"text": "Quitter", "action": "quit"}
         ]

@@ -1,8 +1,8 @@
 """
-Module core du jeu MMO 2D
+Module core - Battle Royale
 """
 
 from .game_manager import GameManager
-from .items import create_items, create_recipes
+from .items import create_items
 
-__all__ = ['GameManager', 'create_items', 'create_recipes']
+__all__ = ['GameManager', 'create_items']
