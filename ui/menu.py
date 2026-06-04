@@ -4,6 +4,7 @@ import os
 import math
 import time as _time
 from game.sound_manager import get_sound_manager
+from game.constants import s, SCALE_FACTOR
 
 class Menu:
     STAR_COUNT = 120
@@ -51,12 +52,6 @@ class Menu:
         # Sound manager
         self.sound_manager = get_sound_manager()
         
-        try:
-            from systems.version import get_current_version
-            self.version_label = f"v{get_current_version()}"
-        except Exception:
-            self.version_label = ""
-        
         # État du menu
         self.current_menu = "main"
         self.selected_button = 0
@@ -76,15 +71,10 @@ class Menu:
         self.selected_save_slot = 0
         self.load_save_slots_info()
         
-        # Options
-        self.resolutions = [
-            (800, 600),
-            (1024, 768),
-            (1280, 720),
-            (1366, 768),
-            (1920, 1080)
-        ]
-        self.current_resolution = 4  # 1920x1080 par défaut
+        # Options - Taille de fenêtre en pourcentage de la résolution native
+        self.window_scales = [0.5, 0.75, 1.0]
+        self.window_scale_labels = ["50%", "75%", "100%"]
+        self.current_scale_index = 2  # 100% par défaut
         self.fullscreen = True  # Plein écran par défaut
         
         # Contrôles
@@ -122,8 +112,8 @@ class Menu:
             if os.path.exists("settings.json"):
                 with open("settings.json", "r") as f:
                     settings = json.load(f)
-                    self.current_resolution = settings.get("resolution", 1)
-                    self.fullscreen = settings.get("fullscreen", False)
+                    self.current_scale_index = settings.get("scale_index", 2)
+                    self.fullscreen = settings.get("fullscreen", True)
                     self.controls.update(settings.get("controls", {}))
         except Exception:
             pass
@@ -131,7 +121,7 @@ class Menu:
     def save_settings(self):
         """Sauvegarde les paramètres dans un fichier"""
         settings = {
-            "resolution": self.current_resolution,
+            "scale_index": self.current_scale_index,
             "fullscreen": self.fullscreen,
             "controls": self.controls
         }
