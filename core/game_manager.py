@@ -313,6 +313,16 @@ class GameManager:
             self.enemies = self.gameplay_manager.enemies
             self.dropped_inventories = self.gameplay_manager.death_markers
 
+            # Auto-save toutes les 5 minutes
+            self.auto_save_timer += dt
+            if self.auto_save_timer >= self.auto_save_interval:
+                self.auto_save_timer = 0.0
+                self.save_game(0)  # Slot 0
+                self.show_save_message = True
+                self.save_message_timer = 2.0
+                self.sound_manager.play('save')
+                print("💾 Sauvegarde automatique effectuée")
+
             # Gestion du timer du message de sauvegarde (sur self)
             if self.show_save_message:
                 self.save_message_timer -= dt
