@@ -36,6 +36,7 @@ class GameplayManager:
         self.item_manager = ItemManager()
         self.particle_manager = ParticleManager()
         self.sound_manager = get_sound_manager()
+        self.tutorial = None  # Référence au tutoriel (set par GameManager)
         
         # Temps de jeu
         self.game_start_time = None
@@ -134,6 +135,9 @@ class GameplayManager:
             if now - self._last_step_time > 0.3:
                 self.sound_manager.play_random_step()
                 self._last_step_time = now
+            # Tutoriel
+            if self.tutorial:
+                self.tutorial.on_player_move()
         
         # Mise à jour des particules
         if hasattr(self, 'particle_manager'):
@@ -303,6 +307,9 @@ class GameplayManager:
             }.get(tile_type, 'stone')
             self.particle_manager.emit_harvest_sparks(world_x, world_y, tile_category)
             self.sound_manager.play_harvest(tile_category)
+            # Tutoriel
+            if self.tutorial:
+                self.tutorial.on_player_harvest()
     
     def get_playtime(self):
         """Retourne le temps de jeu actuel formaté"""

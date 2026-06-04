@@ -16,6 +16,8 @@ from game.sprite_manager import get_sprite_manager
 from game.sound_manager import get_sound_manager
 from game.transitions import ScreenTransition
 from game.controls_hint import ControlsHint
+from game.day_night import DayNightCycle
+from game.tutorial import Tutorial
 from core.items import create_items, create_recipes
 from systems.save_system import SaveSystem
 
@@ -75,6 +77,12 @@ class GameManager:
         
         # Controls hint (bas de l'écran)
         self.controls_hint = ControlsHint(self.screen.get_width(), self.screen.get_height())
+        
+        # Cycle jour/nuit
+        self.day_night = DayNightCycle()
+        
+        # Tutoriel
+        self.tutorial = Tutorial()
         
         # Composants du jeu (initialisés quand on commence une partie)
         self.world_map = None
@@ -279,6 +287,12 @@ class GameManager:
             # Mettre à jour le temps pour les animations de rendu
             self.render_manager.update_time(dt)
             
+            # Mettre à jour le cycle jour/nuit
+            self.day_night.update(dt)
+            
+            # Mettre à jour le tutoriel
+            self.tutorial.update(dt)
+            
             # Mettre à jour les animations du HUD
             if self.hud:
                 self.hud.update(dt)
@@ -320,11 +334,20 @@ class GameManager:
         if hasattr(self.gameplay_manager, 'particle_manager'):
             self.gameplay_manager.particle_manager.draw(self.screen, self.camera)
         
+        # Filtre jour/nuit
+        self.day_night.draw_overlay(self.screen)
+        
         # Dessiner la minimap en haut à droite
         self.minimap.draw(self.screen, self.player, self.enemies, self.camera, self.dropped_inventories)
         
         # Dessiner le HUD
         self.hud.draw(self.screen, self.player, self)
+        
+        # Indicateur heure en haut à gauche
+        self.day_night.draw_hud_indicator(self.screen, 10, 10)
+        
+        # Tutoriel
+        self.tutorial.draw(self.screen)
 
         # Feedback d'attaque du joueur (dégâts infligés)
         if self.player.attack_feedback:
