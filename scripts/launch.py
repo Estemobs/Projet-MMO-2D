@@ -69,6 +69,8 @@ def check_dependencies():
         ('pygame', 'Interface graphique du jeu'),
         ('numpy', 'Calculs mathématiques'),
         ('psutil', 'Informations système'),
+        ('requests', 'Vérification des mises à jour'),
+        ('packaging', 'Comparaison de versions'),
     ]
     
     missing_modules = []
