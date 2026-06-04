@@ -719,8 +719,14 @@ class Menu:
     def delete_save_slot(self, slot_number):
         """Supprime une sauvegarde"""
         import os
+        # Utiliser le même répertoire que SaveSystem
+        if os.getenv('FLATPAK_ID') == 'io.github.Estemobs.ProjetMMO2D':
+            save_dir = os.path.expanduser('~/.var/app/io.github.Estemobs.ProjetMMO2D/data/saves')
+        else:
+            save_dir = os.path.expanduser('~/ProjetMMO2D_saves')
+
         try:
-            save_file = os.path.join("saves", f"save_slot_{slot_number}.json")
+            save_file = os.path.join(save_dir, f"save_slot_{slot_number}.json")
             if os.path.exists(save_file):
                 os.remove(save_file)
                 self.save_slots[slot_number] = None
