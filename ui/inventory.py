@@ -311,29 +311,30 @@ class InventoryUI:
         if not self.visible:
             return
 
-        # Mettre à jour le timer de feedback
         if self.craft_feedback_timer > 0:
-            self.craft_feedback_timer -= 1/60  # ~60fps
+            self.craft_feedback_timer -= 1/60
 
         overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 140))
         self.screen.blit(overlay, (0, 0))
 
-        title_text = "📦 Inventaire et Artisanat"
-        title = self.font.render(title_text, True, (245, 247, 255))
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, 20))
+        title_text = "Inventaire et Artisanat"
+        title_font = pygame.font.Font(None, s(28))
+        title = title_font.render(title_text, True, (245, 247, 255))
+        title_rect = title.get_rect(center=(self.screen.get_width()//2, s(20)))
         self.screen.blit(title, title_rect)
 
         # Onglets modernes
-        tab_width = 140
-        tab_height = 35
-        tab_y = 50
-        tabs = [("inventory", "📋 Inventaire"), ("crafting", "🔨 Artisanat"), ("equipment", "⚔ Équipement")]
+        tab_width = s(140)
+        tab_height = s(35)
+        tab_y = s(50)
+        tabs = [("inventory", "Inventaire"), ("crafting", "Artisanat"), ("equipment", "Equipement")]
 
         self.tab_rects = []
+        small_font = pygame.font.Font(None, s(16))
 
         for i, (tab_id, tab_name) in enumerate(tabs):
-            x = 50 + i * (tab_width + 15)
+            x = s(50) + i * (tab_width + s(15))
             is_active = tab_id == self.current_tab
 
             tab_rect = pygame.Rect(x, tab_y, tab_width, tab_height)
@@ -341,17 +342,17 @@ class InventoryUI:
 
             tab_surface = pygame.Surface((tab_width, tab_height), pygame.SRCALPHA)
             if is_active:
-                pygame.draw.rect(tab_surface, (112, 165, 255, 220), tab_surface.get_rect(), border_radius=6)
-                pygame.draw.rect(tab_surface, (189, 214, 255), tab_surface.get_rect(), 2, border_radius=6)
+                pygame.draw.rect(tab_surface, (112, 165, 255, 220), tab_surface.get_rect(), border_radius=s(6))
+                pygame.draw.rect(tab_surface, (189, 214, 255), tab_surface.get_rect(), 2, border_radius=s(6))
                 text_color = (255, 255, 255)
             else:
-                pygame.draw.rect(tab_surface, (50, 60, 100, 150), tab_surface.get_rect(), border_radius=6)
-                pygame.draw.rect(tab_surface, (100, 120, 180), tab_surface.get_rect(), 1, border_radius=6)
+                pygame.draw.rect(tab_surface, (50, 60, 100, 150), tab_surface.get_rect(), border_radius=s(6))
+                pygame.draw.rect(tab_surface, (100, 120, 180), tab_surface.get_rect(), 1, border_radius=s(6))
                 text_color = (180, 190, 220)
 
             self.screen.blit(tab_surface, tab_rect)
 
-            tab_text = self.small_font.render(tab_name, True, text_color)
+            tab_text = small_font.render(tab_name, True, text_color)
             text_rect = tab_text.get_rect(center=(x + tab_width//2, tab_y + tab_height//2))
             self.screen.blit(tab_text, text_rect)
 
@@ -364,28 +365,27 @@ class InventoryUI:
 
         # Instructions en bas
         instructions = [
-            "Clic: Sélectionner / Utiliser",
+            "Clic: Selectionner / Utiliser",
             "TAB: Onglets",
             "I: Fermer"
         ]
 
-        info_y = self.screen.get_height() - 70
+        info_y = self.screen.get_height() - s(70)
         for i, instruction in enumerate(instructions):
-            inst_text = self.small_font.render(instruction, True, (140, 160, 200))
-            self.screen.blit(inst_text, (20 + i * 220, info_y))
+            inst_text = small_font.render(instruction, True, (140, 160, 200))
+            self.screen.blit(inst_text, (s(20) + i * s(220), info_y))
 
         # Craft feedback
         if self.craft_feedback_timer > 0:
-            feedback_text = self.font.render(self.craft_feedback, True, (84, 214, 125))
-            feedback_rect = feedback_text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - 100))
-            # Fond semi-transparent
-            bg_rect = feedback_rect.inflate(20, 10)
+            feedback_font = pygame.font.Font(None, s(24))
+            feedback_text = feedback_font.render(self.craft_feedback, True, (84, 214, 125))
+            feedback_rect = feedback_text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - s(100)))
+            bg_rect = feedback_rect.inflate(s(20), s(10))
             bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
             bg_surface.fill((30, 60, 40, 200))
             self.screen.blit(bg_surface, bg_rect)
             self.screen.blit(feedback_text, feedback_rect)
 
-        # Tooltip au survol
         self._draw_tooltip(inventory)
 
     def _draw_tooltip(self, inventory):
