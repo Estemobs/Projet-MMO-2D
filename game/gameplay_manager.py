@@ -10,6 +10,7 @@ from .natural_world import NaturalWorldGenerator
 from .camera import Camera
 from .item_system import ItemManager
 from .particles import ParticleManager
+from .sound_manager import get_sound_manager
 from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, ENEMY_COUNT
 
 class DeathMarker:
@@ -34,6 +35,7 @@ class GameplayManager:
         self.death_markers = []
         self.item_manager = ItemManager()
         self.particle_manager = ParticleManager()
+        self.sound_manager = get_sound_manager()
         
         # Temps de jeu
         self.game_start_time = None
@@ -124,6 +126,14 @@ class GameplayManager:
             # Poussière quand le joueur marche
             if hasattr(self, 'particle_manager'):
                 self.particle_manager.emit_dust(self.player.x + 16, self.player.y + 28)
+            # Son de pas (toutes les 0.3s)
+            if not hasattr(self, '_last_step_time'):
+                self._last_step_time = 0
+            import time as _time
+            now = _time.time()
+            if now - self._last_step_time > 0.3:
+                self.sound_manager.play_random_step()
+                self._last_step_time = now
         
         # Mise à jour des particules
         if hasattr(self, 'particle_manager'):
@@ -135,6 +145,7 @@ class GameplayManager:
         # Ramassage automatique des items proches
         picked_items = self.item_manager.try_pickup(self.player.x, self.player.y, self.player.inventory)
         if picked_items:
+            self.sound_manager.play('pickup')
             print(f"🎒 Ramassé: {', '.join(picked_items)}")
         
         # Vérifier si le joueur est mort
@@ -185,6 +196,7 @@ class GameplayManager:
                 self.item_manager.drop_item(enemy.x + ox, enemy.y + oy, item, 1)
         self.player.xp += enemy.XP_REWARD
         self.player._check_level_up()
+        self.sound_manager.play('hit')
         print(f"☠️ Ennemi éliminé ! +{enemy.XP_REWARD} XP")
 
     def _respawn_enemies_if_needed(self):
@@ -212,6 +224,7 @@ class GameplayManager:
         # Effet de mort
         if hasattr(self, 'particle_manager'):
             self.particle_manager.emit_death_effect(self.player.x + 16, self.player.y + 16)
+        self.sound_manager.play('death')
         
         # Créer un marqueur de mort avec l'inventaire
         marker = DeathMarker(self.player.x, self.player.y, self.player.inventory)
@@ -265,6 +278,7 @@ class GameplayManager:
             # Effet de dégâts
             if hasattr(self, 'particle_manager'):
                 self.particle_manager.emit_damage_flash(hit_enemy.x + 16, hit_enemy.y + 16)
+            self.sound_manager.play('hit')
             return
 
         # 4. Récolte de ressources
@@ -288,6 +302,7 @@ class GameplayManager:
                 TileType.BERRY_BUSH: 'food',
             }.get(tile_type, 'stone')
             self.particle_manager.emit_harvest_sparks(world_x, world_y, tile_category)
+            self.sound_manager.play_harvest(tile_category)
     
     def get_playtime(self):
         """Retourne le temps de jeu actuel formaté"""

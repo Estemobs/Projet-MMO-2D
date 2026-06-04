@@ -13,6 +13,8 @@ from game.render_manager import RenderManager
 from game.gameplay_manager import GameplayManager
 from game.minimap import MiniMap
 from game.sprite_manager import get_sprite_manager
+from game.sound_manager import get_sound_manager
+from game.transitions import ScreenTransition
 from core.items import create_items, create_recipes
 from systems.save_system import SaveSystem
 
@@ -54,6 +56,12 @@ class GameManager:
         
         # Sprite manager
         self.sprite_manager = get_sprite_manager()
+        
+        # Sound manager
+        self.sound_manager = get_sound_manager()
+        
+        # Transition manager
+        self.transitions = ScreenTransition(self.screen.get_width(), self.screen.get_height())
         
         # Interfaces
         self.menu = Menu(self.screen, self.font)
@@ -517,6 +525,7 @@ class GameManager:
             self.handle_events()
             self.update(dt)
             self.draw()
+            self.transitions.update()
         
         pygame.quit()
 
