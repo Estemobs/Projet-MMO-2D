@@ -491,12 +491,6 @@ class InventoryUI:
                     for slot_index, slot_rect in self.inventory_slots_rects:
                         if slot_rect.collidepoint(mouse_pos):
                             self.selected_slot = slot_index
-                            # Action directe sur le slot si on re-clique dessus
-                            if inventory.slots[slot_index]:
-                                item = inventory.slots[slot_index].item
-                                if item.type == "food":
-                                    print(f"Consommé: {item.name}")
-                                    inventory.remove_item(item.name, 1)
                             return
                 
                 elif self.current_tab == "crafting" and hasattr(self, 'crafting_rects'):
