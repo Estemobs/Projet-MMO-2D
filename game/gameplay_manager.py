@@ -121,6 +121,13 @@ class GameplayManager:
         # Appliquer le mouvement au joueur
         if dx != 0 or dy != 0:
             self.player.move(dx, dy, dt, self.world_map)
+            # Poussière quand le joueur marche
+            if hasattr(self, 'particle_manager'):
+                self.particle_manager.emit_dust(self.player.x + 16, self.player.y + 28)
+        
+        # Mise à jour des particules
+        if hasattr(self, 'particle_manager'):
+            self.particle_manager.update(dt)
         
         # Mise à jour du système d'items
         self.item_manager.update(dt, self.world_map)
