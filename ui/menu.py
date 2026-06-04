@@ -112,7 +112,18 @@ class Menu:
             if os.path.exists("settings.json"):
                 with open("settings.json", "r") as f:
                     settings = json.load(f)
-                    self.current_scale_index = settings.get("scale_index", 2)
+                    # Compatibilité: ancien format "resolution" (index 0-4) → nouveau "scale_index"
+                    if "scale_index" in settings:
+                        self.current_scale_index = settings["scale_index"]
+                    elif "resolution" in settings:
+                        # Mapper: 0→0, 1→0, 2→0, 3→1, 4→2
+                        old_res = settings["resolution"]
+                        if old_res <= 1:
+                            self.current_scale_index = 0
+                        elif old_res <= 3:
+                            self.current_scale_index = 1
+                        else:
+                            self.current_scale_index = 2
                     self.fullscreen = settings.get("fullscreen", True)
                     self.controls.update(settings.get("controls", {}))
         except Exception:
