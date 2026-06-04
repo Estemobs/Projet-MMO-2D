@@ -1,0 +1,50 @@
+[project]
+name = "projet-mmo-2d"
+version = "0.2.0"
+description = "Jeu de survie 2D multijoueur"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "estemobs"},
+]
+keywords = ["game", "2d", "survival", "mmo", "pygame"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment :: Role-Playing",
+]
+dependencies = [
+    "pygame>=2.5.0",
+    "numpy>=1.21.0",
+    "psutil>=5.8.0",
+    "requests>=2.28.0",
+    "packaging>=21.0",
+]
+
+[project.scripts]
+projet-mmo-2d = "main:main"
+
+[project.urls]
+Homepage = "https://github.com/Estemobs/Projet-MMO-2D"
+Repository = "https://github.com/Estemobs/Projet-MMO-2D"
+Issues = "https://github.com/Estemobs/Projet-MMO-2D/issues"
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["core*", "game*", "ui*", "systems*", "data*"]
+
+[tool.flake8]
+max-line-length = 120
+ignore = ["E402", "F403", "F405"]
