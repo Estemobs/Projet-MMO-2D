@@ -125,8 +125,6 @@ class InventoryUI:
     def __init__(self, screen, font, sprite_manager=None):
         self.screen = screen
         self.font = font
-        self.small_font = pygame.font.Font(None, 16)
-        self.tooltip_font = pygame.font.Font(None, 18)
         self.sprite_manager = sprite_manager
         
         # Couleurs modernes
@@ -141,8 +139,6 @@ class InventoryUI:
         self.PURPLE = (200, 120, 255)
         self.YELLOW = (255, 221, 129)
         
-        self.slot_size = 44
-        self.slot_padding = 4
         self.visible = False
         self.selected_slot = 0
         self.hover_slot = -1
@@ -159,13 +155,19 @@ class InventoryUI:
         
         # Couleurs par catégorie d'item
         self.category_colors = {
-            "resource": (84, 180, 120),   # Vert ressource
-            "food": (220, 140, 60),       # Orange nourriture
-            "weapon": (220, 80, 80),      # Rouge arme
-            "tool": (140, 160, 200),      # Bleu outil
-            "armor": (180, 140, 200),     # Violet armure
-            "material": (180, 170, 120),  # Jaune matériau
+            "resource": (84, 180, 120),
+            "food": (220, 140, 60),
+            "weapon": (220, 80, 80),
+            "tool": (140, 160, 200),
+            "armor": (180, 140, 200),
+            "material": (180, 170, 120),
         }
+    
+    def _get_slot_size(self):
+        return s(44)
+    
+    def _get_slot_padding(self):
+        return s(4)
 
     def _get_category_color(self, item_type):
         """Retourne la couleur de bordure selon le type d'item."""
