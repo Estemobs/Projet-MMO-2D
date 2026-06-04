@@ -1,7 +1,5 @@
 """
-HUD amélioré pour le jeu MMO 2D
-Barres gradient, ombres portées, indicateur faim animé
-Responsive avec scale adaptatif
+HUD moderne - Barre de vie grosse et visible
 """
 
 import pygame
@@ -15,143 +13,111 @@ class HUD:
         self.time = 0.0
 
     def update(self, dt):
-        """Met à jour les animations du HUD."""
         self.time += dt
-
-    def _draw_panel(self, screen, x, y, width, height, title=""):
-        """Dessine un panneau avec dégradé et bordure lumineuse."""
-        panel = pygame.Surface((width, height), pygame.SRCALPHA)
-        for i in range(height):
-            t = i / height
-            alpha = int(210 - t * 40)
-            r = int(14 + t * 6)
-            g = int(20 + t * 8)
-            b = int(38 + t * 12)
-            pygame.draw.line(panel, (r, g, b, alpha), (0, i), (width, i))
-        pygame.draw.rect(panel, (80, 120, 200, 150), panel.get_rect(), 1, border_radius=s(10))
-        screen.blit(panel, (x, y))
-
-        if title:
-            title_font = pygame.font.Font(None, s(18))
-            title_surf = title_font.render(title, True, (140, 180, 255))
-            screen.blit(title_surf, (x + s(12), y + s(6)))
-
-    def _draw_bar(self, screen, x, y, width, height, ratio, bar_color, bg_color=(20, 20, 35)):
-        """Dessine une barre avec gradient vertical et ombre."""
-        ratio = max(0, min(1, ratio))
-
-        # Fond avec ombre
-        bg_surf = pygame.Surface((width, height + 2), pygame.SRCALPHA)
-        pygame.draw.rect(bg_surf, (10, 10, 20, 150), (0, 1, width, height), border_radius=s(4))
-        screen.blit(bg_surf, (x, y))
-
-        # Fond de la barre
-        pygame.draw.rect(screen, bg_color, (x, y, width, height), border_radius=s(4))
-
-        # Barre remplie avec gradient
-        fill_width = int(width * ratio)
-        if fill_width > 0:
-            bar_surf = pygame.Surface((fill_width, height), pygame.SRCALPHA)
-            for i in range(height):
-                t = i / height
-                r = min(255, int(bar_color[0] * (1.1 - t * 0.3)))
-                g = min(255, int(bar_color[1] * (1.1 - t * 0.3)))
-                b = min(255, int(bar_color[2] * (1.1 - t * 0.3)))
-                pygame.draw.line(bar_surf, (r, g, b, 220), (0, i), (fill_width, i))
-            pygame.draw.rect(bar_surf, (255, 255, 255, 40), (0, 0, fill_width, height), 1, border_radius=s(4))
-            screen.blit(bar_surf, (x, y))
-
-        # Bordure extérieure
-        pygame.draw.rect(screen, (60, 70, 100), (x, y, width, height), 1, border_radius=s(4))
-
-    def _draw_text_shadow(self, screen, text, pos, font=None, color=(255, 255, 255)):
-        """Dessine du texte avec ombre portée."""
-        if font is None:
-            font = self.font
-        shadow = font.render(text, True, (0, 0, 0))
-        main = font.render(text, True, color)
-        screen.blit(shadow, (pos[0] + 1, pos[1] + 1))
-        screen.blit(main, pos)
 
     def draw(self, screen, player, game_instance=None):
         self.time += 0.016
+        w, h = screen.get_size()
 
-        bar_width = s(160)
-        bar_height = s(16)
+        bar_w = int(w * 0.25)
+        bar_h = s(22)
+        x = s(16)
+        y = h - bar_h - s(50)
 
-        panel_x, panel_y = s(12), s(12)
-        panel_width, panel_height = s(530), s(115)
-
-        self._draw_panel(screen, panel_x, panel_y, panel_width, panel_height, "STATS")
-
-        # ── Health ────────────────────────────────────────────────────────
-        health_y = panel_y + s(25)
         health_ratio = max(0, player.health / player.max_health)
+        if health_ratio < 0.33:
+            hc = (220, 50, 50)
+        elif health_ratio < 0.66:
+            hc = (220, 180, 40)
+        else:
+            hc = (50, 200, 80)
+
+        label_font = pygame.font.Font(None, s(20))
+        val_font = pygame.font.Font(None, s(18))
+
+        label = label_font.render("VIE", True, (180, 190, 215))
+        screen.blit(label, (x, y - s(18)))
+
+        val = val_font.render(f"{int(player.health)}/{player.max_health}", True, self.WHITE())
+        screen.blit(val, (x + bar_w - val.get_width(), y - s(18)))
+
+        bg = pygame.Surface((bar_w, bar_h), pygame.SRCALPHA)
+        pygame.draw.rect(bg, (20, 24, 38, 200), (0, 0, bar_w, bar_h), border_radius=6)
+        pygame.draw.rect(bg, (40, 48, 70, 120), (0, 0, bar_w, bar_h), 1, border_radius=6)
+        screen.blit(bg, (x, y))
+
+        fill = int(bar_w * health_ratio)
+        if fill > 0:
+            bar = pygame.Surface((fill, bar_h), pygame.SRCALPHA)
+            for i in range(bar_h):
+                t = i / max(1, bar_h)
+                r = min(255, int(hc[0] * (1.1 - t * 0.3)))
+                g = min(255, int(hc[1] * (1.1 - t * 0.3)))
+                b = min(255, int(hc[2] * (1.1 - t * 0.3)))
+                pygame.draw.line(bar, (r, g, b, 230), (0, i), (fill, i))
+            screen.blit(bar, (x, y))
 
         if health_ratio < 0.33:
-            health_color = (220, 50, 50)
-        elif health_ratio < 0.66:
-            health_color = (220, 180, 40)
-        else:
-            health_color = (50, 200, 80)
+            pulse = abs(math.sin(self.time * 5)) * 0.4 + 0.6
+            warn = pygame.Surface((bar_w + 8, bar_h + 8), pygame.SRCALPHA)
+            pygame.draw.rect(warn, (220, 50, 50, int(pulse * 60)), (0, 0, bar_w + 8, bar_h + 8), border_radius=8)
+            screen.blit(warn, (x - 4, y - 4))
 
-        hud_font = pygame.font.Font(None, s(24))
-        small_font = pygame.font.Font(None, s(18))
-
-        self._draw_text_shadow(screen, f"PV {int(player.health)}/{player.max_health}",
-                               (panel_x + s(15), health_y), hud_font, COLORS['WHITE'])
-        self._draw_bar(screen, panel_x + s(15), health_y + s(20), bar_width, bar_height, health_ratio, health_color)
-
-        # ── Hunger ────────────────────────────────────────────────────────
-        hunger_y = panel_y + s(25)
         hunger_ratio = max(0, player.hunger / player.max_hunger)
+        hy = y + bar_h + s(8)
+        hh = s(14)
 
-        hunger_warning = player.hunger < 20
-        if hunger_warning:
-            pulse = abs(math.sin(self.time * 4)) * 0.3 + 0.7
-            hunger_color = (int(220 * pulse), int(60 * pulse), int(40 * pulse))
-        elif player.hunger < 40:
-            hunger_color = (220, 160, 40)
-        else:
-            hunger_color = (200, 140, 60)
+        hlabel = label_font.render("FAIM", True, (180, 190, 215))
+        screen.blit(hlabel, (x, hy - s(16)))
 
-        self._draw_text_shadow(screen, f"Faim {int(player.hunger)}/{player.max_hunger}",
-                               (panel_x + s(200), hunger_y), hud_font, COLORS['WHITE'])
-        self._draw_bar(screen, panel_x + s(200), hunger_y + s(20), bar_width, bar_height, hunger_ratio, hunger_color)
+        hval = val_font.render(f"{int(player.hunger)}", True, self.WHITE())
+        screen.blit(hval, (x + bar_w - hval.get_width(), hy - s(16)))
 
-        # ── Level / XP ────────────────────────────────────────────────────
+        hbg = pygame.Surface((bar_w, hh), pygame.SRCALPHA)
+        pygame.draw.rect(hbg, (20, 24, 38, 180), (0, 0, bar_w, hh), border_radius=4)
+        screen.blit(hbg, (x, hy))
+
+        hfill = int(bar_w * hunger_ratio)
+        if hfill > 0:
+            if hunger_ratio < 0.25:
+                hcolor = (220, 60, 40)
+            elif hunger_ratio < 0.5:
+                hcolor = (220, 160, 40)
+            else:
+                hcolor = (180, 130, 60)
+            hbar = pygame.Surface((hfill, hh), pygame.SRCALPHA)
+            pygame.draw.rect(hbar, (*hcolor, 200), (0, 0, hfill, hh), border_radius=4)
+            screen.blit(hbar, (x, hy))
+
+        weapon_name = "Mains"
+        dmg = player.BARE_HANDS_DAMAGE
+        for slot in player.inventory.slots:
+            if slot and slot.item.type in ("weapon", "tool"):
+                weapon_name = slot.item.name[:16]
+                dmg = player.WEAPON_DAMAGE.get(slot.item.name, player.BARE_HANDS_DAMAGE)
+                break
+
+        wy = hy + hh + s(10)
+        wf = pygame.font.Font(None, s(18))
+        wt = wf.render(f"{weapon_name}  {dmg} DMG", True, (200, 170, 100))
+        screen.blit(wt, (x, wy))
+
         level = getattr(player, 'level', 1)
         xp = getattr(player, 'xp', 0)
         xp_needed = level * 100
         xp_ratio = min(1.0, xp / xp_needed) if xp_needed > 0 else 0
 
-        self._draw_text_shadow(screen, f"Nv.{level}",
-                               (panel_x + s(15), panel_y + s(65)), hud_font, COLORS['YELLOW'])
-        self._draw_text_shadow(screen, f"XP: {xp}/{xp_needed}",
-                               (panel_x + s(75), panel_y + s(68)), small_font, (180, 190, 220))
+        lf = pygame.font.Font(None, s(16))
+        screen.blit(lf.render(f"Nv.{level}", True, (140, 160, 220)), (x, wy + s(18)))
 
-        self._draw_bar(screen, panel_x + s(75), panel_y + s(85), s(120), s(12), xp_ratio, (80, 140, 240))
+        xp_w = int(bar_w * 0.5)
+        xp_h = s(6)
+        xp_x = x + s(40)
+        xp_y = wy + s(20)
+        pygame.draw.rect(screen, (20, 24, 38), (xp_x, xp_y, xp_w, xp_h), border_radius=3)
+        xp_fill = int(xp_w * xp_ratio)
+        if xp_fill > 0:
+            pygame.draw.rect(screen, (80, 120, 220), (xp_x, xp_y, xp_fill, xp_h), border_radius=3)
 
-        # ── Weapon indicator ──────────────────────────────────────────────
-        weapon_name = "Mains"
-        dmg = player.BARE_HANDS_DAMAGE
-        for slot in player.inventory.slots:
-            if slot and slot.item.type in ("weapon", "tool"):
-                weapon_name = slot.item.name[:14]
-                dmg = player.WEAPON_DAMAGE.get(slot.item.name, player.BARE_HANDS_DAMAGE)
-                break
-
-        self._draw_text_shadow(screen, f"{weapon_name} ({dmg})",
-                               (panel_x + s(320), panel_y + s(35)), small_font, COLORS['ORANGE'])
-
-        # ── Build mode indicator ──────────────────────────────────────────
-        if player.build_mode:
-            build_panel_y = panel_y + panel_height + s(8)
-            build_width = s(280)
-            self._draw_panel(screen, panel_x, build_panel_y, build_width, s(45))
-
-            badge_pulse = int(abs(math.sin(self.time * 2)) * 30) + 225
-            self._draw_text_shadow(screen, "CONSTRUCTION",
-                                   (panel_x + s(15), build_panel_y + s(12)), hud_font, (255, badge_pulse, 80))
-            self._draw_text_shadow(screen, f"Objet: {player.selected_building.upper()}",
-                                   (panel_x + s(15), build_panel_y + s(28)), small_font, (140, 180, 255))
+    def WHITE(self):
+        return (240, 242, 250)
