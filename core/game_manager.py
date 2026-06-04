@@ -8,7 +8,7 @@ import time
 from ui.inventory import InventoryUI
 from ui.menu import Menu
 from ui.pause_menu import PauseMenu
-from game.constants import COLORS, TARGET_FPS
+from game.constants import COLORS, TARGET_FPS, update_scale, s, SCALE_FACTOR
 from game.hud import HUD
 from game.render_manager import RenderManager
 from game.gameplay_manager import GameplayManager

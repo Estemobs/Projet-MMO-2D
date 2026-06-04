@@ -9,6 +9,26 @@ MAP_HEIGHT = 100
 ENEMY_COUNT = 20
 TARGET_FPS = 60
 
+# Système de scale adaptatif
+REFERENCE_WIDTH = 1920
+REFERENCE_HEIGHT = 1080
+SCALE_FACTOR = 1.0
+SCREEN_WIDTH = WINDOW_WIDTH
+SCREEN_HEIGHT = WINDOW_HEIGHT
+
+
+def update_scale(screen_width, screen_height):
+    """Met à jour le scale factor selon la taille de l'écran."""
+    global SCALE_FACTOR, SCREEN_WIDTH, SCREEN_HEIGHT
+    SCREEN_WIDTH = screen_width
+    SCREEN_HEIGHT = screen_height
+    SCALE_FACTOR = min(screen_width / REFERENCE_WIDTH, screen_height / REFERENCE_HEIGHT)
+
+
+def s(value):
+    """Scale une valeur selon la taille de l'écran."""
+    return int(value * SCALE_FACTOR)
+
 # Palette de couleurs moderne
 COLORS = {
     # Base
