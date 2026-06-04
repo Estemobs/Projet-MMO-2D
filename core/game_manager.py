@@ -31,25 +31,28 @@ class GameManager:
     def __init__(self):
         # État du jeu
         self.state = "menu"  # "menu", "playing", "paused"
-        
+
         # Initialisation basique
         # Créer un écran temporaire pour charger les paramètres
         temp_screen = pygame.display.set_mode((800, 600))
         temp_font = pygame.font.Font(None, 24)
-        
+
         # Charger les paramètres d'affichage
         temp_menu = Menu(temp_screen, temp_font)
-        
+
         if temp_menu.fullscreen:
             info = pygame.display.Info()
             self.screen = pygame.display.set_mode((info.current_w, info.current_h), pygame.FULLSCREEN)
             print(f"✅ Lancement en mode plein écran ({info.current_w}x{info.current_h})")
         else:
-            resolution = temp_menu.resolutions[temp_menu.current_resolution]
+            resolution = temp_menu.get_resolution()
             self.screen = pygame.display.set_mode(resolution)
             print(f"✅ Lancement en mode fenêtré ({resolution[0]}x{resolution[1]})")
-            
+
         pygame.display.set_caption("MMO 2D - Jeu de survie")
+
+        # Initialiser le scale adaptatif
+        update_scale(self.screen.get_width(), self.screen.get_height())
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 24)
         self.small_font = pygame.font.Font(None, 20)
