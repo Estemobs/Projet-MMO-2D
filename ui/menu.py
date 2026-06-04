@@ -238,9 +238,9 @@ class Menu:
 
     def _draw_title_block(self, title_text):
         """Dessine un panneau de titre moderne avec animation subtile."""
-        title_width = min(900, self.screen.get_width() - 80)
+        title_width = min(s(900), self.screen.get_width() - s(80))
         title_x = self.screen.get_width() // 2 - title_width // 2
-        title_rect = pygame.Rect(title_x, 30, title_width, 120)
+        title_rect = pygame.Rect(title_x, s(30), title_width, s(120))
 
         # Fond du panneau avec gradient
         panel_surface = pygame.Surface((title_rect.width, title_rect.height), pygame.SRCALPHA)
@@ -254,27 +254,35 @@ class Menu:
             pygame.draw.line(panel_surface, (r, g, b, alpha), (0, i), (title_rect.width, i))
         # Bordure dorée subtile
         border_alpha = int(180 + math.sin(self._menu_time * 1.5) * 30)
-        pygame.draw.rect(panel_surface, (150, 180, 255, border_alpha), panel_surface.get_rect(), 2, border_radius=18)
+        pygame.draw.rect(panel_surface, (150, 180, 255, border_alpha), panel_surface.get_rect(), 2, border_radius=s(18))
         self.screen.blit(panel_surface, title_rect.topleft)
 
         # Titre avec ombre portée
-        title_shadow = self.big_font.render(title_text, True, (0, 0, 0))
-        title = self.big_font.render(title_text, True, (240, 245, 255))
-        title_rect_pos = title.get_rect(center=(self.screen.get_width() // 2, 68))
+        title_font = pygame.font.Font(None, s(48))
+        title_shadow = title_font.render(title_text, True, (0, 0, 0))
+        title = title_font.render(title_text, True, (240, 245, 255))
+        title_rect_pos = title.get_rect(center=(self.screen.get_width() // 2, s(68)))
         self.screen.blit(title_shadow, (title_rect_pos.x + 2, title_rect_pos.y + 2))
         self.screen.blit(title, title_rect_pos)
 
         # Sous-titre avec animation de fondu
         subtitle_alpha = int(200 + math.sin(self._menu_time * 0.8) * 55)
-        subtitle = self.font.render("Survie  •  Exploration  •  Construction", True, (199, 214, 248))
+        subtitle_font = pygame.font.Font(None, s(24))
+        subtitle = subtitle_font.render("Survie  •  Exploration  •  Construction", True, (199, 214, 248))
         subtitle.set_alpha(subtitle_alpha)
-        subtitle_rect = subtitle.get_rect(center=(self.screen.get_width() // 2, 105))
+        subtitle_rect = subtitle.get_rect(center=(self.screen.get_width() // 2, s(105)))
         self.screen.blit(subtitle, subtitle_rect)
 
-        # Version
-        if self.version_label:
-            version_text = self.small_font.render(self.version_label, True, (140, 160, 200))
-            self.screen.blit(version_text, (title_x + title_width - self.VERSION_OFFSET_X, self.VERSION_OFFSET_Y))
+        # Version - auto-actualisée à chaque appel
+        try:
+            from systems.version import get_current_version
+            version_label = f"v{get_current_version()}"
+        except Exception:
+            version_label = ""
+        if version_label:
+            small_font = pygame.font.Font(None, s(20))
+            version_text = small_font.render(version_label, True, (140, 160, 200))
+            self.screen.blit(version_text, (title_x + title_width - s(55), s(38)))
     
     def draw_main_menu(self):
         """Dessine le menu principal"""
