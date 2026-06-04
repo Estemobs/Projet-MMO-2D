@@ -1,5 +1,6 @@
 import pygame
 from game.sound_manager import get_sound_manager
+from game.constants import s
 
 class Item:
     def __init__(self, name, item_type, description, stack_size=99, color=(255, 255, 255), sprite_name=None):
