@@ -596,10 +596,10 @@ class Menu:
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
-            button_width = 300
-            button_height = 60
-            start_y = 200
-            spacing = 80
+            button_width = s(300)
+            button_height = s(60)
+            start_y = s(200)
+            spacing = s(80)
             
             for i, button in enumerate(self.main_buttons):
                 x = self.screen.get_width()//2 - button_width//2
