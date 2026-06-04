@@ -124,15 +124,13 @@ Le workflow peut aussi être lancé à la main via l'onglet **Actions** (`workfl
 .
 ├── main.py
 ├── launch.py
-├── check.py
 ├── requirements.txt
 ├── core/          # Orchestration principale (GameManager, items)
 ├── game/          # Gameplay, monde, rendu, entites
 ├── ui/            # Inventaire, menus, pause
 ├── systems/       # Sauvegarde / chargement
-├── data/          # Config et donnees de sauvegarde
 ├── assets/        # Sprites et ressources
-├── scripts/       # Outils de maintenance, generation et tests
+├── scripts/       # Outils de maintenance et generation d'assets
 └── docs/          # Documentation technique
 ```
 

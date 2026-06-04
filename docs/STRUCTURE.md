@@ -6,35 +6,38 @@
 Projet-MMO-2D/
 ├── main.py                # Lancement direct du jeu
 ├── launch.py              # Lancement avec options (--check, --check-only)
-├── check.py               # Verification integrite uniquement
 ├── README.md
 ├── requirements.txt
-├── settings.json
 ├── assets/
 │   └── sprites/
 ├── core/
 │   ├── game_manager.py
 │   └── items.py
 ├── game/
-│   ├── core.py
 │   ├── gameplay_manager.py
 │   ├── render_manager.py
+│   ├── sound_manager.py
+│   ├── day_night.py
+│   ├── tutorial.py
+│   ├── particles.py
+│   ├── controls_hint.py
+│   ├── transitions.py
 │   └── ...
 ├── ui/
 │   ├── menu.py
 │   ├── inventory.py
 │   └── pause_menu.py
 ├── systems/
-│   └── save_system.py
-├── data/
-│   ├── config.py
-│   └── savegame.json
+│   ├── save_system.py
+│   ├── update_checker.py
+│   └── update_installer.py
 ├── scripts/
 │   ├── launch.py
-│   ├── test_performance.py
-│   └── ...
+│   ├── generate_natural_sprites.py
+│   ├── generate_missing_items.py
+│   └── create_large_characters.py
 └── docs/
-	└── STRUCTURE.md
+    └── STRUCTURE.md
 ```
 
 ## Points d'entree recommandes
@@ -52,9 +55,8 @@ python main.py
 ## Role des repertoires
 
 - `core/`: orchestration centrale de l'application.
-- `game/`: logique de gameplay, carte, camera, rendu, entites.
+- `game/`: logique de gameplay, carte, camera, rendu, entites, sons, particules.
 - `ui/`: menus, inventaire, interface de pause.
-- `systems/`: services techniques transverses (sauvegarde).
-- `scripts/`: outils utilitaires, generation assets, tests manuels.
-- `assets/`: ressources graphiques.
-- `data/`: configuration locale et donnees de session.
+- `systems/`: services techniques transverses (sauvegarde, mise a jour).
+- `scripts/`: outils utilitaires, generation d'assets.
+- `assets/`: ressources graphiques (sprites).
