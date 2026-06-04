@@ -207,7 +207,11 @@ class GameplayManager:
     def handle_player_death(self):
         """Gère la mort du joueur"""
         if self.player.health > 0:
-            return  # Le joueur n'est pas mort
+            return
+        
+        # Effet de mort
+        if hasattr(self, 'particle_manager'):
+            self.particle_manager.emit_death_effect(self.player.x + 16, self.player.y + 16)
         
         # Créer un marqueur de mort avec l'inventaire
         marker = DeathMarker(self.player.x, self.player.y, self.player.inventory)
