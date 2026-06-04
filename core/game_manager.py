@@ -264,6 +264,9 @@ class GameManager:
             # Déléguer la mise à jour au GameplayManager
             self.gameplay_manager.update(keys, mouse_buttons, mouse_pos, dt, self.menu.controls, self.camera, self.items)
             
+            # Mettre à jour le temps pour les animations de rendu
+            self.render_manager.update_time(dt)
+            
             # Synchroniser les références
             self.player = self.gameplay_manager.player
             self.enemies = self.gameplay_manager.enemies
