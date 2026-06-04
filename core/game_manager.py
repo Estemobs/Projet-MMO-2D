@@ -517,17 +517,26 @@ class GameManager:
                 current_resolution = self.menu.get_resolution()
                 self.screen = pygame.display.set_mode(current_resolution)
                 print(f"✅ Mode fenêtré activé ({current_resolution[0]}x{current_resolution[1]})")
-            
+
+            # Mettre à jour le scale
+            update_scale(self.screen.get_width(), self.screen.get_height())
+
             # Mettre à jour le menu avec le nouvel écran
             self.menu.screen = self.screen
-            
+
             # Si on est en jeu, mettre à jour les autres composants
             if self.state == "playing":
                 if hasattr(self, 'hud') and self.hud:
                     self.hud.screen = self.screen
                 if hasattr(self, 'camera') and self.camera:
                     self.camera.update_screen_size(self.screen.get_width(), self.screen.get_height())
-            
+                if hasattr(self, 'minimap') and self.minimap:
+                    self.minimap.update_screen_size(self.screen.get_width(), self.screen.get_height())
+                if hasattr(self, 'controls_hint') and self.controls_hint:
+                    self.controls_hint.update_screen_size(self.screen.get_width(), self.screen.get_height())
+                if hasattr(self, 'transitions') and self.transitions:
+                    self.transitions.update_screen_size(self.screen.get_width(), self.screen.get_height())
+
         except Exception as e:
             print(f"❌ Erreur lors du changement de mode d'affichage: {e}")
     
