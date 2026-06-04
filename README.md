@@ -31,19 +31,15 @@ python main.py
 
 - `main.py`: lance le jeu directement.
 - `launch.py`: lance le gestionnaire complet (options `--check`, `--check-only`).
-- `check.py`: execute uniquement les verifications d'integrite.
 
 ## Commandes utiles
 
 ```bash
 # Verifier l'installation
-python check.py
+python launch.py --check-only
 
 # Verifier puis lancer
 python launch.py --check
-
-# Test performance
-python scripts/test_performance.py
 ```
 
 ## Release automatique (.exe + .flatpak)
