@@ -468,23 +468,28 @@ class Menu:
         """Dessine le menu de sauvegarde ou de chargement"""
         self._draw_gradient_background()
         
+        title_font = pygame.font.Font(None, s(48))
+        option_font = pygame.font.Font(None, s(24))
+        small_font = pygame.font.Font(None, s(20))
+        btn_font = pygame.font.Font(None, s(32))
+        
         # Titre
         title_text = "Charger une partie" if menu_type == "load" else "Sauvegarder la partie"
-        title = self.big_font.render(title_text, True, self.WHITE)
-        title_rect = title.get_rect(center=(self.screen.get_width()//2, 50))
+        title = title_font.render(title_text, True, self.WHITE)
+        title_rect = title.get_rect(center=(self.screen.get_width()//2, s(50)))
         self.screen.blit(title, title_rect)
         
         # Instructions
         instruction = "Sélectionnez un slot de sauvegarde" if menu_type == "save" else "Sélectionnez une sauvegarde à charger"
-        instr_surf = self.font.render(instruction, True, self.GRAY)
-        instr_rect = instr_surf.get_rect(center=(self.screen.get_width()//2, 100))
+        instr_surf = option_font.render(instruction, True, self.GRAY)
+        instr_rect = instr_surf.get_rect(center=(self.screen.get_width()//2, s(100)))
         self.screen.blit(instr_surf, instr_rect)
         
         # Dessiner les slots de sauvegarde
-        slot_width = 700
-        slot_height = 120
-        start_y = 150
-        spacing = 140
+        slot_width = s(700)
+        slot_height = s(120)
+        start_y = s(150)
+        spacing = s(140)
         
         for i in range(3):
             x = self.screen.get_width()//2 - slot_width//2
@@ -500,79 +505,69 @@ class Menu:
                 border_color = self.GRAY
             
             # Dessiner le slot
-            pygame.draw.rect(self.screen, slot_color, (x, y, slot_width, slot_height))
-            pygame.draw.rect(self.screen, border_color, (x, y, slot_width, slot_height), 3)
+            slot_surf = pygame.Surface((slot_width, slot_height), pygame.SRCALPHA)
+            pygame.draw.rect(slot_surf, (*slot_color, 200), (0, 0, slot_width, slot_height), border_radius=s(8))
+            self.screen.blit(slot_surf, (x, y))
+            pygame.draw.rect(self.screen, border_color, (x, y, slot_width, slot_height), 2, border_radius=s(8))
             
             # Titre du slot
-            slot_title = self.button_font.render(f"Slot {i+1}", True, self.WHITE)
-            self.screen.blit(slot_title, (x + 20, y + 10))
+            slot_title = btn_font.render(f"Slot {i+1}", True, self.WHITE)
+            self.screen.blit(slot_title, (x + s(20), y + s(10)))
             
             if self.save_slots[i] and self.save_slots[i]["exists"]:
-                # Slot avec sauvegarde
                 save_info = self.save_slots[i]
                 
-                # Date et heure
                 date_text = self.format_date(save_info["timestamp"])
-                date_surf = self.small_font.render(f"Sauvegardé le: {date_text}", True, self.WHITE)
-                self.screen.blit(date_surf, (x + 20, y + 40))
+                date_surf = small_font.render(f"Sauvegardé le: {date_text}", True, self.WHITE)
+                self.screen.blit(date_surf, (x + s(20), y + s(40)))
                 
-                # Temps de jeu
-                playtime_surf = self.small_font.render(f"Temps de jeu: {save_info['playtime']}", True, self.WHITE)
-                self.screen.blit(playtime_surf, (x + 20, y + 60))
+                playtime_surf = small_font.render(f"Temps de jeu: {save_info['playtime']}", True, self.WHITE)
+                self.screen.blit(playtime_surf, (x + s(20), y + s(60)))
                 
-                # Monde
-                world_surf = self.small_font.render(f"Monde: {save_info['level_name']}", True, self.WHITE)
-                self.screen.blit(world_surf, (x + 20, y + 80))
+                world_surf = small_font.render(f"Monde: {save_info['level_name']}", True, self.WHITE)
+                self.screen.blit(world_surf, (x + s(20), y + s(80)))
                 
-                # Santé du joueur
-                health_surf = self.small_font.render(f"Santé: {save_info['player_health']}/100", True, self.GREEN)
-                self.screen.blit(health_surf, (x + 400, y + 40))
+                health_surf = small_font.render(f"Santé: {save_info['player_health']}/100", True, self.GREEN)
+                self.screen.blit(health_surf, (x + s(400), y + s(40)))
                 
-                # Actions
                 if menu_type == "load":
-                    action_text = "Entrée: Charger"
-                    action_surf = self.small_font.render(action_text, True, self.YELLOW)
-                    self.screen.blit(action_surf, (x + 400, y + 65))
-                    
-                    delete_text = "Suppr: Effacer"
-                    delete_surf = self.small_font.render(delete_text, True, self.RED)
-                    self.screen.blit(delete_surf, (x + 400, y + 85))
+                    action_surf = small_font.render("Entrée: Charger", True, self.YELLOW)
+                    self.screen.blit(action_surf, (x + s(400), y + s(65)))
+                    delete_surf = small_font.render("Suppr: Effacer", True, self.RED)
+                    self.screen.blit(delete_surf, (x + s(400), y + s(85)))
                 else:
-                    action_text = "Entrée: Écraser"
-                    action_surf = self.small_font.render(action_text, True, self.YELLOW)
-                    self.screen.blit(action_surf, (x + 400, y + 80))
+                    action_surf = small_font.render("Entrée: Écraser", True, self.YELLOW)
+                    self.screen.blit(action_surf, (x + s(400), y + s(80)))
                 
-                # Bouton de suppression (seulement en mode load)
                 if menu_type == "load":
-                    delete_button_x = x + slot_width - 100
-                    delete_button_y = y + 10
+                    delete_button_x = x + slot_width - s(100)
+                    delete_button_y = y + s(10)
                     delete_selected = selected and hasattr(self, 'delete_mode') and self.delete_mode
-                    self.draw_button("Supprimer", delete_button_x, delete_button_y, 80, 30, delete_selected)
+                    self.draw_button("Supprimer", delete_button_x, delete_button_y, s(80), s(30), delete_selected, btn_font)
                 
             else:
-                # Slot vide
-                empty_text = self.font.render("Slot vide", True, self.GRAY)
-                self.screen.blit(empty_text, (x + 20, y + 50))
+                empty_text = option_font.render("Slot vide", True, self.GRAY)
+                self.screen.blit(empty_text, (x + s(20), y + s(50)))
                 
                 if menu_type == "save":
-                    create_text = self.small_font.render("Entrée: Créer nouvelle sauvegarde", True, self.YELLOW)
-                    self.screen.blit(create_text, (x + 200, y + 80))
+                    create_text = small_font.render("Entrée: Créer nouvelle sauvegarde", True, self.YELLOW)
+                    self.screen.blit(create_text, (x + s(200), y + s(80)))
                 elif menu_type == "load":
-                    unavailable_text = self.small_font.render("Aucune sauvegarde disponible", True, self.RED)
-                    self.screen.blit(unavailable_text, (x + 200, y + 80))
+                    unavailable_text = small_font.render("Aucune sauvegarde disponible", True, self.RED)
+                    self.screen.blit(unavailable_text, (x + s(200), y + s(80)))
         
         # Bouton retour
-        button_y = start_y + 3 * spacing + 20
-        self.draw_button("Retour", 50, button_y, 120, 50, 
-                        self.selected_save_slot == 3)
+        button_y = start_y + 3 * spacing + s(20)
+        self.draw_button("Retour", s(50), button_y, s(120), s(50), 
+                        self.selected_save_slot == 3, btn_font)
         
         # Instructions de navigation
         if menu_type == "load":
             nav_text = "↑↓: Naviguer • Entrée: Charger • Suppr: Effacer • Échap: Retour"
         else:
             nav_text = "↑↓: Naviguer • Entrée: Sauvegarder • Échap: Retour"
-        nav_surf = self.small_font.render(nav_text, True, self.GRAY)
-        nav_rect = nav_surf.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - 30))
+        nav_surf = small_font.render(nav_text, True, self.GRAY)
+        nav_rect = nav_surf.get_rect(center=(self.screen.get_width()//2, self.screen.get_height() - s(30)))
         self.screen.blit(nav_surf, nav_rect)
     
     def handle_event(self, event):
