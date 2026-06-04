@@ -75,6 +75,11 @@ class ScreenTransition:
         self.target_screen = None
         self.screen_data = {}
 
+    def update_screen_size(self, screen_width, screen_height):
+        """Met à jour la taille d'écran."""
+        self.fade.screen_width = screen_width
+        self.fade.screen_height = screen_height
+
     def switch_to(self, target_screen, data=None):
         """Lance une transition vers un autre écran."""
         if self.fade.active:
