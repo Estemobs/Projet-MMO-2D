@@ -9,6 +9,7 @@ from .enemy import Enemy
 from .natural_world import NaturalWorldGenerator
 from .camera import Camera
 from .item_system import ItemManager
+from .particles import ParticleManager
 from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, ENEMY_COUNT
 
 class DeathMarker:
@@ -31,7 +32,8 @@ class GameplayManager:
         self.camera = None
         self.enemies = []
         self.death_markers = []
-        self.item_manager = ItemManager()  # Nouveau système d'items
+        self.item_manager = ItemManager()
+        self.particle_manager = ParticleManager()
         
         # Temps de jeu
         self.game_start_time = None
