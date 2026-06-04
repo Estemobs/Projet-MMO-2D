@@ -247,19 +247,20 @@ class InventoryUI:
     
     def draw_crafting_tab(self, recipes, inventory):
         """Dessine l'onglet crafting."""
-        start_x = 50
-        start_y = 110
+        small_font = pygame.font.Font(None, s(16))
+        start_x = s(50)
+        start_y = s(110)
         self.crafting_rects = []
 
         for i, recipe in enumerate(recipes[:10]):
-            y = start_y + i * 65
+            y = start_y + i * s(65)
             can_craft = recipe.can_craft(inventory)
-            recipe_rect = pygame.Rect(start_x, y, 450, 55)
+            recipe_rect = pygame.Rect(start_x, y, s(450), s(55))
 
             self.crafting_rects.append((i, recipe_rect, can_craft))
             selected = (i == self.selected_slot and self.current_tab == "crafting")
 
-            recipe_surface = pygame.Surface((450, 55), pygame.SRCALPHA)
+            recipe_surface = pygame.Surface((s(450), s(55)), pygame.SRCALPHA)
             if can_craft:
                 bg_color = (50, 100, 80, 150) if selected else (40, 80, 60, 120)
                 border_color = (100, 255, 150) if selected else (80, 200, 120)
@@ -268,25 +269,25 @@ class InventoryUI:
                 border_color = (180, 100, 100)
 
             border_width = 3 if selected else 2
-            pygame.draw.rect(recipe_surface, bg_color, recipe_surface.get_rect(), border_radius=6)
-            pygame.draw.rect(recipe_surface, border_color, recipe_surface.get_rect(), border_width, border_radius=6)
+            pygame.draw.rect(recipe_surface, bg_color, recipe_surface.get_rect(), border_radius=s(6))
+            pygame.draw.rect(recipe_surface, border_color, recipe_surface.get_rect(), border_width, border_radius=s(6))
 
             self.screen.blit(recipe_surface, recipe_rect)
 
-            name_text = self.font.render(f"🔨 {recipe.name}", True, (245, 247, 255) if can_craft else (180, 100, 100))
-            self.screen.blit(name_text, (start_x + 15, y + 5))
+            name_text = self.font.render(f"{recipe.name}", True, (245, 247, 255) if can_craft else (180, 100, 100))
+            self.screen.blit(name_text, (start_x + s(15), y + s(5)))
 
-            ingredients_text = ", ".join([f"{qty}× {name[:10]}" for name, qty in recipe.ingredients.items()])
+            ingredients_text = ", ".join([f"{qty}x {name[:10]}" for name, qty in recipe.ingredients.items()])
             ing_color = (200, 230, 200) if can_craft else (200, 100, 100)
-            ing_text = self.small_font.render(f"Requis: {ingredients_text}", True, ing_color)
-            self.screen.blit(ing_text, (start_x + 15, y + 28))
+            ing_text = small_font.render(f"Requis: {ingredients_text}", True, ing_color)
+            self.screen.blit(ing_text, (start_x + s(15), y + s(28)))
     
     def draw_equipment_tab(self, inventory):
         """Dessine l'onglet équipement."""
-        start_x = 200
-        start_y = 150
+        slot_size = self._get_slot_size()
+        start_x = s(200)
+        start_y = s(150)
         
-        # Stocker les positions des équipements pour les clics
         self.equipment_rects = []
         
         equipment_slots = ["weapon", "armor", "tool"]
@@ -294,17 +295,14 @@ class InventoryUI:
         
         for i, (slot_name, display_name) in enumerate(zip(equipment_slots, slot_names)):
             x = start_x
-            y = start_y + i * 80
+            y = start_y + i * s(80)
             
-            # Nom de l'emplacement
             name_text = self.font.render(display_name + ":", True, self.WHITE)
-            self.screen.blit(name_text, (x - 100, y + 10))
+            self.screen.blit(name_text, (x - s(100), y + s(10)))
             
-            # Stocker le rectangle pour les clics
-            slot_rect = pygame.Rect(x, y, self.slot_size, self.slot_size)
+            slot_rect = pygame.Rect(x, y, slot_size, slot_size)
             self.equipment_rects.append((slot_name, slot_rect))
             
-            # Emplacement
             selected = (i == self.selected_slot and self.current_tab == "equipment")
             self.draw_slot(x, y, inventory.equipment[slot_name], selected)
     
