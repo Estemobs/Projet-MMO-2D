@@ -340,8 +340,14 @@ class Menu:
     
     def load_save_slots_info(self):
         """Charge les informations des slots de sauvegarde"""
+        # Utiliser le même répertoire que SaveSystem
+        if os.getenv('FLATPAK_ID') == 'io.github.Estemobs.ProjetMMO2D':
+            save_dir = os.path.expanduser('~/.var/app/io.github.Estemobs.ProjetMMO2D/data/saves')
+        else:
+            save_dir = os.path.expanduser('~/ProjetMMO2D_saves')
+
         for i in range(3):
-            save_file = os.path.join("saves", f"save_slot_{i}.json")
+            save_file = os.path.join(save_dir, f"save_slot_{i}.json")
             if os.path.exists(save_file):
                 try:
                     with open(save_file, "r") as f:
