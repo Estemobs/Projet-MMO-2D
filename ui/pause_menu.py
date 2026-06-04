@@ -1,36 +1,27 @@
 """
-Menu de pause pour le jeu MMO 2D
+Menu de pause - gros, lisible, moderne
 """
 
 import pygame
 import math
-from game.constants import s
 
 
 class PauseMenu:
     def __init__(self, screen, font):
         self.screen = screen
-        self.font = font
         self.visible = False
-        self._menu_time = 0.0
-        
-        # Couleurs modernes (cohérentes avec le reste du jeu)
+        self._time = 0.0
+
         self.WHITE = (245, 247, 255)
         self.BLACK = (8, 12, 24)
         self.GRAY = (132, 144, 170)
         self.BLUE = (88, 138, 255)
         self.GREEN = (84, 214, 125)
         self.RED = (245, 98, 98)
-        self.PANEL = (16, 22, 40)
         self.BUTTON_DEFAULT = (62, 88, 148)
         self.BUTTON_SELECTED = (112, 165, 255)
         self.BUTTON_BORDER = (189, 214, 255)
-        
-        # Boutons
-        self.button_width = s(240)
-        self.button_height = s(50)
-        self.button_spacing = s(15)
-        
+
         self.selected_button = 0
         self.buttons = [
             {"text": "Reprendre", "action": "resume"},
@@ -38,155 +29,153 @@ class PauseMenu:
             {"text": "Menu principal", "action": "menu"},
             {"text": "Quitter", "action": "quit"}
         ]
-        
-        # Calculer les positions des boutons
-        self.setup_buttons()
-    
-    def setup_buttons(self):
-        """Configure les positions des boutons"""
-        screen_width = self.screen.get_width()
-        screen_height = self.screen.get_height()
-        
-        total_height = len(self.buttons) * self.button_height + (len(self.buttons) - 1) * self.button_spacing
-        start_y = (screen_height - total_height) // 2 + s(40)
-        
-        for i, button in enumerate(self.buttons):
-            button["rect"] = pygame.Rect(
-                (screen_width - self.button_width) // 2,
-                start_y + i * (self.button_height + self.button_spacing),
-                self.button_width,
-                self.button_height
-            )
-    
+
+    def _W(self):
+        return self.screen.get_width()
+
+    def _H(self):
+        return self.screen.get_height()
+
+    def _font(self, pct):
+        return max(14, int(self._H() * pct / 100))
+
     def draw(self):
-        """Dessine le menu de pause"""
         if not self.visible:
             return
-        
-        self._menu_time += 0.016
-        screen_width = self.screen.get_width()
-        screen_height = self.screen.get_height()
-        
-        # Fond semi-transparent avec le jeu visible en arrière-plan
-        overlay = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 160))
+
+        self._time += 0.016
+        w, h = self._W(), self._H()
+
+        # Fond semi-transparent
+        overlay = pygame.Surface((w, h), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
         self.screen.blit(overlay, (0, 0))
-        
-        # Panneau central
-        panel_width = s(350)
-        panel_height = s(400)
-        panel_x = (screen_width - panel_width) // 2
-        panel_y = (screen_height - panel_height) // 2
-        
-        # Fond du panneau avec gradient
-        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
-        for i in range(panel_height):
-            t = i / panel_height
-            alpha = int(230 - t * 20)
-            r = int(20 + t * 5)
-            g = int(28 + t * 5)
-            b = int(50 + t * 8)
-            pygame.draw.line(panel, (r, g, b, alpha), (0, i), (panel_width, i))
-        # Bordure lumineuse animée
-        border_alpha = int(100 + math.sin(self._menu_time * 2) * 30)
-        pygame.draw.rect(panel, (88, 138, 255, border_alpha), (0, 0, panel_width, panel_height), 2, border_radius=s(12))
+
+        # Panneau central - GRAND
+        panel_w = int(w * 0.35)
+        panel_h = int(h * 0.65)
+        panel_x = (w - panel_w) // 2
+        panel_y = (h - panel_h) // 2
+
+        panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        for i in range(panel_h):
+            t = i / panel_h
+            alpha = int(235 - t * 15)
+            r = int(18 + t * 5)
+            g = int(25 + t * 5)
+            b = int(45 + t * 8)
+            pygame.draw.line(panel, (r, g, b, alpha), (0, i), (panel_w, i))
+        border_alpha = int(120 + math.sin(self._time * 2) * 30)
+        pygame.draw.rect(panel, (88, 138, 255, border_alpha), (0, 0, panel_w, panel_h), 3, border_radius=16)
         self.screen.blit(panel, (panel_x, panel_y))
-        
-        # Titre "PAUSE"
-        title_font = pygame.font.Font(None, s(48))
-        title_text = title_font.render("PAUSE", True, self.WHITE)
-        title_rect = title_text.get_rect(center=(screen_width // 2, panel_y + s(50)))
-        self.screen.blit(title_text, title_rect)
-        
+
+        # Titre PAUSE - TRÈS GROS
+        title_font = pygame.font.Font(None, self._font(8))
+        title = title_font.render("PAUSE", True, self.WHITE)
+        title_rect = title.get_rect(center=(w // 2, panel_y + int(panel_h * 0.12)))
+        shadow = title_font.render("PAUSE", True, (0, 0, 0))
+        self.screen.blit(shadow, (title_rect.x + 3, title_rect.y + 3))
+        self.screen.blit(title, title_rect)
+
         # Ligne séparatrice
-        sep_surf = pygame.Surface((panel_width - s(40), 2), pygame.SRCALPHA)
-        pygame.draw.line(sep_surf, (88, 138, 255, 150), (0, 0), (panel_width - s(40), 0), 1)
-        self.screen.blit(sep_surf, (panel_x + s(20), panel_y + s(80)))
-        
-        # Dessiner les boutons
-        btn_font = pygame.font.Font(None, s(28))
+        sep_y = panel_y + int(panel_h * 0.2)
+        pygame.draw.line(self.screen, (88, 138, 255, 150), (panel_x + 30, sep_y), (panel_x + panel_w - 30, sep_y), 2)
+
+        # Boutons - GRANDS
+        btn_w = int(panel_w * 0.7)
+        btn_h = int(panel_h * 0.1)
+        btn_cx = w // 2
+        start_y = panel_y + int(panel_h * 0.28)
+        spacing = int(panel_h * 0.13)
+
         for i, button in enumerate(self.buttons):
-            if i == self.selected_button:
-                color = self.BUTTON_SELECTED
-                border_color = self.WHITE
-            else:
-                color = self.BUTTON_DEFAULT
-                border_color = self.GRAY
-            
-            # Fond du bouton avec effet glow
-            btn_surface = pygame.Surface((button["rect"].width, button["rect"].height), pygame.SRCALPHA)
-            pygame.draw.rect(btn_surface, (*color, 220), (0, 0, button["rect"].width, button["rect"].height), border_radius=s(8))
-            pygame.draw.rect(btn_surface, (*border_color, 180), (0, 0, button["rect"].width, button["rect"].height), 2, border_radius=s(8))
-            self.screen.blit(btn_surface, button["rect"])
-            
-            # Glow pour bouton sélectionné
-            if i == self.selected_button:
-                glow_surf = pygame.Surface((button["rect"].width + 12, button["rect"].height + 12), pygame.SRCALPHA)
-                pulse = int(abs(math.sin(self._menu_time * 3)) * 25) + 40
-                pygame.draw.rect(glow_surf, (112, 165, 255, pulse), (0, 0, button["rect"].width + 12, button["rect"].height + 12), border_radius=s(12))
-                self.screen.blit(glow_surf, (button["rect"].x - 6, button["rect"].y - 6))
-            
-            # Texte du bouton
-            text_color = (255, 255, 255) if i == self.selected_button else (200, 210, 235)
-            button_text = btn_font.render(button["text"], True, text_color)
-            text_rect = button_text.get_rect(center=button["rect"].center)
-            if i == self.selected_button:
-                shadow = btn_font.render(button["text"], True, (0, 0, 0))
-                self.screen.blit(shadow, (text_rect.x + 1, text_rect.y + 1))
-            self.screen.blit(button_text, text_rect)
-        
+            cy = start_y + i * spacing
+            selected = (i == self.selected_button)
+            self._draw_button(button["text"], btn_cx, cy, btn_w, btn_h, selected)
+
         # Instructions en bas
-        small_font = pygame.font.Font(None, s(18))
-        instructions = [
-            "Échap: Reprendre",
-            "↑↓: Naviguer",
-            "Entrée: Sélectionner"
-        ]
-        
-        for i, instruction in enumerate(instructions):
-            inst_text = small_font.render(instruction, True, self.GRAY)
-            inst_rect = inst_text.get_rect(center=(screen_width // 2, panel_y + panel_height - s(55) + i * s(18)))
-            self.screen.blit(inst_text, inst_rect)
-    
+        inst_font = pygame.font.Font(None, self._font(2))
+        inst = inst_font.render("Echap: Reprendre  |  Haut/Bas: Naviguer  |  Entree: Selectionner", True, self.GRAY)
+        inst_rect = inst.get_rect(center=(w // 2, panel_y + panel_h - int(panel_h * 0.08)))
+        self.screen.blit(inst, inst_rect)
+
+    def _draw_button(self, text, cx, cy, w, h, selected=False):
+        x = cx - w // 2
+        y = cy - h // 2
+        rect = pygame.Rect(x, y, w, h)
+        br = max(6, h // 5)
+
+        # Ombre
+        shadow = pygame.Surface((w, h + 8), pygame.SRCALPHA)
+        pygame.draw.rect(shadow, (0, 0, 0, 140 if selected else 80), (0, 4, w, h), border_radius=br)
+        self.screen.blit(shadow, (x, y))
+
+        # Glow
+        if selected:
+            glow = pygame.Surface((w + 16, h + 16), pygame.SRCALPHA)
+            pulse = int(abs(math.sin(self._time * 3)) * 25) + 45
+            pygame.draw.rect(glow, (112, 165, 255, pulse), (0, 0, w + 16, h + 16), border_radius=br + 4)
+            self.screen.blit(glow, (x - 8, y - 8))
+
+        # Fond
+        color = self.BUTTON_SELECTED if selected else self.BUTTON_DEFAULT
+        border_c = self.BUTTON_BORDER if selected else (80, 100, 150)
+        btn_surf = pygame.Surface((w, h), pygame.SRCALPHA)
+        pygame.draw.rect(btn_surf, (*color, 230), (0, 0, w, h), border_radius=br)
+        highlight = tuple(min(255, c + 40) for c in color)
+        pygame.draw.line(btn_surf, (*highlight, 150), (10, 2), (w - 10, 2), 1)
+        self.screen.blit(btn_surf, (x, y))
+        pygame.draw.rect(self.screen, border_c, rect, 2, border_radius=br)
+
+        # Texte
+        font = pygame.font.Font(None, self._font(3))
+        text_color = (255, 255, 255) if selected else (200, 210, 235)
+        text_surf = font.render(text, True, text_color)
+        text_rect = text_surf.get_rect(center=(cx, cy))
+        if selected:
+            shadow_t = font.render(text, True, (0, 0, 0))
+            self.screen.blit(shadow_t, (text_rect.x + 2, text_rect.y + 2))
+        self.screen.blit(text_surf, text_rect)
+
+        return rect
+
     def handle_event(self, event):
-        """Gère les événements du menu de pause"""
         if not self.visible:
             return None
-        
-        action = None
-        
-        # Gestion des clics de souris
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                mouse_pos = pygame.mouse.get_pos()
-                for i, button in enumerate(self.buttons):
-                    if button["rect"].collidepoint(mouse_pos):
-                        self.selected_button = i
-                        action = button["action"]
-                        break
-        
-        # Gestion du clavier
+
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            mouse_pos = event.pos
+            w, h = self._W(), self._H()
+            panel_w = int(w * 0.35)
+            panel_h = int(h * 0.65)
+            btn_w = int(panel_w * 0.7)
+            btn_h = int(panel_h * 0.1)
+            btn_cx = w // 2
+            start_y = (h - panel_h) // 2 + int(panel_h * 0.28)
+            spacing = int(panel_h * 0.13)
+
+            for i, button in enumerate(self.buttons):
+                cy = start_y + i * spacing
+                rect = pygame.Rect(btn_cx - btn_w // 2, cy - btn_h // 2, btn_w, btn_h)
+                if rect.collidepoint(mouse_pos):
+                    self.selected_button = i
+                    return button["action"]
+
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                action = "resume"
-            
+                return "resume"
             elif event.key == pygame.K_UP:
                 self.selected_button = (self.selected_button - 1) % len(self.buttons)
-            
             elif event.key == pygame.K_DOWN:
                 self.selected_button = (self.selected_button + 1) % len(self.buttons)
-            
             elif event.key == pygame.K_RETURN:
-                action = self.buttons[self.selected_button]["action"]
-        
-        return action
-    
+                return self.buttons[self.selected_button]["action"]
+
+        return None
+
     def show(self):
-        """Affiche le menu de pause"""
         self.visible = True
         self.selected_button = 0
-        self.setup_buttons()  # Recalculer les positions
-    
+
     def hide(self):
-        """Cache le menu de pause"""
         self.visible = False

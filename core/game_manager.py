@@ -407,18 +407,6 @@ class GameManager:
         # Dessiner l'interface d'inventaire (une seule fois)
         self.inventory_ui.draw(self.player.inventory, self.recipes)
         
-        # Contrôles en bas de l'écran
-        context = "normal"
-        if self.inventory_ui.visible:
-            context = "inventory"
-        elif self.player.build_mode:
-            context = "build"
-        self.controls_hint.draw(self.screen, context)
-        
-        # Instructions (uniquement quand l'inventaire est fermé)
-        if not self.inventory_ui.visible:
-            self._draw_instructions()
-        
         # Menu pause (par-dessus tout)
         self.pause_menu.draw()
 
