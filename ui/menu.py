@@ -622,22 +622,26 @@ class Menu:
             elif event.key == pygame.K_UP:
                 self.selected_button = max(0, self.selected_button - 1)
             elif event.key == pygame.K_DOWN:
-                self.selected_button = min(4, self.selected_button + 1)  # 0-4: résolution(</>), fullscreen, contrôles, retour
+                self.selected_button = min(4, self.selected_button + 1)
             elif event.key == pygame.K_LEFT:
-                if self.selected_button == 0 or self.selected_button == 1:  # Résolution
-                    self.current_resolution = (self.current_resolution - 1) % len(self.resolutions)
+                if self.selected_button <= 1:  # Taille de fenêtre
+                    self.current_scale_index = (self.current_scale_index - 1) % len(self.window_scales)
                     self.save_settings()
+                    return "toggle_fullscreen"  # Forcer le redémarrage de l'affichage
             elif event.key == pygame.K_RIGHT:
-                if self.selected_button == 0 or self.selected_button == 1:  # Résolution
-                    self.current_resolution = (self.current_resolution + 1) % len(self.resolutions)
+                if self.selected_button <= 1:  # Taille de fenêtre
+                    self.current_scale_index = (self.current_scale_index + 1) % len(self.window_scales)
                     self.save_settings()
+                    return "toggle_fullscreen"
             elif event.key == pygame.K_RETURN:
-                if self.selected_button == 0:  # Résolution précédente
-                    self.current_resolution = (self.current_resolution - 1) % len(self.resolutions)
+                if self.selected_button == 0:  # Taille précédente
+                    self.current_scale_index = (self.current_scale_index - 1) % len(self.window_scales)
                     self.save_settings()
-                elif self.selected_button == 1:  # Résolution suivante
-                    self.current_resolution = (self.current_resolution + 1) % len(self.resolutions)
+                    return "toggle_fullscreen"
+                elif self.selected_button == 1:  # Taille suivante
+                    self.current_scale_index = (self.current_scale_index + 1) % len(self.window_scales)
                     self.save_settings()
+                    return "toggle_fullscreen"
                 elif self.selected_button == 2:  # Basculer plein écran
                     self.fullscreen = not self.fullscreen
                     self.save_settings()
@@ -653,24 +657,26 @@ class Menu:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
             
-            # Clic sur les boutons de résolution
-            if pygame.Rect(400, 115, 40, 30).collidepoint(mouse_pos):  # Bouton <
-                self.current_resolution = (self.current_resolution - 1) % len(self.resolutions)
+            # Clic sur les boutons de taille
+            if pygame.Rect(s(450), s(115), s(40), s(30)).collidepoint(mouse_pos):
+                self.current_scale_index = (self.current_scale_index - 1) % len(self.window_scales)
                 self.save_settings()
-            elif pygame.Rect(450, 115, 40, 30).collidepoint(mouse_pos):  # Bouton >
-                self.current_resolution = (self.current_resolution + 1) % len(self.resolutions)
+                return "toggle_fullscreen"
+            elif pygame.Rect(s(500), s(115), s(40), s(30)).collidepoint(mouse_pos):
+                self.current_scale_index = (self.current_scale_index + 1) % len(self.window_scales)
                 self.save_settings()
+                return "toggle_fullscreen"
             # Clic sur le bouton fullscreen
-            elif pygame.Rect(400, 165, 100, 30).collidepoint(mouse_pos):
+            elif pygame.Rect(s(450), s(165), s(100), s(30)).collidepoint(mouse_pos):
                 self.fullscreen = not self.fullscreen
                 self.save_settings()
                 return "toggle_fullscreen"
             # Clic sur le bouton contrôles
-            elif pygame.Rect(400, 215, 100, 30).collidepoint(mouse_pos):
+            elif pygame.Rect(s(450), s(215), s(100), s(30)).collidepoint(mouse_pos):
                 self.current_menu = "controls"
                 self.controls_menu_selected = 0
             # Clic sur le bouton retour
-            elif pygame.Rect(50, self.screen.get_height() - 80, 100, 50).collidepoint(mouse_pos):
+            elif pygame.Rect(s(50), self.screen.get_height() - s(80), s(100), s(50)).collidepoint(mouse_pos):
                 self.current_menu = "main"
                 self.selected_button = 0
                 self.save_settings()
