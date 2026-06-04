@@ -1,15 +1,13 @@
 """
-Gestionnaire principal du jeu MMO 2D
-Mode survivor - Dernier en vie
+Game Manager - Battle Royale
 """
 
 import pygame
-import time
 
 from ui.inventory import InventoryUI
 from ui.menu import Menu
 from ui.pause_menu import PauseMenu
-from game.constants import COLORS, TARGET_FPS, update_scale, s
+from game.constants import COLORS, TARGET_FPS, update_scale
 from game.hud import HUD
 from game.render_manager import RenderManager
 from game.gameplay_manager import GameplayManager
@@ -18,8 +16,7 @@ from game.sprite_manager import get_sprite_manager
 from game.sound_manager import get_sound_manager
 from game.transitions import ScreenTransition
 from game.controls_hint import ControlsHint
-from core.items import create_items, create_recipes
-from systems.save_system import SaveSystem
+from core.items import create_items
 
 pygame.init()
 
@@ -39,14 +36,12 @@ class GameManager:
             resolution = temp_menu.get_resolution()
             self.screen = pygame.display.set_mode(resolution)
 
-        pygame.display.set_caption("Survival - Dernier en vie")
+        pygame.display.set_caption("Battle Royale - Dernier en vie")
         update_scale(self.screen.get_width(), self.screen.get_height())
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 24)
-        self.small_font = pygame.font.Font(None, 20)
 
         self.items = create_items()
-        self.recipes = create_recipes(self.items)
 
         self.sprite_manager = get_sprite_manager()
         self.sound_manager = get_sound_manager()
@@ -62,24 +57,10 @@ class GameManager:
 
         self.controls_hint = ControlsHint(self.screen.get_width(), self.screen.get_height())
 
-        self.tutorial = None
-
         self.world_map = None
         self.player = None
         self.camera = None
         self.hud = None
-        self.enemies = []
-
-        self.game_start_time = None
-        self.total_playtime = 0
-
-        self.save_system = SaveSystem()
-
-        self.show_save_message = False
-        self.save_message_timer = 0.0
-
-        self.auto_save_interval = 300.0
-        self.auto_save_timer = 0.0
 
         self.running = True
 
@@ -89,47 +70,15 @@ class GameManager:
         self.world_map = self.gameplay_manager.world_map
         self.player = self.gameplay_manager.player
         self.camera = self.gameplay_manager.camera
-        self.enemies = self.gameplay_manager.enemies
 
         self.hud = HUD(self.font)
         self.minimap.generate_world_minimap(self.world_map)
-
-        self.tutorial = None
-        self.gameplay_manager.tutorial = None
 
         self._give_starting_items()
         self.state = "playing"
 
     def _give_starting_items(self):
-        self.player.inventory.add_item(self.items["apple"], 3)
-        if "wooden_sword" in self.items:
-            self.player.inventory.add_item(self.items["wooden_sword"], 1)
-
-    def save_game(self, slot_number=0):
-        if self.player is None:
-            return False
-        return self.save_system.save_game(
-            slot_number, self.player, self.world_map,
-            self.enemies, self.gameplay_manager.total_playtime
-        )
-
-    def load_game(self, slot_number=0):
-        game_data = self.save_system.load_game(slot_number)
-        if not game_data:
-            return False
-
-        self.gameplay_manager.load_game_data(game_data, self.screen.get_width(), self.screen.get_height())
-
-        self.world_map = self.gameplay_manager.world_map
-        self.player = self.gameplay_manager.player
-        self.camera = self.gameplay_manager.camera
-        self.enemies = self.gameplay_manager.enemies
-
-        self.hud = HUD(self.font)
-        self.minimap.generate_world_minimap(self.world_map)
-
-        self.state = "playing"
-        return True
+        self.player.inventory.add_item(self.items["bandage"], 2)
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -144,10 +93,6 @@ class GameManager:
         action = self.menu.handle_event(event)
         if action == "new_game":
             self.init_game()
-        elif action == "load_menu":
-            self.menu.current_menu = "load_menu"
-            self.menu.selected_save_slot = 0
-            self.menu.refresh_save_slots()
         elif action == "options":
             self.menu.current_menu = "options"
             self.menu.selected_button = 0
@@ -158,34 +103,11 @@ class GameManager:
         elif action and action.startswith("remap_control_"):
             control_key = action.split("remap_control_")[-1]
             self._remap_control(control_key)
-        elif action and action.startswith("load_slot_"):
-            slot_number = int(action.split("_")[-1])
-            if self.load_game(slot_number):
-                print(f"Partie chargee depuis le slot {slot_number}")
-            else:
-                print(f"Impossible de charger le slot {slot_number}")
-        elif action and action.startswith("save_slot_"):
-            slot_number = int(action.split("_")[-1])
-            if self.save_game(slot_number):
-                self.menu.refresh_save_slots()
-                self.state = "playing"
-                self.show_save_message = True
-                self.save_message_timer = 3.0
-        elif action and action.startswith("delete_slot_"):
-            slot_number = int(action.split("_")[-1])
-            if self.menu.delete_save_slot(slot_number):
-                self.menu.refresh_save_slots()
 
     def _handle_game_events(self, event):
         if self.pause_menu.visible:
             action = self.pause_menu.handle_event(event)
             if action == "resume":
-                self.pause_menu.hide()
-            elif action == "save":
-                if self.save_game():
-                    self.show_save_message = True
-                    self.save_message_timer = 2.0
-                    self.sound_manager.play('save')
                 self.pause_menu.hide()
             elif action == "menu":
                 self.pause_menu.hide()
@@ -198,20 +120,16 @@ class GameManager:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.pause_menu.show()
-            elif event.key == pygame.K_F5:
-                if self.save_game():
-                    self.show_save_message = True
-                    self.save_message_timer = 3.0
-            elif event.key == self.menu.controls["inventory"]:
+            elif event.key == pygame.K_i:
                 self.inventory_ui.toggle_visibility()
-            elif event.key == pygame.K_h:
-                result = self.player.eat_best_food()
-                if result:
-                    food_name, heal = result
-                    print(f"{food_name} mange! +{heal} PV")
+            elif event.key == pygame.K_f:
+                if self.player:
+                    result = self.player.eat_best_food()
+                    if result:
+                        food_name, heal = result
 
         if self.inventory_ui.visible:
-            self.inventory_ui.handle_event(event, self.player.inventory, self.recipes)
+            self.inventory_ui.handle_event(event, self.player.inventory, None)
 
     def update(self, dt):
         if self.state == "playing":
@@ -226,19 +144,6 @@ class GameManager:
                 self.hud.update(dt)
 
             self.player = self.gameplay_manager.player
-            self.enemies = self.gameplay_manager.enemies
-
-            self.auto_save_timer += dt
-            if self.auto_save_timer >= self.auto_save_interval:
-                self.auto_save_timer = 0.0
-                self.save_game(0)
-                self.show_save_message = True
-                self.save_message_timer = 2.0
-
-            if self.show_save_message:
-                self.save_message_timer -= dt
-                if self.save_message_timer <= 0:
-                    self.show_save_message = False
 
     def draw(self):
         self.screen.fill(COLORS["BLACK"])
@@ -251,14 +156,14 @@ class GameManager:
     def _draw_game(self):
         self.render_manager.draw_world(self.world_map, self.camera)
         self.render_manager.draw_entities(
-            self.player, self.enemies, [], self.camera,
-            self.gameplay_manager.item_manager
+            self.player, self.gameplay_manager.enemies, self.gameplay_manager.death_markers,
+            self.camera, self.gameplay_manager.item_manager
         )
 
         if hasattr(self.gameplay_manager, 'particle_manager'):
             self.gameplay_manager.particle_manager.draw(self.screen, self.camera)
 
-        self.minimap.draw(self.screen, self.player, self.enemies, self.camera, [])
+        self.minimap.draw(self.screen, self.player, self.gameplay_manager.enemies, self.camera, self.gameplay_manager.death_markers)
         self.hud.draw(self.screen, self.player, self)
 
         if self.player.attack_feedback:
@@ -267,11 +172,9 @@ class GameManager:
         if self.gameplay_manager.show_death_message:
             self._draw_death_message()
 
-        if self.show_save_message:
-            self._draw_save_confirmation()
-
-        self.inventory_ui.draw(self.player.inventory, self.recipes)
+        self.inventory_ui.draw(self.player.inventory, None)
         self.pause_menu.draw()
+        self.controls_hint.draw(self.screen, self.player, self.menu.controls)
 
     def _draw_attack_feedback(self):
         text, _ = self.player.attack_feedback
@@ -289,17 +192,6 @@ class GameManager:
             x = self.screen.get_width() // 2 - surf.get_width() // 2
             y = self.screen.get_height() // 3 + i * 50
             self.screen.blit(surf, (x, y))
-
-    def _draw_save_confirmation(self):
-        w, h = self.screen.get_width(), self.screen.get_height()
-        big_font = pygame.font.Font(None, 48)
-        ts = big_font.render("Sauvegarde!", True, COLORS["GREEN"])
-        tr = ts.get_rect(center=(w // 2, int(h * 0.15)))
-        bg = pygame.Surface((tr.width + 40, tr.height + 20), pygame.SRCALPHA)
-        pygame.draw.rect(bg, (10, 20, 30, 200), bg.get_rect(), border_radius=8)
-        pygame.draw.rect(bg, COLORS["GREEN"], bg.get_rect(), 2, border_radius=8)
-        self.screen.blit(bg, (tr.x - 20, tr.y - 10))
-        self.screen.blit(ts, tr)
 
     def _toggle_fullscreen(self):
         try:
@@ -354,11 +246,16 @@ class GameManager:
             pygame.draw.rect(self.screen, (40, 40, 40), (dx, dy, dw, dh))
             pygame.draw.rect(self.screen, (255, 255, 255), (dx, dy, dw, dh), 3)
 
-            title_surf = self.font.render(f"Modifier: {self.menu.control_names[control_key]}", True, (255, 255, 255))
+            control_names = {
+                "move_up": "Monter", "move_down": "Descendre",
+                "move_left": "Gauche", "move_right": "Droite",
+                "inventory": "Inventaire",
+            }
+            title_surf = self.font.render(f"Modifier: {control_names.get(control_key, control_key)}", True, (255, 255, 255))
             self.screen.blit(title_surf, title_surf.get_rect(center=(dx + dw // 2, dy + 40)))
             wait_surf = self.font.render("Appuyez sur une touche...", True, (255, 255, 0))
             self.screen.blit(wait_surf, wait_surf.get_rect(center=(dx + dw // 2, dy + 80)))
-            cancel_surf = self.small_font.render("(Echap pour annuler)", True, (200, 200, 200))
+            cancel_surf = self.font.render("(Echap pour annuler)", True, (200, 200, 200))
             self.screen.blit(cancel_surf, cancel_surf.get_rect(center=(dx + dw // 2, dy + 110)))
 
             pygame.display.flip()
@@ -372,14 +269,3 @@ class GameManager:
             self.draw()
             self.transitions.update()
         pygame.quit()
-
-    def get_playtime(self):
-        if self.gameplay_manager.game_start_time and self.state == "playing":
-            current_session = time.time() - self.gameplay_manager.game_start_time
-            total_time = self.gameplay_manager.total_playtime + current_session
-        else:
-            total_time = self.gameplay_manager.total_playtime
-        hours = int(total_time // 3600)
-        minutes = int((total_time % 3600) // 60)
-        seconds = int(total_time % 60)
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
