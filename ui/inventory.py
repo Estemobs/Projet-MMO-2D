@@ -223,23 +223,23 @@ class InventoryUI:
     
     def draw_inventory_tab(self, inventory):
         """Dessine l'onglet inventaire."""
-        start_x = 50
-        start_y = 100
+        slot_size = self._get_slot_size()
+        slot_padding = self._get_slot_padding()
+        start_x = s(50)
+        start_y = s(100)
         cols = 9
         rows = 4
         
-        # Stocker les positions des slots pour les clics
         self.inventory_slots_rects = []
         
         for i in range(min(inventory.size, cols * rows)):
             row = i // cols
             col = i % cols
             
-            x = start_x + col * (self.slot_size + self.slot_padding)
-            y = start_y + row * (self.slot_size + self.slot_padding)
+            x = start_x + col * (slot_size + slot_padding)
+            y = start_y + row * (slot_size + slot_padding)
             
-            # Stocker le rectangle pour les clics
-            slot_rect = pygame.Rect(x, y, self.slot_size, self.slot_size)
+            slot_rect = pygame.Rect(x, y, slot_size, slot_size)
             self.inventory_slots_rects.append((i, slot_rect))
             
             selected = (i == self.selected_slot and self.current_tab == "inventory")
