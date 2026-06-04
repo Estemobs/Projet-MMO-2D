@@ -103,109 +103,77 @@ class MiniMap:
         self.y = 10  # Petite marge en haut
     
     def draw(self, screen, player, enemies=None, camera=None, death_markers=None):
-        """Dessine la minimap"""
-        # Fond de la minimap avec une bordure pour remplir l'espace
-        background_rect = pygame.Rect(self.x - 5, self.y, self.width + 5, self.height + 5)
-        pygame.draw.rect(screen, (20, 20, 20), background_rect)  # Fond gris foncé
+        """Dessine la minimap avec style amélioré."""
+        import math
         
-        # Fond de la minimap
-        pygame.draw.rect(screen, (0, 0, 0), (self.x, self.y, self.width, self.height))
-        pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.width, self.height), 2)
-        
+        # Ombre portée de la minimap
+        shadow_surf = pygame.Surface((self.width + 12, self.height + 12), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 80), (0, 0, self.width + 12, self.height + 12), border_radius=8)
+        screen.blit(shadow_surf, (self.x - 6, self.y - 4))
+
+        # Fond semi-transparent
+        bg_surf = pygame.Surface((self.width + 8, self.height + 8), pygame.SRCALPHA)
+        pygame.draw.rect(bg_surf, (10, 14, 28, 200), (0, 0, self.width + 8, self.height + 8), border_radius=8)
+        screen.blit(bg_surf, (self.x - 4, self.y - 4))
+
         # Dessiner le monde si disponible
         if self.world_surface:
-            screen.blit(self.world_surface, (self.x, self.y))
-        
-        # Dessiner les marqueurs de mort passés en paramètre
+            # Masque arrondi pour la minimap
+            mask_surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            mask_surf.blit(self.world_surface, (0, 0))
+            pygame.draw.rect(mask_surf, (0, 0, 0, 0), (0, 0, self.width, self.height), 0, border_radius=6)
+            screen.blit(mask_surf, (self.x, self.y))
+
+        # Bordure extérieure
+        pygame.draw.rect(screen, (60, 80, 130), (self.x - 4, self.y - 4, self.width + 8, self.height + 8), 1, border_radius=8)
+
+        # Dessiner les marqueurs de mort
         if death_markers:
             for marker in death_markers:
                 marker_mini_x, marker_mini_y = self.world_to_minimap(marker.x, marker.y)
-                
-                # Dessiner un fond plus visible pour la tombe
-                pygame.draw.circle(screen, (50, 50, 50), 
-                                 (self.x + marker_mini_x, self.y + marker_mini_y), 6)
-                pygame.draw.circle(screen, (200, 200, 200), 
-                                 (self.x + marker_mini_x, self.y + marker_mini_y), 5)
-                
-                # Dessiner une tombe stylisée
-                tomb_x = self.x + marker_mini_x
-                tomb_y = self.y + marker_mini_y
-                
-                # Base de la tombe
-                pygame.draw.rect(screen, (80, 80, 80), 
-                               (tomb_x - 3, tomb_y + 2, 6, 2))
-                
-                # Pierre tombale
-                pygame.draw.rect(screen, (120, 120, 120), 
-                               (tomb_x - 2, tomb_y - 3, 4, 5))
-                
-                # Croix sur la tombe
-                pygame.draw.line(screen, (255, 255, 255), 
-                               (tomb_x, tomb_y - 2), (tomb_x, tomb_y + 1), 1)
-                pygame.draw.line(screen, (255, 255, 255), 
-                               (tomb_x - 1, tomb_y - 1), (tomb_x + 1, tomb_y - 1), 1)
-                
-                # Ajouter un effet de brillance
-                pygame.draw.circle(screen, (255, 255, 0, 100), 
-                                 (self.x + marker_mini_x, self.y + marker_mini_y), 8, 1)
-        
-        # Dessiner les marqueurs de mort stockés localement (rétro-compatibilité)
-        for marker_x, marker_y in self.death_markers:
-            # Dessiner un fond plus visible pour la tombe
-            pygame.draw.circle(screen, (50, 50, 50), 
-                             (self.x + marker_x, self.y + marker_y), 6)
-            pygame.draw.circle(screen, (200, 200, 200), 
-                             (self.x + marker_x, self.y + marker_y), 5)
-            
-            # Dessiner une tombe stylisée
-            tomb_x = self.x + marker_x
-            tomb_y = self.y + marker_y
-            
-            # Base de la tombe
-            pygame.draw.rect(screen, (80, 80, 80), 
-                           (tomb_x - 3, tomb_y + 2, 6, 2))
-            
-            # Pierre tombale
-            pygame.draw.rect(screen, (120, 120, 120), 
-                           (tomb_x - 2, tomb_y - 3, 4, 5))
-            
-            # Croix sur la tombe
-            pygame.draw.line(screen, (255, 255, 255), 
-                           (tomb_x, tomb_y - 2), (tomb_x, tomb_y + 1), 1)
-            pygame.draw.line(screen, (255, 255, 255), 
-                           (tomb_x - 1, tomb_y - 1), (tomb_x + 1, tomb_y - 1), 1)
-            
-            # Ajouter un effet de brillance
-            pygame.draw.circle(screen, (255, 255, 0, 100), 
-                             (self.x + marker_x, self.y + marker_y), 8, 1)
-        
+                mx = self.x + marker_mini_x
+                my = self.y + marker_mini_y
+
+                # Lueur pulsante
+                glow_alpha = int(abs(math.sin(pygame.time.get_ticks() / 300)) * 60) + 40
+                glow_surf = pygame.Surface((14, 14), pygame.SRCALPHA)
+                pygame.draw.circle(glow_surf, (255, 200, 80, glow_alpha), (7, 7), 7)
+                screen.blit(glow_surf, (mx - 7, my - 7))
+
+                # Tombe miniature
+                pygame.draw.rect(screen, (80, 75, 70), (mx - 2, my - 2, 4, 5))
+                pygame.draw.line(screen, (200, 195, 185), (mx, my - 1), (mx, my + 2), 1)
+                pygame.draw.line(screen, (200, 195, 185), (mx - 1, my), (mx + 1, my), 1)
+
         # Dessiner les ennemis
         if enemies:
             for enemy in enemies:
                 enemy_mini_x, enemy_mini_y = self.world_to_minimap(enemy.x, enemy.y)
-                pygame.draw.circle(screen, self.colors['enemy'], 
+                pygame.draw.circle(screen, (220, 60, 60),
                                  (self.x + enemy_mini_x, self.y + enemy_mini_y), 2)
-        
-        # Dessiner le joueur
+
+        # Dessiner le joueur (point bleu brillant)
         if player:
             player_mini_x, player_mini_y = self.world_to_minimap(player.x, player.y)
-            pygame.draw.circle(screen, self.colors['player'], 
-                             (self.x + player_mini_x, self.y + player_mini_y), 3)
-        
+            px = self.x + player_mini_x
+            py = self.y + player_mini_y
+            # Halo
+            pygame.draw.circle(screen, (60, 120, 255), (px, py), 4)
+            pygame.draw.circle(screen, (120, 180, 255), (px, py), 2)
+
         # Dessiner la zone visible (caméra)
         if camera:
-            # Calculer la zone visible sur la minimap
             camera_mini_x = int(camera.x * self.scale)
             camera_mini_y = int(camera.y * self.scale)
             camera_mini_w = int(camera.screen_width * self.scale)
             camera_mini_h = int(camera.screen_height * self.scale)
-            
-            # Dessiner le rectangle de la caméra
-            pygame.draw.rect(screen, (255, 255, 0), 
-                           (self.x + camera_mini_x, self.y + camera_mini_y, 
-                            camera_mini_w, camera_mini_h), 1)
-        
+            view_rect = pygame.Rect(
+                self.x + camera_mini_x, self.y + camera_mini_y,
+                camera_mini_w, camera_mini_h
+            )
+            pygame.draw.rect(screen, (255, 255, 100), view_rect, 1)
+
         # Titre de la minimap
-        font = pygame.font.Font(None, 16)
-        title = font.render("MiniMap", True, (255, 255, 255))
-        screen.blit(title, (self.x + 5, self.y - 20))
+        font = pygame.font.Font(None, 14)
+        title = font.render("Carte", True, (140, 160, 200))
+        screen.blit(title, (self.x + 6, self.y - 18))
