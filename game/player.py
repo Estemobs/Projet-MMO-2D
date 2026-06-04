@@ -1,11 +1,5 @@
 import random
-import os
-import sys
-
-# Ajouter le répertoire parent au path pour les imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
+import pygame
 
 from ui.inventory import Inventory
 from .constants import MAP_WIDTH, MAP_HEIGHT, TILE_SIZE
@@ -306,7 +300,6 @@ class Player:
         # Gestion du déplacement avec les contrôles configurés
         if controls is None:
             # Contrôles par défaut si aucun contrôle personnalisé n'est fourni
-            import pygame
             controls = {
                 "move_up": pygame.K_w,
                 "move_down": pygame.K_s,
