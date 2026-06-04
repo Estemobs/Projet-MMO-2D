@@ -1,96 +1,37 @@
 """
-Système d'items et de crafting pour le jeu MMO 2D
+Items Battle Royale - Armes, Armures, Soins
 """
 
 from ui.inventory import Item, CraftingRecipe
 from game.constants import COLORS
 
-class ItemDatabase:
-    """Base de données des items du jeu"""
-    
-    def __init__(self):
-        self.items = create_items()
-        self.recipes = create_recipes(self.items)
-    
-    def get_item(self, name):
-        """Récupère un item par son nom"""
-        return self.items.get(name)
-    
-    def get_recipe(self, item_name):
-        """Récupère une recette par le nom de l'item produit"""
-        for recipe in self.recipes:
-            if recipe.output.name == item_name:
-                return recipe
-        return None
-    
-    def get_all_items(self):
-        """Retourne tous les items"""
-        return self.items
-    
-    def get_all_recipes(self):
-        """Retourne toutes les recettes"""
-        return self.recipes
 
 def create_items():
-    """Crée tous les items du jeu"""
     items = {
-        # Ressources de base
-        "wood": Item("Bois", "resource", "Matériau de base pour la construction", 99, COLORS["BROWN"], "wood"),
-        "stone": Item("Pierre", "resource", "Matériau solide pour les constructions", 99, COLORS["GRAY"], "stone"),
-        "iron_ore": Item("Minerai de fer", "resource", "Utilisé pour créer des outils", 99, COLORS["DARK_GRAY"], "iron_ore"),
-        "gold_ore": Item("Minerai d'or", "resource", "Précieux minerai doré", 99, (255, 215, 0), "gold_ore"),
-        "diamond_ore": Item("Minerai de diamant", "resource", "Le plus précieux des minerais", 99, (185, 242, 255), "diamond"),  # Le fichier s'appelle diamond.png
-        "coal": Item("Charbon", "resource", "Combustible et matériau", 99, (36, 36, 36), "coal"),
-        
-        # Nourriture
-        "apple": Item("Pomme", "food", "Restaure 10 points de vie", 10, COLORS["RED"], "apple"),
-        "berry": Item("Baie", "food", "Restaure 5 points de vie", 20, (128, 0, 128), "berry"),
-        "bread": Item("Pain", "food", "Restaure 20 points de vie", 5, (222, 184, 135), "bread"),
-        "meat": Item("Viande", "food", "Restaure 15 points de vie", 8, (139, 69, 19), "meat"),
-        
-        # Matériaux raffinés
-        "iron_ingot": Item("Lingot de fer", "material", "Fer purifié", 99, (169, 169, 169), "iron_ingot"),
-        "gold_ingot": Item("Lingot d'or", "material", "Or purifié", 99, (255, 215, 0), "gold_ingot"),
-        "diamond": Item("Diamant", "material", "Diamant taillé", 99, (185, 242, 255), "diamond"),
-        
-        # Outils
-        "wooden_sword": Item("Épée en bois", "weapon", "Arme basique", 1, COLORS["BROWN"], "wooden_sword"),
-        "iron_sword": Item("Épée en fer", "weapon", "Arme solide", 1, COLORS["DARK_GRAY"], "iron_sword"),
-        "gold_sword": Item("Épée en or", "weapon", "Arme précieuse", 1, (255, 215, 0), "wooden_sword"),  # Pas de sprite spécifique, utiliser wooden_sword
-        "diamond_sword": Item("Épée en diamant", "weapon", "L'arme ultime", 1, (185, 242, 255), "iron_sword"),  # Pas de sprite spécifique, utiliser iron_sword
-        
-        "wooden_pickaxe": Item("Pioche en bois", "tool", "Outil de minage basique", 1, COLORS["BROWN"], "wooden_pickaxe"),
-        "iron_pickaxe": Item("Pioche en fer", "tool", "Outil de minage avancé", 1, COLORS["DARK_GRAY"], "wooden_pickaxe"),  # Pas de sprite spécifique, utiliser wooden_pickaxe
-        
+        # Armes
+        "pistol": Item("Pistolet", "weapon", "15 degats, tir rapide", 1, (180, 180, 180), "wooden_sword"),
+        "shotgun": Item("Shotgun", "weapon", "40 degats, portee courte", 1, (140, 100, 60), "iron_sword"),
+        "rifle": Item("Fusil", "weapon", "25 degats, portee longue", 1, (80, 80, 90), "iron_sword"),
+        "sniper": Item("Sniper", "weapon", "60 degats, tres longue portee", 1, (60, 60, 70), "diamond_sword"),
+        "smg": Item("SMG", "weapon", "10 degats, tres rapide", 1, (100, 100, 110), "wooden_sword"),
+        "katana": Item("Katana", "weapon", "35 degats, melee", 1, (200, 200, 220), "iron_sword"),
+        "axe": Item("Hache", "weapon", "20 degats, melee", 1, (139, 69, 19), "wooden_sword"),
+
         # Armures
-        "leather_armor": Item("Armure en cuir", "armor", "Protection basique", 1, (139, 69, 19), "leather_armor"),
-        "iron_armor": Item("Armure en fer", "armor", "Protection solide", 1, COLORS["DARK_GRAY"], "iron_armor"),
+        "vest_1": Item("Gilet Lv1", "armor", "+20 PV max", 1, (100, 120, 80), "leather_armor"),
+        "vest_2": Item("Gilet Lv2", "armor", "+40 PV max", 1, (80, 100, 120), "iron_armor"),
+        "vest_3": Item("Gilet Lv3", "armor", "+60 PV max", 1, (120, 100, 140), "iron_armor"),
+
+        # Soins
+        "bandage": Item("Bandage", "heal", "Soigne 25 PV", 5, (220, 220, 220), "apple"),
+        "medkit": Item("Medkit", "heal", "Soigne 75 PV", 3, (220, 50, 50), "apple"),
+        "potion": Item("Potion", "heal", "Soigne 50 PV", 3, (100, 180, 255), "berry"),
+
+        # Munitions
+        "ammo": Item("Munitions", "ammo", "Pour les armes a feu", 30, (255, 200, 50), "coal"),
     }
     return items
 
+
 def create_recipes(items):
-    """Crée toutes les recettes de crafting"""
-    recipes = [
-        # Raffinement
-        CraftingRecipe("Lingot de fer", {"Minerai de fer": 2, "Charbon": 1}, items["iron_ingot"], 1),
-        CraftingRecipe("Lingot d'or", {"Minerai d'or": 2, "Charbon": 1}, items["gold_ingot"], 1),
-        CraftingRecipe("Diamant", {"Minerai de diamant": 1}, items["diamond"], 1),
-        
-        # Nourriture
-        CraftingRecipe("Pain", {"Bois": 2}, items["bread"], 1),
-        
-        # Armes
-        CraftingRecipe("Épée en bois", {"Bois": 3, "Pierre": 1}, items["wooden_sword"], 1),
-        CraftingRecipe("Épée en fer", {"Lingot de fer": 2, "Bois": 1}, items["iron_sword"], 1),
-        CraftingRecipe("Épée en or", {"Lingot d'or": 2, "Bois": 1}, items["gold_sword"], 1),
-        CraftingRecipe("Épée en diamant", {"Diamant": 2, "Bois": 1}, items["diamond_sword"], 1),
-        
-        # Outils
-        CraftingRecipe("Pioche en bois", {"Bois": 3, "Pierre": 2}, items["wooden_pickaxe"], 1),
-        CraftingRecipe("Pioche en fer", {"Lingot de fer": 3, "Bois": 2}, items["iron_pickaxe"], 1),
-        
-        # Armures
-        CraftingRecipe("Armure en cuir", {"Bois": 8}, items["leather_armor"], 1),
-        CraftingRecipe("Armure en fer", {"Lingot de fer": 8}, items["iron_armor"], 1),
-    ]
-    return recipes
+    return []
