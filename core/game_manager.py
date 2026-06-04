@@ -415,6 +415,9 @@ class GameManager:
         # Instructions (uniquement quand l'inventaire est fermé)
         if not self.inventory_ui.visible:
             self._draw_instructions()
+        
+        # Menu pause (par-dessus tout)
+        self.pause_menu.draw()
 
     def _draw_attack_feedback(self):
         """Affiche le montant de dégâts infligés sur l'écran."""
