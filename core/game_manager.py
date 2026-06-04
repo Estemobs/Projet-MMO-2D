@@ -459,37 +459,21 @@ class GameManager:
 
     def _draw_save_confirmation(self):
         """Dessine le message de confirmation de sauvegarde"""
-        # Créer le texte du message
-        message = "✅ Partie sauvegardée !"
+        w, h = self.screen.get_width(), self.screen.get_height()
+        message = "Partie sauvegardee !"
         big_font = pygame.font.Font(None, 48)
         text_surface = big_font.render(message, True, COLORS["GREEN"])
-        
-        # Calculer la position centrée avec la taille actuelle de l'écran
-        screen_width = self.screen.get_width()
-        screen_height = self.screen.get_height()
         text_rect = text_surface.get_rect()
-        text_x = (screen_width - text_rect.width) // 2
-        text_y = screen_height // 4
-        
-        # Dessiner un fond semi-transparent
-        background_padding = 20
-        background_rect = pygame.Rect(
-            text_x - background_padding,
-            text_y - background_padding,
-            text_rect.width + 2 * background_padding,
-            text_rect.height + 2 * background_padding
-        )
-        
-        # Surface avec transparence
-        background_surface = pygame.Surface((background_rect.width, background_rect.height))
-        background_surface.set_alpha(180)
-        background_surface.fill(COLORS["BLACK"])
-        self.screen.blit(background_surface, (background_rect.x, background_rect.y))
-        
-        # Bordure verte
-        pygame.draw.rect(self.screen, COLORS["GREEN"], background_rect, 3)
-        
-        # Afficher le texte
+        text_x = (w - text_rect.width) // 2
+        text_y = int(h * 0.15)
+
+        # Fond semi-transparent
+        padding = 20
+        bg_rect = pygame.Rect(text_x - padding, text_y - padding, text_rect.width + 2 * padding, text_rect.height + 2 * padding)
+        bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+        bg_surface.fill((10, 20, 30, 200))
+        self.screen.blit(bg_surface, (bg_rect.x, bg_rect.y))
+        pygame.draw.rect(self.screen, COLORS["GREEN"], bg_rect, 2, border_radius=8)
         self.screen.blit(text_surface, (text_x, text_y))
 
     def _toggle_fullscreen(self):
